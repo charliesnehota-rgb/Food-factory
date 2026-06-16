@@ -60,7 +60,13 @@ function LoginForm() {
         </button>
       </div>
 
-      <p className="text-xs text-center text-[var(--muted)] mt-6">
+      <p className="text-center mt-4">
+        <a href="/admin/reset" className="text-xs text-[var(--muted)] hover:text-white underline">
+          Zapomněl jsem heslo
+        </a>
+      </p>
+
+      <p className="text-xs text-center text-[var(--muted)] mt-4">
         Účty vytváří správce v Supabase. Nemáš přístup? Kontaktuj správce.
       </p>
     </div>

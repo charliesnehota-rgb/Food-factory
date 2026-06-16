@@ -28,8 +28,9 @@ export async function proxy(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isLogin = path === "/admin/login";
+  const isPublicAuth = isLogin || path === "/admin/reset" || path === "/admin/nove-heslo";
 
-  if (path.startsWith("/admin") && !isLogin && !user) {
+  if (path.startsWith("/admin") && !isPublicAuth && !user) {
     const redirect = request.nextUrl.clone();
     redirect.pathname = "/admin/login";
     redirect.searchParams.set("next", path);
