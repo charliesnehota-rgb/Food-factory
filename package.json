@@ -14,7 +14,8 @@
     "react-dom": "19.2.4",
     "firebase": "^11.10.0",
     "stripe": "^17.7.0",
-    "@supabase/supabase-js": "^2.49.0"
+    "@supabase/supabase-js": "^2.49.0",
+    "@supabase/ssr": "^0.5.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
