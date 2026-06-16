@@ -5,11 +5,13 @@ import { useCart } from "@/lib/cart";
 import { formatCzk } from "@/lib/types";
 
 type Fulfilment = "delivery" | "pickup";
+type Payment = "cash" | "card";
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
   const router = useRouter();
   const [fulfilment, setFulfilment] = useState<Fulfilment>("delivery");
+  const [payment, setPayment] = useState<Payment>("card");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -18,8 +20,6 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
 
   const deliveryFee = fulfilment === "delivery" ? 59 : 0;
-
-  // Seskupení košíku podle konceptu
   const conceptSlugs = [...new Set(items.map(i => i.product.conceptSlug))];
   const primaryConcept = conceptSlugs[0] ?? "smash";
 
@@ -32,6 +32,7 @@ export default function CheckoutPage() {
     setError("");
 
     try {
+      // 1) Vytvoř objednávku v DB
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -42,22 +43,34 @@ export default function CheckoutPage() {
           customer: { name: name.trim(), phone: phone.trim(), address: address.trim() },
           note: note.trim(),
           items: items.map(i => ({
-            productId: i.product.id,
-            name: i.product.name,
-            qty: i.qty,
-            unitPriceCzk: i.product.priceCzk,
+            productId: i.product.id, name: i.product.name,
+            qty: i.qty, unitPriceCzk: i.product.priceCzk,
           })),
         }),
       });
-
       const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Chyba při odeslání."); setLoading(false); return; }
 
-      if (!res.ok) {
-        setError(data.error ?? "Chyba při odeslání objednávky.");
+      // 2a) Platba kartou → Stripe Checkout
+      if (payment === "card") {
+        const payRes = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: data.orderId }),
+        });
+        const payData = await payRes.json();
+        if (payRes.ok && payData.url) {
+          clearCart();
+          window.location.href = payData.url; // přesměrování na Stripe
+          return;
+        }
+        // Stripe nedostupné → spadni na hotovost
+        setError(payData.error ?? "Platba kartou není dostupná. Zkus platbu při převzetí.");
         setLoading(false);
         return;
       }
 
+      // 2b) Hotově → rovnou potvrzení
       clearCart();
       router.push(`/objednavka/${data.orderId}`);
     } catch {
@@ -81,18 +94,14 @@ export default function CheckoutPage() {
       <h1 className="text-2xl font-semibold mb-8">Objednávka</h1>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Levý sloupec — formulář */}
         <div className="space-y-5">
           {/* Způsob doručení */}
           <div>
             <label className="mb-2 block text-sm font-medium">Způsob doručení</label>
             <div className="grid grid-cols-2 gap-2">
               {([["delivery", "🛵 Doručení", "59 Kč"], ["pickup", "🏃 Vyzvednutí", "zdarma"]] as const).map(([val, label, sub]) => (
-                <button
-                  key={val}
-                  onClick={() => setFulfilment(val)}
-                  className={`rounded-xl border p-3 text-left transition ${fulfilment === val ? "border-white bg-[var(--card)]" : "border-[var(--border)] hover:border-neutral-600"}`}
-                >
+                <button key={val} onClick={() => setFulfilment(val)}
+                  className={`rounded-xl border p-3 text-left transition ${fulfilment === val ? "border-white bg-[var(--card)]" : "border-[var(--border)] hover:border-neutral-600"}`}>
                   <div className="text-sm font-medium">{label}</div>
                   <div className="text-xs text-[var(--muted)]">{sub}</div>
                 </button>
@@ -100,7 +109,20 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Kontaktní údaje */}
+          {/* Způsob platby */}
+          <div>
+            <label className="mb-2 block text-sm font-medium">Platba</label>
+            <div className="grid grid-cols-2 gap-2">
+              {([["card", "💳 Kartou online", "ihned"], ["cash", "💵 Při převzetí", "hotově/kartou"]] as const).map(([val, label, sub]) => (
+                <button key={val} onClick={() => setPayment(val)}
+                  className={`rounded-xl border p-3 text-left transition ${payment === val ? "border-white bg-[var(--card)]" : "border-[var(--border)] hover:border-neutral-600"}`}>
+                  <div className="text-sm font-medium">{label}</div>
+                  <div className="text-xs text-[var(--muted)]">{sub}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="mb-1 block text-sm font-medium">Jméno *</label>
             <input value={name} onChange={e => setName(e.target.value)} placeholder="Jana Nováková"
@@ -125,7 +147,7 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* Pravý sloupec — souhrn */}
+        {/* Souhrn */}
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 space-y-3 self-start">
           <h2 className="font-medium mb-3">Souhrn objednávky</h2>
           {items.map(item => (
@@ -135,29 +157,17 @@ export default function CheckoutPage() {
             </div>
           ))}
           <div className="border-t border-[var(--border)] pt-3 space-y-1">
-            <div className="flex justify-between text-sm text-[var(--muted)]">
-              <span>Jídlo</span><span>{formatCzk(total)}</span>
-            </div>
-            <div className="flex justify-between text-sm text-[var(--muted)]">
-              <span>Doručení</span><span>{deliveryFee === 0 ? "zdarma" : formatCzk(deliveryFee)}</span>
-            </div>
-            <div className="flex justify-between font-semibold text-base pt-1">
-              <span>Celkem</span><span>{formatCzk(total + deliveryFee)}</span>
-            </div>
+            <div className="flex justify-between text-sm text-[var(--muted)]"><span>Jídlo</span><span>{formatCzk(total)}</span></div>
+            <div className="flex justify-between text-sm text-[var(--muted)]"><span>Doručení</span><span>{deliveryFee === 0 ? "zdarma" : formatCzk(deliveryFee)}</span></div>
+            <div className="flex justify-between font-semibold text-base pt-1"><span>Celkem</span><span>{formatCzk(total + deliveryFee)}</span></div>
           </div>
 
           {error && <p className="text-sm text-red-400 rounded-lg bg-red-500/10 px-3 py-2">{error}</p>}
 
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-black hover:bg-neutral-200 disabled:opacity-50 transition mt-2"
-          >
-            {loading ? "Odesílám..." : "Odeslat objednávku"}
+          <button onClick={handleSubmit} disabled={loading}
+            className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-black hover:bg-neutral-200 disabled:opacity-50 transition mt-2">
+            {loading ? "Zpracovávám…" : payment === "card" ? "Zaplatit kartou →" : "Odeslat objednávku"}
           </button>
-          <p className="text-xs text-center text-[var(--muted)]">
-            Platba při převzetí nebo kartou (brzy)
-          </p>
         </div>
       </div>
     </div>
