@@ -5,16 +5,13 @@ type CookieToSet = { name: string; value: string; options?: Record<string, unkno
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
-
-  const url  = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
   if (!url || !anon) return response;
 
   const supabase = createServerClient(url, anon, {
     cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
+      getAll() { return request.cookies.getAll(); },
       setAll(cookiesToSet: CookieToSet[]) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         response = NextResponse.next({ request });
@@ -25,28 +22,29 @@ export async function proxy(request: NextRequest) {
   });
 
   const { data: { user } } = await supabase.auth.getUser();
-
   const path = request.nextUrl.pathname;
-  const isLogin = path === "/admin/login";
-  const isPublicAuth = isLogin || path === "/admin/reset" || path === "/admin/nove-heslo";
 
-  if (path.startsWith("/admin") && !isPublicAuth && !user) {
-    const redirect = request.nextUrl.clone();
-    redirect.pathname = "/admin/login";
-    redirect.searchParams.set("next", path);
-    return NextResponse.redirect(redirect);
+  // --- Admin ochrana ---
+  const isAdminAuth = path === "/admin/login" || path === "/admin/reset" || path === "/admin/nove-heslo";
+  if (path.startsWith("/admin") && !isAdminAuth && !user) {
+    const r = request.nextUrl.clone(); r.pathname = "/admin/login"; r.searchParams.set("next", path);
+    return NextResponse.redirect(r);
+  }
+  if (isAdminAuth && user) {
+    const r = request.nextUrl.clone(); r.pathname = "/admin"; r.searchParams.delete("next");
+    return NextResponse.redirect(r);
   }
 
-  if (isLogin && user) {
-    const redirect = request.nextUrl.clone();
-    redirect.pathname = "/admin";
-    redirect.searchParams.delete("next");
-    return NextResponse.redirect(redirect);
+  // --- Zákaznický účet ochrana ---
+  const isCustomerAuth = path === "/ucet/prihlaseni" || path === "/ucet/registrace";
+  if (path.startsWith("/ucet") && !isCustomerAuth && !user) {
+    const r = request.nextUrl.clone(); r.pathname = "/ucet/prihlaseni"; r.searchParams.set("next", path);
+    return NextResponse.redirect(r);
   }
 
   return response;
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/ucet/:path*"],
 };

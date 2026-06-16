@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CartButton } from "@/components/CartButton";
+import { AccountButton } from "@/components/AccountButton";
 
 export function Nav() {
   return (
@@ -10,16 +11,10 @@ export function Nav() {
           <span>Food Factory</span>
         </Link>
         <nav className="flex items-center gap-1 text-sm">
-          <Link href="/#koncepty" className="rounded-md px-3 py-2 text-[var(--muted)] hover:text-white">
-            Koncepty
-          </Link>
-          <Link href="/#jak-to-funguje" className="rounded-md px-3 py-2 text-[var(--muted)] hover:text-white">
-            Jak to funguje
-          </Link>
+          <Link href="/#koncepty" className="rounded-md px-3 py-2 text-[var(--muted)] hover:text-white">Koncepty</Link>
+          <AccountButton />
           <CartButton />
-          <Link href="/admin" className="rounded-md border border-[var(--border)] px-3 py-2 hover:border-neutral-600 ml-1">
-            Admin
-          </Link>
+          <Link href="/admin" className="rounded-md border border-[var(--border)] px-3 py-2 hover:border-neutral-600 ml-1">Admin</Link>
         </nav>
       </div>
     </header>
