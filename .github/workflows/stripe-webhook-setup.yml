@@ -7,38 +7,46 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     steps:
-      - name: Create Stripe webhook endpoint
+      - name: Cleanup old + create new Stripe webhook
         id: create
         run: |
+          # Smaž existující endpointy mířící na náš /api/webhooks/stripe (úklid duplikátů)
+          EXISTING=$(curl -s https://api.stripe.com/v1/webhook_endpoints \
+            -u "${{ secrets.STRIPE_SECRET_KEY }}:")
+          echo "$EXISTING" | python3 -c "
+          import sys,json
+          d=json.load(sys.stdin)
+          for e in d.get('data',[]):
+              if 'food-factory-zeta.vercel.app' in e.get('url',''):
+                  print(e['id'])
+          " > to_delete.txt
+          while read id; do
+            [ -n "$id" ] && curl -s -X DELETE "https://api.stripe.com/v1/webhook_endpoints/$id" \
+              -u "${{ secrets.STRIPE_SECRET_KEY }}:" > /dev/null && echo "Smazán starý: $id"
+          done < to_delete.txt
+
+          # Vytvoř nový
           RESPONSE=$(curl -s https://api.stripe.com/v1/webhook_endpoints \
             -u "${{ secrets.STRIPE_SECRET_KEY }}:" \
             -d "url=https://food-factory-zeta.vercel.app/api/webhooks/stripe" \
             -d "enabled_events[]=checkout.session.completed" \
             -d "enabled_events[]=payment_intent.succeeded")
-          echo "$RESPONSE" > response.json
           SECRET=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('secret',''))")
-          ID=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))")
-          echo "Endpoint ID: $ID"
-          if [ -z "$SECRET" ]; then
-            echo "CHYBA - secret nezískán. Odpověď:"
-            cat response.json
-            exit 1
-          fi
+          if [ -z "$SECRET" ]; then echo "CHYBA:"; echo "$RESPONSE"; exit 1; fi
           echo "::add-mask::$SECRET"
           echo "secret=$SECRET" >> "$GITHUB_OUTPUT"
-          echo "Webhook vytvořen úspěšně (secret zamaskován)"
+          echo "Nový webhook vytvořen"
 
-      - name: Save secret to GitHub Secrets
+      - name: Save secret via PAT
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
           WHSEC: ${{ steps.create.outputs.secret }}
         run: |
           pip install pynacl --quiet
           python3 << 'PY'
           import base64, json, os, urllib.request
           from nacl import public
-          token = os.environ["GH_TOKEN"]
-          whsec = os.environ["WHSEC"]
+          token = os.environ["GH_TOKEN"]; whsec = os.environ["WHSEC"]
           repo = "${{ github.repository }}"
           def req(url, method="GET", data=None):
               r = urllib.request.Request(url, data=data, method=method,
@@ -49,5 +57,5 @@ jobs:
           ev = base64.b64encode(box.encrypt(whsec.encode())).decode()
           body = json.dumps({"encrypted_value": ev, "key_id": pk["key_id"]}).encode()
           req(f"https://api.github.com/repos/{repo}/actions/secrets/STRIPE_WEBHOOK_SECRET", "PUT", body)
-          print("STRIPE_WEBHOOK_SECRET uložen")
+          print("STRIPE_WEBHOOK_SECRET ulozen")
           PY
