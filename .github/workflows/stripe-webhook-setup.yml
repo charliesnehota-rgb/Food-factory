@@ -1,0 +1,53 @@
+name: Setup Stripe Webhook
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Stripe webhook endpoint
+        id: create
+        run: |
+          RESPONSE=$(curl -s https://api.stripe.com/v1/webhook_endpoints \
+            -u "${{ secrets.STRIPE_SECRET_KEY }}:" \
+            -d "url=https://food-factory-zeta.vercel.app/api/webhooks/stripe" \
+            -d "enabled_events[]=checkout.session.completed" \
+            -d "enabled_events[]=payment_intent.succeeded")
+          echo "$RESPONSE" > response.json
+          SECRET=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('secret',''))")
+          ID=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))")
+          echo "Endpoint ID: $ID"
+          if [ -z "$SECRET" ]; then
+            echo "CHYBA - secret nezískán. Odpověď:"
+            cat response.json
+            exit 1
+          fi
+          echo "::add-mask::$SECRET"
+          echo "secret=$SECRET" >> "$GITHUB_OUTPUT"
+          echo "Webhook vytvořen úspěšně (secret zamaskován)"
+
+      - name: Save secret to GitHub Secrets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WHSEC: ${{ steps.create.outputs.secret }}
+        run: |
+          pip install pynacl --quiet
+          python3 << 'PY'
+          import base64, json, os, urllib.request
+          from nacl import public
+          token = os.environ["GH_TOKEN"]
+          whsec = os.environ["WHSEC"]
+          repo = "${{ github.repository }}"
+          def req(url, method="GET", data=None):
+              r = urllib.request.Request(url, data=data, method=method,
+                  headers={"Authorization": f"token {token}", "Accept": "application/vnd.github+json", "Content-Type":"application/json"})
+              return urllib.request.urlopen(r)
+          pk = json.loads(req(f"https://api.github.com/repos/{repo}/actions/secrets/public-key").read())
+          box = public.SealedBox(public.PublicKey(base64.b64decode(pk["key"])))
+          ev = base64.b64encode(box.encrypt(whsec.encode())).decode()
+          body = json.dumps({"encrypted_value": ev, "key_id": pk["key_id"]}).encode()
+          req(f"https://api.github.com/repos/{repo}/actions/secrets/STRIPE_WEBHOOK_SECRET", "PUT", body)
+          print("STRIPE_WEBHOOK_SECRET uložen")
+          PY
