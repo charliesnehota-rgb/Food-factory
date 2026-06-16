@@ -24,7 +24,12 @@ export default function RegisterPage() {
     });
     setLoading(false);
     if (error) {
-      setError(error.message.includes("already") ? "Tento e-mail je už registrovaný." : "Registrace se nezdařila.");
+      const msg = error.message.toLowerCase();
+      if (msg.includes("already") || msg.includes("registered") || msg.includes("exists")) {
+        setError("Tento e-mail je už registrovaný. Přihlas se, nebo použij jiný e-mail.");
+      } else {
+        setError(`Registrace se nezdařila: ${error.message}`);
+      }
       return;
     }
     router.push("/ucet/profil");
