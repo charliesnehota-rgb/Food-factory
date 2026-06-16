@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CartButton } from "@/components/CartButton";
 
 export function Nav() {
   return (
@@ -15,10 +16,8 @@ export function Nav() {
           <Link href="/#jak-to-funguje" className="rounded-md px-3 py-2 text-[var(--muted)] hover:text-white">
             Jak to funguje
           </Link>
-          <Link
-            href="/admin"
-            className="rounded-md border border-[var(--border)] px-3 py-2 hover:border-neutral-600"
-          >
+          <CartButton />
+          <Link href="/admin" className="rounded-md border border-[var(--border)] px-3 py-2 hover:border-neutral-600 ml-1">
             Admin
           </Link>
         </nav>

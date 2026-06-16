@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { concepts, getConcept } from "@/lib/data/concepts";
 import { DAYPART_LABEL, formatCzk } from "@/lib/types";
 import type { MenuItem } from "@/lib/types";
+import { AddToCartButton } from "@/components/AddToCartButton";
 
 export function generateStaticParams() {
   return concepts.map((c) => ({ slug: c.slug }));
@@ -13,7 +14,6 @@ export default async function ConceptPage({ params }: { params: Promise<{ slug: 
   const concept = getConcept(slug);
   if (!concept) notFound();
 
-  // seskupení menu podle kategorie
   const categories = new Map<string, MenuItem[]>();
   for (const item of concept.menu) {
     const list = categories.get(item.category) ?? [];
@@ -50,8 +50,8 @@ export default async function ConceptPage({ params }: { params: Promise<{ slug: 
             </h2>
             <ul className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)]">
               {items.map((item) => (
-                <li key={item.id} className="flex items-start justify-between gap-4 p-4">
-                  <div>
+                <li key={item.id} className="flex items-center justify-between gap-4 p-4">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{item.name}</span>
                       {!item.available && (
@@ -62,17 +62,15 @@ export default async function ConceptPage({ params }: { params: Promise<{ slug: 
                     </div>
                     <p className="mt-0.5 text-sm text-[var(--muted)]">{item.description}</p>
                   </div>
-                  <span className="shrink-0 font-medium">{formatCzk(item.priceCzk)}</span>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="font-medium">{formatCzk(item.priceCzk)}</span>
+                    <AddToCartButton item={item} />
+                  </div>
                 </li>
               ))}
             </ul>
           </section>
         ))}
-      </div>
-
-      <div className="mt-10 rounded-2xl border border-dashed border-[var(--border)] p-5 text-sm text-[var(--muted)]">
-        🛒 Objednávání (košík + platba Stripe) přijde ve fázi 2. Tahle stránka
-        už čte stejná data, jaká budou v databázi.
       </div>
     </div>
   );
