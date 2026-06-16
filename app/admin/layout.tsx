@@ -16,8 +16,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-300">
-        Demo režim — data jsou ukázková. Napojení na Firebase a přihlášení
-        (Firebase Auth) se aktivuje ve fázi 2. Viz PROJECT.md.
+        Admin zatím není chráněn přihlášením — přidáme v dalším kroku (Supabase Auth).
       </div>
 
       <div className="flex flex-col gap-6 sm:flex-row">

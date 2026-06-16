@@ -8,7 +8,7 @@ export async function fetchOrders(conceptSlug?: string): Promise<Order[]> {
   let q = supabaseAdmin.from("orders").select("*, order_items(*)").order("created_at", { ascending: false }).limit(200);
   if (conceptSlug) q = q.eq("concept_slug", conceptSlug);
   const { data, error } = await q;
-  if (error || !data) return mockOrders;
+  if (error || !data) return [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return data.map((row: any) => dbOrderToModel(row));
 }
