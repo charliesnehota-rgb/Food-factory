@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..500&family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..500&family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -35,5 +35,18 @@ a { color: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .ff-steam-line, .ff-float { animation: none !important; }
+  .ff-steam-line, .ff-float, .ss-rays, .ss-marquee { animation: none !important; }
 }
+
+/* ── Sunny Side / atomic-age animace ── */
+.ss-rays {
+  position: absolute;
+  inset: -60%;
+  animation: ss-spin 70s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+@keyframes ss-spin { to { transform: rotate(360deg); } }
+
+.ss-marquee { display: inline-block; animation: ss-scroll 28s linear infinite; }
+@keyframes ss-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
