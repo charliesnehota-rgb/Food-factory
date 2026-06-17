@@ -1,0 +1,86 @@
+import webpush from "web-push";
+import type { OrderStatus } from "@/lib/types";
+
+// VAPID konfigurace
+if (process.env.VAPID_PRIVATE_KEY && process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
+  webpush.setVapidDetails(
+    "mailto:info@foodfactory.cz",
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
+
+// Texty notifikací per stav
+const STATUS_MESSAGES: Partial<Record<OrderStatus, { title: string; body: string }>> = {
+  accepted:         { title: "✅ Objednávka přijata",     body: "Kuchyně ji má — brzy se začne připravovat." },
+  preparing:        { title: "👨‍🍳 Připravujeme",          body: "Vaše jídlo se právě připravuje." },
+  ready:            { title: "🎉 Hotovo!",                body: "Objednávka je připravena k vyzvednutí." },
+  out_for_delivery: { title: "🛵 Na cestě",               body: "Kurýr vyjel s vaší objednávkou." },
+  delivered:        { title: "✓ Doručeno",                body: "Dobrou chuť! Objednávka je doručena." },
+};
+
+interface PushSub {
+  endpoint: string;
+  p256dh: string;
+  auth_key: string;
+}
+
+// Odeslání push notifikace
+export async function sendPushNotification(subs: PushSub[], orderId: string, status: OrderStatus) {
+  const msg = STATUS_MESSAGES[status];
+  if (!msg || !process.env.VAPID_PRIVATE_KEY) return;
+
+  const payload = JSON.stringify({
+    title: msg.title,
+    body: msg.body,
+    orderId,
+    url: `/ucet/objednavky`,
+  });
+
+  await Promise.allSettled(
+    subs.map((s) =>
+      webpush.sendNotification(
+        { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth_key } },
+        payload
+      ).catch(() => null) // expired subscriptions ignorujeme
+    )
+  );
+}
+
+// Odeslání e-mailu přes Resend
+export async function sendStatusEmail(
+  toEmail: string,
+  toName: string,
+  orderId: string,
+  status: OrderStatus
+) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return; // bez klíče tiše přeskočíme
+
+  const msg = STATUS_MESSAGES[status];
+  if (!msg) return;
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:500px;margin:0 auto;color:#1a1a1a">
+      <h2 style="font-size:22px;margin-bottom:8px">${msg.title}</h2>
+      <p style="color:#555;margin-bottom:16px">${msg.body}</p>
+      <p style="color:#555">Objednávka: <strong>${orderId}</strong></p>
+      <a href="${process.env.NEXT_PUBLIC_SITE_URL ?? "https://food-factory-zeta.vercel.app"}/ucet/objednavky"
+         style="display:inline-block;margin-top:16px;padding:10px 20px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-size:14px">
+        Sledovat objednávku →
+      </a>
+      <p style="margin-top:32px;font-size:12px;color:#999">Food Factory · Praha</p>
+    </div>
+  `;
+
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: "Food Factory <notifikace@foodfactory.cz>",
+      to: toEmail,
+      subject: `${msg.title} — objednávka ${orderId}`,
+      html,
+    }),
+  }).catch(() => null);
+}

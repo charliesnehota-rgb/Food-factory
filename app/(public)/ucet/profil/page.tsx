@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { PushPermission } from "@/components/PushPermission";
 import { createSupabaseBrowser } from "@/lib/auth/client";
 
 interface Profile {
@@ -129,6 +130,8 @@ function ProfileInner() {
             )
           )}
         </div>
+
+        <PushPermission />
 
         <div className="border-t border-[var(--border)] pt-6">
           <Link href="/ucet/objednavky" className="text-sm underline hover:text-white">
