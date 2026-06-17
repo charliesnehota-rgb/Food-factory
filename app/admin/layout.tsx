@@ -16,8 +16,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
 
-  // Auth stránky (login, reset) nemají admin chrome
-  const isLogin = pathname === "/admin/login" || pathname === "/admin/reset" || pathname === "/admin/nove-heslo";
+  // Auth stránky (login, reset, přístup zamítnut) nemají admin chrome
+  const isLogin = pathname === "/admin/login" || pathname === "/admin/reset" || pathname === "/admin/nove-heslo" || pathname === "/admin/pristup-zamitnut";
 
   useEffect(() => {
     if (isLogin) return;

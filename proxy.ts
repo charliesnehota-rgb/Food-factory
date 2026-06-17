@@ -26,6 +26,8 @@ export async function proxy(request: NextRequest) {
 
   // --- Admin ochrana ---
   const isAdminAuth = path === "/admin/login" || path === "/admin/reset" || path === "/admin/nove-heslo";
+  const isAccessDenied = path === "/admin/pristup-zamitnut";
+
   if (path.startsWith("/admin") && !isAdminAuth && !user) {
     const r = request.nextUrl.clone(); r.pathname = "/admin/login"; r.searchParams.set("next", path);
     return NextResponse.redirect(r);
@@ -33,6 +35,17 @@ export async function proxy(request: NextRequest) {
   if (isAdminAuth && user) {
     const r = request.nextUrl.clone(); r.pathname = "/admin"; r.searchParams.delete("next");
     return NextResponse.redirect(r);
+  }
+
+  // Kontrola role: do adminu jen admin/staff (ne zákazníci)
+  if (path.startsWith("/admin") && !isAdminAuth && !isAccessDenied && user) {
+    const { data: profile } = await supabase
+      .from("user_profiles").select("role").eq("id", user.id).single();
+    const role = profile?.role;
+    if (role !== "admin" && role !== "staff") {
+      const r = request.nextUrl.clone(); r.pathname = "/admin/pristup-zamitnut"; r.search = "";
+      return NextResponse.redirect(r);
+    }
   }
 
   // --- Zákaznický účet ochrana ---

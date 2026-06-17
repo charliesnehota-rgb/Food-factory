@@ -1,11 +1,16 @@
-// GET /api/orders — admin: všechny objednávky (?concept=slug filtr)
+// GET /api/orders — JEN pracovník: všechny objednávky (?concept=slug filtr)
 // POST /api/orders — vytvoří objednávku přihlášeného zákazníka
 import { NextRequest, NextResponse } from "next/server";
 import { fetchOrders } from "@/lib/db/orders";
 import { supabaseAdmin } from "@/lib/db/supabase";
 import { createSupabaseServer } from "@/lib/auth/server";
+import { requireStaff } from "@/lib/auth/require-staff";
 
 export async function GET(req: NextRequest) {
+  // Seznam všech objednávek je jen pro pracovníky
+  const staff = await requireStaff();
+  if (!staff) return NextResponse.json({ error: "Přístup zamítnut" }, { status: 403 });
+
   const concept = req.nextUrl.searchParams.get("concept") ?? undefined;
   const orders = await fetchOrders(concept);
   return NextResponse.json(orders);
@@ -16,7 +21,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  // Vyžaduj přihlášení
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
