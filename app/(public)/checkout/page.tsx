@@ -2,7 +2,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart";
+import { useBrand } from "@/lib/brand-context";
 import { formatCzk } from "@/lib/types";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { createSupabaseBrowser } from "@/lib/auth/client";
 
 type Fulfilment = "delivery" | "pickup";
@@ -10,7 +12,17 @@ type Payment = "cash" | "card";
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
+  const { brand } = useBrand();
   const router = useRouter();
+
+  // Brand barvy nebo výchozí
+  const accent    = brand?.accent    ?? "#ffffff";
+  const accentInk = brand?.accentInk ?? "#000000";
+  const surface   = brand?.surface   ?? "var(--card)";
+  const line      = brand?.line      ?? "var(--border)";
+  const ink       = brand?.ink       ?? "var(--fg)";
+  const muted     = brand?.muted     ?? "var(--muted)";
+
   const [authChecked, setAuthChecked] = useState(false);
   const [hasCard, setHasCard] = useState(false);
   const [fulfilment, setFulfilment] = useState<Fulfilment>("delivery");
@@ -22,7 +34,6 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Ověř přihlášení + předvyplň profil
   useEffect(() => {
     const supabase = createSupabaseBrowser();
     supabase.auth.getUser().then(({ data }) => {
@@ -40,7 +51,9 @@ export default function CheckoutPage() {
 
   const deliveryFee = fulfilment === "delivery" ? 59 : 0;
   const conceptSlugs = [...new Set(items.map(i => i.product.conceptSlug))];
-  const primaryConcept = conceptSlugs[0] ?? "smash";
+  const primaryConcept = conceptSlugs[0] ?? brand?.slug ?? "smash";
+
+  const inputCls = "w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1";
 
   async function handleSubmit() {
     if (!name.trim()) { setError("Zadej jméno."); return; }
@@ -72,95 +85,147 @@ export default function CheckoutPage() {
         if (payRes.ok && payData.url) { clearCart(); window.location.href = payData.url; return; }
         setError(payData.error ?? "Platba kartou není dostupná."); setLoading(false); return;
       }
-
       clearCart();
       router.push(`/objednavka/${data.orderId}`);
     } catch {
-      setError("Chyba připojení. Zkus to znovu."); setLoading(false);
+      setError("Chyba připojení."); setLoading(false);
     }
   }
 
-  if (!authChecked) return <div className="px-4 py-20 text-center text-[var(--muted)]">Načítám…</div>;
+  if (!authChecked) return (
+    <div className="px-4 py-20 text-center" style={{ color: muted }}>Načítám…</div>
+  );
 
-  if (items.length === 0) {
-    return (
-      <div className="mx-auto max-w-lg px-4 py-20 text-center">
-        <p className="text-4xl mb-4">🛒</p>
-        <p className="text-[var(--muted)]">Košík je prázdný.</p>
-        <a href="/" className="mt-4 inline-block text-sm underline">Zpět na výběr jídla</a>
-      </div>
-    );
-  }
+  if (items.length === 0) return (
+    <div className="mx-auto max-w-lg px-4 py-20 text-center">
+      <p className="text-4xl mb-4">🛒</p>
+      <p style={{ color: muted }}>Košík je prázdný.</p>
+      <a href="/" className="mt-4 inline-block text-sm underline" style={{ color: ink }}>Zpět na výběr jídla</a>
+    </div>
+  );
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12">
-      <h1 className="text-2xl font-semibold mb-8">Objednávka</h1>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-5">
-          <div>
-            <label className="mb-2 block text-sm font-medium">Způsob doručení</label>
-            <div className="grid grid-cols-2 gap-2">
-              {([["delivery","🛵 Doručení","59 Kč"],["pickup","🏃 Vyzvednutí","zdarma"]] as const).map(([val,label,sub]) => (
-                <button key={val} onClick={() => setFulfilment(val)}
-                  className={`rounded-xl border p-3 text-left transition ${fulfilment===val?"border-white bg-[var(--card)]":"border-[var(--border)] hover:border-neutral-600"}`}>
-                  <div className="text-sm font-medium">{label}</div><div className="text-xs text-[var(--muted)]">{sub}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium">Platba</label>
-            <div className="grid grid-cols-2 gap-2">
-              {([["card", hasCard ? "💳 Uloženou kartou" : "💳 Kartou online", hasCard ? "jedním klikem" : "ihned"],["cash","💵 Při převzetí","hotově/kartou"]] as const).map(([val,label,sub]) => (
-                <button key={val} onClick={() => setPayment(val)}
-                  className={`rounded-xl border p-3 text-left transition ${payment===val?"border-white bg-[var(--card)]":"border-[var(--border)] hover:border-neutral-600"}`}>
-                  <div className="text-sm font-medium">{label}</div><div className="text-xs text-[var(--muted)]">{sub}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Jméno *</label>
-            <input value={name} onChange={e => setName(e.target.value)}
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm focus:border-neutral-500 focus:outline-none" />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Telefon</label>
-            <input value={phone} onChange={e => setPhone(e.target.value)} type="tel"
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm focus:border-neutral-500 focus:outline-none" />
-          </div>
-          {fulfilment === "delivery" && (
-            <div>
-              <label className="mb-1 block text-sm font-medium">Adresa doručení *</label>
-              <input value={address} onChange={e => setAddress(e.target.value)}
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm focus:border-neutral-500 focus:outline-none" />
-            </div>
+    <div className="min-h-screen" style={{ background: brand?.bg ?? "var(--bg)" }}>
+      {/* Brand hlavička */}
+      <header className="border-b px-5 py-4" style={{ borderColor: line }}>
+        <div className="mx-auto max-w-2xl flex items-center justify-between">
+          {brand ? (
+            <BrandLogo brand={brand} size="md" />
+          ) : (
+            <span className="font-semibold" style={{ color: ink }}>Objednávka</span>
           )}
-          <div>
-            <label className="mb-1 block text-sm font-medium">Poznámka ke kuchyni</label>
-            <textarea value={note} onChange={e => setNote(e.target.value)} rows={2}
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm focus:border-neutral-500 focus:outline-none resize-none" />
-          </div>
+          <a href={brand ? `/${brand.slug}` : "/"} className="text-sm transition"
+            style={{ color: muted }}>← Zpět na menu</a>
         </div>
+      </header>
 
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 space-y-3 self-start">
-          <h2 className="font-medium mb-3">Souhrn objednávky</h2>
-          {items.map(item => (
-            <div key={item.product.id} className="flex justify-between text-sm">
-              <span className="text-[var(--muted)]">{item.qty}× {item.product.name}</span>
-              <span>{formatCzk(item.product.priceCzk * item.qty)}</span>
+      <div className="mx-auto max-w-2xl px-4 py-10">
+        <h1 className="text-2xl font-semibold mb-8" style={{ color: ink, fontFamily: brand?.displayFont }}>
+          Objednávka
+        </h1>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Formulář */}
+          <div className="space-y-5">
+            {/* Doručení */}
+            <div>
+              <label className="mb-2 block text-sm font-medium" style={{ color: ink }}>Způsob doručení</label>
+              <div className="grid grid-cols-2 gap-2">
+                {([["delivery","🛵 Doručení","59 Kč"],["pickup","🏃 Vyzvednutí","zdarma"]] as const).map(([val,label,sub]) => (
+                  <button key={val} onClick={() => setFulfilment(val)}
+                    className="rounded-xl p-3 text-left transition"
+                    style={{
+                      background: fulfilment === val ? surface : "transparent",
+                      border: `1px solid ${fulfilment === val ? accent : line}`,
+                    }}>
+                    <div className="text-sm font-medium" style={{ color: ink }}>{label}</div>
+                    <div className="text-xs" style={{ color: muted }}>{sub}</div>
+                  </button>
+                ))}
+              </div>
             </div>
-          ))}
-          <div className="border-t border-[var(--border)] pt-3 space-y-1">
-            <div className="flex justify-between text-sm text-[var(--muted)]"><span>Jídlo</span><span>{formatCzk(total)}</span></div>
-            <div className="flex justify-between text-sm text-[var(--muted)]"><span>Doručení</span><span>{deliveryFee===0?"zdarma":formatCzk(deliveryFee)}</span></div>
-            <div className="flex justify-between font-semibold text-base pt-1"><span>Celkem</span><span>{formatCzk(total+deliveryFee)}</span></div>
+
+            {/* Platba */}
+            <div>
+              <label className="mb-2 block text-sm font-medium" style={{ color: ink }}>Platba</label>
+              <div className="grid grid-cols-2 gap-2">
+                {([["card", hasCard ? "💳 Uloženou kartou" : "💳 Kartou online", hasCard ? "jedním klikem" : "ihned"],["cash","💵 Při převzetí","hotově/kartou"]] as const).map(([val,label,sub]) => (
+                  <button key={val} onClick={() => setPayment(val)}
+                    className="rounded-xl p-3 text-left transition"
+                    style={{
+                      background: payment === val ? surface : "transparent",
+                      border: `1px solid ${payment === val ? accent : line}`,
+                    }}>
+                    <div className="text-sm font-medium" style={{ color: ink }}>{label}</div>
+                    <div className="text-xs" style={{ color: muted }}>{sub}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {[
+              { label: "Jméno *", value: name, set: setName, type: "text", placeholder: "Jana Nováková" },
+              { label: "Telefon", value: phone, set: setPhone, type: "tel", placeholder: "+420 777 123 456" },
+            ].map(f => (
+              <div key={f.label}>
+                <label className="mb-1 block text-sm font-medium" style={{ color: ink }}>{f.label}</label>
+                <input value={f.value} onChange={e => f.set(e.target.value)} type={f.type} placeholder={f.placeholder}
+                  className={inputCls} style={{ background: surface, border: `1px solid ${line}`, color: ink }} />
+              </div>
+            ))}
+
+            {fulfilment === "delivery" && (
+              <div>
+                <label className="mb-1 block text-sm font-medium" style={{ color: ink }}>Adresa doručení *</label>
+                <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Korunní 12, Praha 2"
+                  className={inputCls} style={{ background: surface, border: `1px solid ${line}`, color: ink }} />
+              </div>
+            )}
+
+            <div>
+              <label className="mb-1 block text-sm font-medium" style={{ color: ink }}>Poznámka ke kuchyni</label>
+              <textarea value={note} onChange={e => setNote(e.target.value)} rows={2}
+                placeholder="Bez cibule, extra omáčka…"
+                className={inputCls + " resize-none"} style={{ background: surface, border: `1px solid ${line}`, color: ink }} />
+            </div>
           </div>
-          {error && <p className="text-sm text-red-400 rounded-lg bg-red-500/10 px-3 py-2">{error}</p>}
-          <button onClick={handleSubmit} disabled={loading}
-            className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-black hover:bg-neutral-200 disabled:opacity-50 transition mt-2">
-            {loading ? "Zpracovávám…" : payment === "card" ? (hasCard ? "Zaplatit uloženou kartou" : "Zaplatit kartou →") : "Odeslat objednávku"}
-          </button>
+
+          {/* Souhrn */}
+          <div className="rounded-2xl p-5 space-y-3 self-start" style={{ background: surface, border: `1px solid ${line}` }}>
+            {brand && (
+              <div className="flex items-center gap-2 pb-2 mb-1" style={{ borderBottom: `1px solid ${line}` }}>
+                <BrandLogo brand={brand} size="sm" />
+              </div>
+            )}
+            <h2 className="font-medium" style={{ color: ink }}>Souhrn objednávky</h2>
+            {items.map(item => (
+              <div key={item.product.id} className="flex justify-between text-sm">
+                <span style={{ color: muted }}>{item.qty}× {item.product.name}</span>
+                <span style={{ color: ink }}>{formatCzk(item.product.priceCzk * item.qty)}</span>
+              </div>
+            ))}
+            <div className="pt-3 space-y-1" style={{ borderTop: `1px solid ${line}` }}>
+              <div className="flex justify-between text-sm">
+                <span style={{ color: muted }}>Jídlo</span><span style={{ color: ink }}>{formatCzk(total)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span style={{ color: muted }}>Doručení</span>
+                <span style={{ color: ink }}>{deliveryFee === 0 ? "zdarma" : formatCzk(deliveryFee)}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-base pt-1">
+                <span style={{ color: ink }}>Celkem</span>
+                <span style={{ color: ink }}>{formatCzk(total + deliveryFee)}</span>
+              </div>
+            </div>
+
+            {error && <p className="text-sm text-red-400 rounded-lg bg-red-500/10 px-3 py-2">{error}</p>}
+
+            <button onClick={handleSubmit} disabled={loading}
+              className="w-full rounded-xl py-3 text-sm font-semibold transition hover:opacity-90 disabled:opacity-50 mt-2"
+              style={{ background: accent, color: accentInk }}>
+              {loading ? "Zpracovávám…" : payment === "card" ? (hasCard ? "Zaplatit uloženou kartou" : "Zaplatit kartou →") : "Odeslat objednávku"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

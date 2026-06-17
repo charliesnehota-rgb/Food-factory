@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { CartProvider } from "@/lib/cart";
+import { BrandProvider } from "@/lib/brand-context";
 import { CartDrawer } from "@/components/CartDrawer";
 
 export const metadata: Metadata = {
@@ -13,10 +14,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="cs">
       <body className="min-h-screen">
-        <CartProvider>
-          <CartDrawer />
-          {children}
-        </CartProvider>
+        <BrandProvider>
+          <CartProvider>
+            <CartDrawer />
+            {children}
+          </CartProvider>
+        </BrandProvider>
       </body>
     </html>
   );
