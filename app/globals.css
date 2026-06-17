@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Brandové fonty (načítá prohlížeč za běhu) */
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..500&display=swap');
+
 :root {
   --bg: #0a0a0b;
   --fg: #ededed;
@@ -8,9 +11,7 @@
   --border: #262629;
 }
 
-html {
-  color-scheme: dark;
-}
+html { color-scheme: dark; }
 
 body {
   background: var(--bg);
@@ -19,6 +20,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-a {
-  color: inherit;
+a { color: inherit; }
+
+@keyframes ff-steam {
+  0%   { transform: translateY(0) scaleX(1); opacity: 0; }
+  20%  { opacity: .5; }
+  60%  { opacity: .25; }
+  100% { transform: translateY(-46px) scaleX(1.5); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ff-steam-line { animation: none !important; opacity: .25 !important; }
 }
