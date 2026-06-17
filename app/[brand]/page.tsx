@@ -1,15 +1,17 @@
 import { notFound } from "next/navigation";
 import { getBrand } from "@/lib/brand/registry";
-import { getConcept } from "@/lib/data/concepts";
+import { fetchProductsForConcept } from "@/lib/db/products";
 import { BrandMenu } from "@/components/brand/BrandMenu";
 import { BrandHeroArt } from "@/components/brand/BrandHeroArt";
+
+// Revalidace každých 60s — po změně v adminu se menu obnoví
+export const revalidate = 60;
 
 export default async function BrandHome({ params }: { params: Promise<{ brand: string }> }) {
   const { brand } = await params;
   const b = getBrand(brand);
   if (!b) notFound();
-  const concept = getConcept(brand);
-  const menu = concept?.menu ?? [];
+  const menu = await fetchProductsForConcept(brand);
 
   return (
     <>
