@@ -149,8 +149,11 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
             {/* Velké logo s jemným pohupováním */}
             <div className="flex justify-center">
               <div className="ff-float" style={{ animation: "ff-float 4s ease-in-out infinite" }}>
-                <Image src="/brands/dumply.png" alt="Dumply knedlíček" width={340} height={340}
-                  className="drop-shadow-xl" priority />
+                <span className="block rounded-full overflow-hidden drop-shadow-xl"
+                  style={{ width: 340, height: 340, border: `3px solid ${b.line}` }}>
+                  <Image src="/brands/dumply.png" alt="Dumply knedlíček" width={340} height={340}
+                    className="object-cover" priority />
+                </span>
               </div>
             </div>
           </div>
@@ -198,7 +201,10 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
           <div className="flex justify-center order-2 sm:order-1">
             <div className="relative">
               <div className="absolute inset-0 rounded-full blur-2xl opacity-40" style={{ background: b.pop }} />
-              <Image src="/brands/dumply.png" alt="Dumply" width={260} height={260} className="relative" />
+              <span className="relative block rounded-full overflow-hidden"
+                style={{ width: 260, height: 260, border: `3px solid ${b.line}` }}>
+                <Image src="/brands/dumply.png" alt="Dumply" width={260} height={260} className="object-cover" />
+              </span>
             </div>
           </div>
           <div className="order-1 sm:order-2">
