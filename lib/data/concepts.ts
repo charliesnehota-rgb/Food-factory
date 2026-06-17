@@ -6,11 +6,11 @@ import type { Concept } from "@/lib/types";
 export const concepts: Concept[] = [
   {
     slug: "sunny-side",
-    name: "Sunny Side",
-    tagline: "All-day breakfast",
-    description: "Snídaně kdykoliv. Vajíčka, toasty, palačinky a kvalitní káva po celý den.",
+    name: "Prostě snídaně",
+    tagline: "Snídaně celý den",
+    description: "Vajíčka, lívance, toasty a poctivá káva po celý den. Retro diner feeling v srdci Prahy.",
     daypart: "all-day",
-    accent: "#f59e0b",
+    accent: "#BF3B16",
     emoji: "🍳",
     menu: [
       { id: "sunny-side-1", conceptSlug: "sunny-side", name: "Avocado toast", description: "Kváskový chléb, avokádo, pošírované vejce", priceCzk: 159, category: "Jídlo", tags: ["vegetarian"], available: true },
