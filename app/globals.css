@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..500&family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -9,7 +9,7 @@
   --border: #262629;
 }
 
-html { color-scheme: dark; }
+html { color-scheme: dark; scroll-behavior: smooth; }
 
 body {
   background: var(--bg);
@@ -27,6 +27,13 @@ a { color: inherit; }
   100% { transform: translateY(-46px) scaleX(1.5); opacity: 0; }
 }
 
+/* jemné plovoucí poskočení (cute) */
+@keyframes ff-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .ff-steam-line { animation: none !important; opacity: .25 !important; }
+  html { scroll-behavior: auto; }
+  .ff-steam-line, .ff-float { animation: none !important; }
 }

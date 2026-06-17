@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { BrandTheme } from "@/lib/brand/registry";
 
 interface Props {
@@ -6,25 +7,32 @@ interface Props {
   className?: string;
 }
 
+// Brandy s vlastním obrázkovým logem (kulatý ořez)
+const IMG_LOGOS: Record<string, string> = {
+  dumply: "/brands/dumply.png",
+};
+
 export function BrandLogo({ brand, size = "md", className = "" }: Props) {
-  const sizes = { sm: "h-8", md: "h-10", lg: "h-14" };
+  const px = size === "sm" ? 32 : size === "md" ? 40 : 56;
   const textSizes = { sm: "text-base", md: "text-xl", lg: "text-3xl" };
-  const emojiSizes = { sm: "text-lg", md: "text-2xl", lg: "text-4xl" };
+  const emoji: Record<string, string> = {
+    "sunny-side": "🍳", smash: "🍔", bowlevard: "🥗", rizkarna: "🍗", dumply: "🥟",
+  };
+  const imgSrc = IMG_LOGOS[brand.slug];
 
   return (
-    <div className={`flex items-center gap-2 ${sizes[size]} ${className}`}>
-      {/* Pokud bude logo jako obrázek, přidej zde <img> místo emoji */}
-      <div className="flex items-center justify-center w-8 h-8 rounded-xl"
-        style={{ background: brand.accent }}>
-        <span className={emojiSizes[size]} style={{ fontSize: size === "sm" ? "16px" : size === "md" ? "18px" : "24px" }}>
-          {brand.slug === "dumply" ? "🥟"
-            : brand.slug === "sunny-side" ? "🍳"
-            : brand.slug === "smash" ? "🍔"
-            : brand.slug === "bowlevard" ? "🥗"
-            : brand.slug === "rizkarna" ? "🍗"
-            : "🍴"}
+    <div className={`flex items-center gap-2.5 ${className}`}>
+      {imgSrc ? (
+        <span className="block rounded-full overflow-hidden shrink-0"
+          style={{ width: px, height: px, border: `2px solid ${brand.line}` }}>
+          <Image src={imgSrc} alt={brand.name} width={px} height={px} className="object-cover" />
         </span>
-      </div>
+      ) : (
+        <span className="flex items-center justify-center rounded-2xl shrink-0"
+          style={{ width: px, height: px, background: brand.accent, fontSize: px * 0.5 }}>
+          {emoji[brand.slug] ?? "🍴"}
+        </span>
+      )}
       <span className={`font-bold tracking-tight ${textSizes[size]}`}
         style={{ fontFamily: brand.displayFont, color: brand.ink }}>
         {brand.name}

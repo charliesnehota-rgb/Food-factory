@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { getBrand, brandStyle, brands } from "@/lib/brand/registry";
-import { BrandNav } from "@/components/brand/BrandNav";
-import { BrandFooter } from "@/components/brand/BrandFooter";
 import { BrandSetter } from "@/components/brand/BrandSetter";
 
 export const dynamicParams = false;
@@ -26,9 +24,7 @@ export default async function BrandLayout({ children, params }: { children: Reac
   return (
     <div style={brandStyle(b)} className="min-h-screen flex flex-col">
       <BrandSetter brand={b} />
-      <BrandNav brand={b} />
-      <main className="flex-1">{children}</main>
-      <BrandFooter brand={b} />
+      {children}
     </div>
   );
 }
