@@ -1,5 +1,11 @@
 import Link from "next/link";
+import Image from "next/image";
 import { concepts } from "@/lib/data/concepts";
+
+// Brandy se skutečným logem (kulatý ořez), ostatní emoji
+const LOGOS: Record<string, string> = {
+  dumply: "/brands/dumply.png",
+};
 
 export const metadata = {
   title: "Food Factory — pět konceptů, jedna kuchyně",
@@ -40,7 +46,13 @@ export default function Hub() {
                 {/* barevný nádech brandu */}
                 <div className="absolute inset-x-0 top-0 h-1.5" style={{ background: c.accent }} />
                 <div className="mb-4 flex items-center justify-between">
-                  <span className="text-4xl">{c.emoji}</span>
+                  {LOGOS[c.slug] ? (
+                    <span className="block rounded-full overflow-hidden" style={{ width: 48, height: 48, border: "2px solid var(--border)" }}>
+                      <Image src={LOGOS[c.slug]} alt={c.name} width={48} height={48} className="object-cover" />
+                    </span>
+                  ) : (
+                    <span className="text-4xl">{c.emoji}</span>
+                  )}
                   <span className="text-sm font-medium opacity-0 transition group-hover:opacity-100" style={{ color: c.accent }}>
                     Otevřít →
                   </span>
