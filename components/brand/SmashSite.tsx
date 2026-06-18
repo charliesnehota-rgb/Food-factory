@@ -122,8 +122,6 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
         .sm-gal:hover { filter: grayscale(0); transform: scale(1.02); }
         @keyframes sm-rotate { to { transform: rotate(360deg); } }
         .sm-spin-badge { animation: sm-rotate 22s linear infinite; }
-        @keyframes sm-float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-14px) } }
-        .sm-float { animation: sm-float 7s ease-in-out infinite; }
         .sm-dots {
           background-image: radial-gradient(${MUTED} 1.4px, transparent 1.4px);
           background-size: 14px 14px;
@@ -190,57 +188,18 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
         )}
       </header>
 
-      {/* ── HERO ── */}
-      <section id="uvod" className="scroll-mt-16 relative" style={{ minHeight: "94vh", display: "flex", alignItems: "center" }}>
+      {/* ── HERO (centrovaná editorial kompozice) ── */}
+      <section id="uvod" className="scroll-mt-16 relative overflow-hidden" style={{ minHeight: "96vh", display: "flex", alignItems: "center" }}>
         {/* obří obrysový watermark text na pozadí */}
         <div aria-hidden className="sm-display absolute select-none pointer-events-none"
-          style={{ right: "-3%", top: "16%", fontSize: "min(28vw, 360px)", fontWeight: 800, lineHeight: .8, color: "transparent", WebkitTextStroke: `1.5px ${LINE}`, zIndex: 0, transform: "rotate(-90deg)", transformOrigin: "right top" }}>
+          style={{ left: "50%", top: "50%", transform: "translate(-50%,-50%)", fontSize: "min(34vw, 460px)", fontWeight: 800, lineHeight: .8, color: "transparent", WebkitTextStroke: `1.5px ${LINE}`, zIndex: 0, whiteSpace: "nowrap" }}>
           SMASH
         </div>
-        {/* malý oranžový asterisk akcent */}
-        <div aria-hidden className="sm-display absolute select-none pointer-events-none sm-float"
-          style={{ left: "44%", top: "12%", fontSize: 64, fontWeight: 800, color: ACC, zIndex: 0, opacity: .9 }}>
-          ✶
-        </div>
 
-        <div className="relative z-10 mx-auto max-w-6xl px-5 w-full grid items-center gap-12 lg:grid-cols-12">
-          <div className="lg:col-span-7">
-            <p className="mb-6 inline-flex items-center gap-2 text-xs font-semibold tracking-[0.3em] uppercase"
-              style={{ color: ACC }}>
-              <span style={{ width: 28, height: 1, background: ACC, display: "inline-block" }} />
-              Praha · smash bistro
-            </p>
-            <h1 className="sm-display font-extrabold uppercase"
-              style={{ fontSize: "clamp(52px, 9vw, 132px)", lineHeight: .86, letterSpacing: "-0.02em", color: INK }}>
-              Umlácený.<br />
-              Roztavený.<br />
-              <span style={{ color: ACC }}>Tvůj.</span>
-            </h1>
-            <p className="mt-7 max-w-md text-lg leading-relaxed" style={{ color: MUTED }}>
-              Tence umlácené hovězí placky, roztavený cheddar a domácí omáčky.
-              Žádný mrazák. Žádné kompromisy. Jen řemeslo.
-            </p>
-            <div className="mt-9 flex flex-wrap gap-3">
-              <a href="#menu"
-                className="text-sm font-bold uppercase tracking-wider px-8 py-4 transition hover:scale-105"
-                style={{ background: ACC, color: AINK, borderRadius: 2 }}>
-                Objednat →
-              </a>
-              <a href="#remeslo"
-                className="text-sm font-bold uppercase tracking-wider px-8 py-4 transition hover:scale-105"
-                style={{ color: INK, border: `1px solid ${LINE}`, borderRadius: 2 }}>
-                Naše řemeslo
-              </a>
-            </div>
-          </div>
-
-          {/* Velký kruhový log/medailon s rotujícím textem */}
-          <div className="lg:col-span-5 flex justify-center">
-            <div className="relative grid place-items-center sm-float" style={{ width: "min(400px, 82vw)", aspectRatio: "1" }}>
-              {/* tečkovaný čtverec za medailonem */}
-              <div aria-hidden className="sm-dots absolute" style={{ width: "55%", height: "55%", top: "-6%", left: "-8%", opacity: .5, zIndex: 0 }} />
-
-              {/* rotující kruhový text */}
+        <div className="relative z-10 mx-auto max-w-5xl px-5 w-full text-center">
+          {/* medailon nahoře, centrovaný, bez animace */}
+          <div className="flex justify-center mb-10">
+            <div className="relative grid place-items-center" style={{ width: "min(280px, 64vw)", aspectRatio: "1" }}>
               <svg viewBox="0 0 200 200" className="sm-spin-badge absolute inset-0 w-full h-full" style={{ zIndex: 1 }} aria-hidden>
                 <defs>
                   <path id="sm-textcircle" d="M 100,100 m -82,0 a 82,82 0 1,1 164,0 a 82,82 0 1,1 -164,0" />
@@ -251,20 +210,49 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
                   </textPath>
                 </text>
               </svg>
-
               <div className="absolute inset-0 rounded-full" style={{ border: `1px solid ${LINE}`, zIndex: 1 }} />
               <div className="absolute rounded-full grid place-items-center overflow-hidden"
                 style={{ inset: "16%", background: INK, zIndex: 2 }}>
                 <Image src="/brands/smash.png" alt="L.T. Smash logo" width={320} height={320} className="object-contain" style={{ width: "78%", height: "78%" }} />
               </div>
-              {/* sticker badge */}
-              <div className="absolute" style={{ bottom: "4%", right: "2%", background: ACC, color: AINK, padding: "8px 14px", borderRadius: 2, transform: "rotate(-4deg)", zIndex: 3 }}>
-                <span className="text-xs font-bold uppercase tracking-widest">Est. 2026</span>
-              </div>
             </div>
+          </div>
+
+          {/* eyebrow s čarami po obou stranách */}
+          <div className="flex items-center justify-center gap-4 mb-7">
+            <span style={{ width: 40, height: 1, background: LINE }} />
+            <p className="text-xs font-semibold tracking-[0.35em] uppercase" style={{ color: ACC }}>
+              L.T. Smash · Praha
+            </p>
+            <span style={{ width: 40, height: 1, background: LINE }} />
+          </div>
+
+          {/* obří headline na plnou šířku */}
+          <h1 className="sm-display font-extrabold uppercase mx-auto"
+            style={{ fontSize: "clamp(48px, 11vw, 150px)", lineHeight: .82, letterSpacing: "-0.03em", color: INK }}>
+            Umlácený. Roztavený. <span style={{ color: ACC }}>Tvůj.</span>
+          </h1>
+
+          <p className="mx-auto mt-8 max-w-lg text-lg leading-relaxed" style={{ color: MUTED }}>
+            Tence umlácené hovězí placky, roztavený cheddar a domácí omáčky.
+            Žádný mrazák. Žádné kompromisy. Jen řemeslo.
+          </p>
+
+          <div className="mt-9 flex flex-wrap justify-center gap-3">
+            <a href="#menu"
+              className="text-sm font-bold uppercase tracking-wider px-9 py-4 transition hover:scale-105"
+              style={{ background: ACC, color: AINK, borderRadius: 2 }}>
+              Objednat →
+            </a>
+            <a href="#remeslo"
+              className="text-sm font-bold uppercase tracking-wider px-9 py-4 transition hover:scale-105"
+              style={{ color: INK, border: `1px solid ${LINE}`, borderRadius: 2 }}>
+              Naše řemeslo
+            </a>
           </div>
         </div>
       </section>
+
 
       {/* ── TICKER ── */}
       <div className="py-4 overflow-hidden" style={{ borderTop: `1px solid ${LINE}`, borderBottom: `1px solid ${LINE}`, background: INK }}>
