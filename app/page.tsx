@@ -5,6 +5,7 @@ import { concepts } from "@/lib/data/concepts";
 // Brandy se skutečným logem (kulatý ořez), ostatní emoji
 const LOGOS: Record<string, string> = {
   dumply: "/brands/dumply.png",
+  "sunny-side": "/brands/sunny-side.webp",
 };
 
 export const metadata = {
