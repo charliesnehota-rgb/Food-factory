@@ -120,6 +120,14 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
         .sm-add:hover { transform: scale(1.12); }
         .sm-gal { transition: filter .35s, transform .35s; filter: grayscale(1) contrast(1.05); }
         .sm-gal:hover { filter: grayscale(0); transform: scale(1.02); }
+        @keyframes sm-rotate { to { transform: rotate(360deg); } }
+        .sm-spin-badge { animation: sm-rotate 22s linear infinite; }
+        @keyframes sm-float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-14px) } }
+        .sm-float { animation: sm-float 7s ease-in-out infinite; }
+        .sm-dots {
+          background-image: radial-gradient(${MUTED} 1.4px, transparent 1.4px);
+          background-size: 14px 14px;
+        }
         @media(max-width:760px){ .sm-nav-links{ display:none !important; } }
       `}</style>
 
@@ -141,7 +149,7 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
               style={{ width: 42, height: 42, background: INK }}>
               <Image src="/brands/smash.png" alt="Smash" width={42} height={42} className="object-contain" style={{ width: "82%", height: "82%" }} />
             </span>
-            <span className="sm-display text-2xl font-extrabold tracking-tight" style={{ color: INK }}>SMASH</span>
+            <span className="sm-display text-2xl font-extrabold tracking-tight" style={{ color: INK }}>L.T. SMASH</span>
           </a>
 
           <nav className="sm-nav-links flex items-center gap-7">
@@ -184,10 +192,15 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
 
       {/* ── HERO ── */}
       <section id="uvod" className="scroll-mt-16 relative" style={{ minHeight: "94vh", display: "flex", alignItems: "center" }}>
-        {/* obří watermark číslo/typo na pozadí */}
+        {/* obří obrysový watermark text na pozadí */}
         <div aria-hidden className="sm-display absolute select-none pointer-events-none"
-          style={{ right: "-4%", top: "8%", fontSize: "min(46vw, 640px)", fontWeight: 800, lineHeight: .8, color: SURF, zIndex: 0 }}>
-          ®
+          style={{ right: "-3%", top: "16%", fontSize: "min(28vw, 360px)", fontWeight: 800, lineHeight: .8, color: "transparent", WebkitTextStroke: `1.5px ${LINE}`, zIndex: 0, transform: "rotate(-90deg)", transformOrigin: "right top" }}>
+          SMASH
+        </div>
+        {/* malý oranžový asterisk akcent */}
+        <div aria-hidden className="sm-display absolute select-none pointer-events-none sm-float"
+          style={{ left: "44%", top: "12%", fontSize: 64, fontWeight: 800, color: ACC, zIndex: 0, opacity: .9 }}>
+          ✶
         </div>
 
         <div className="relative z-10 mx-auto max-w-6xl px-5 w-full grid items-center gap-12 lg:grid-cols-12">
@@ -221,16 +234,31 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
             </div>
           </div>
 
-          {/* Velký kruhový log/medailon */}
+          {/* Velký kruhový log/medailon s rotujícím textem */}
           <div className="lg:col-span-5 flex justify-center">
-            <div className="relative grid place-items-center" style={{ width: "min(380px, 80vw)", aspectRatio: "1" }}>
-              <div className="absolute inset-0 rounded-full" style={{ border: `1px solid ${LINE}` }} />
+            <div className="relative grid place-items-center sm-float" style={{ width: "min(400px, 82vw)", aspectRatio: "1" }}>
+              {/* tečkovaný čtverec za medailonem */}
+              <div aria-hidden className="sm-dots absolute" style={{ width: "55%", height: "55%", top: "-6%", left: "-8%", opacity: .5, zIndex: 0 }} />
+
+              {/* rotující kruhový text */}
+              <svg viewBox="0 0 200 200" className="sm-spin-badge absolute inset-0 w-full h-full" style={{ zIndex: 1 }} aria-hidden>
+                <defs>
+                  <path id="sm-textcircle" d="M 100,100 m -82,0 a 82,82 0 1,1 164,0 a 82,82 0 1,1 -164,0" />
+                </defs>
+                <text fill={MUTED} style={{ fontFamily: DISPLAY, fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>
+                  <textPath href="#sm-textcircle" startOffset="0%">
+                    SMASHED TO ORDER ✶ LOCAL BEEF ✶ NO FREEZER ✶ PRAHA ✶ 
+                  </textPath>
+                </text>
+              </svg>
+
+              <div className="absolute inset-0 rounded-full" style={{ border: `1px solid ${LINE}`, zIndex: 1 }} />
               <div className="absolute rounded-full grid place-items-center overflow-hidden"
-                style={{ inset: "8%", background: INK }}>
-                <Image src="/brands/smash.png" alt="Smash logo" width={320} height={320} className="object-contain" style={{ width: "82%", height: "82%" }} />
+                style={{ inset: "16%", background: INK, zIndex: 2 }}>
+                <Image src="/brands/smash.png" alt="L.T. Smash logo" width={320} height={320} className="object-contain" style={{ width: "78%", height: "78%" }} />
               </div>
-              {/* rotující text kolem? jednoduchý badge */}
-              <div className="absolute" style={{ bottom: "-2%", right: "6%", background: ACC, color: AINK, padding: "8px 14px", borderRadius: 2, transform: "rotate(-4deg)" }}>
+              {/* sticker badge */}
+              <div className="absolute" style={{ bottom: "4%", right: "2%", background: ACC, color: AINK, padding: "8px 14px", borderRadius: 2, transform: "rotate(-4deg)", zIndex: 3 }}>
                 <span className="text-xs font-bold uppercase tracking-widest">Est. 2026</span>
               </div>
             </div>
@@ -297,8 +325,9 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
       </section>
 
       {/* ── ŘEMESLO / PROCESS ── */}
-      <section id="remeslo" className="scroll-mt-24 py-24" style={{ background: SURF }}>
-        <div className="mx-auto max-w-6xl px-5">
+      <section id="remeslo" className="scroll-mt-24 py-24 relative overflow-hidden" style={{ background: SURF }}>
+        <div aria-hidden className="sm-dots absolute" style={{ width: 180, height: 180, right: "4%", top: "12%", opacity: .35 }} />
+        <div className="relative mx-auto max-w-6xl px-5">
           <div className="grid lg:grid-cols-12 gap-12 items-start">
             <div className="lg:col-span-4">
               <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: ACC }}>Jak to děláme</p>
@@ -408,7 +437,7 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
               <span className="rounded-full overflow-hidden grid place-items-center" style={{ width: 38, height: 38, background: INK }}>
                 <Image src="/brands/smash.png" alt="Smash" width={38} height={38} className="object-contain" style={{ width: "82%", height: "82%" }} />
               </span>
-              <span className="sm-display text-xl font-extrabold" style={{ color: INK }}>SMASH</span>
+              <span className="sm-display text-xl font-extrabold" style={{ color: INK }}>L.T. SMASH</span>
             </div>
             <p className="text-sm" style={{ color: MUTED }}>Smash bistro · Praha</p>
           </div>

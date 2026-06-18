@@ -83,7 +83,7 @@ export const brands: Record<string, BrandTheme> = {
 
   smash: {
     slug: "smash",
-    name: "Smash",
+    name: "L.T. Smash",
     bg: "#121113",
     surface: "#1D1B1E",
     ink: "#F2EEE9",

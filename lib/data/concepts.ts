@@ -40,7 +40,7 @@ export const concepts: Concept[] = [
   },
   {
     slug: "smash",
-    name: "Smash",
+    name: "L.T. Smash",
     tagline: "Smashburgery & wrapy",
     description: "Tence umlácené hovězí placky, roztavený sýr, domácí omáčky. Žádné kompromisy.",
     daypart: "dinner",
