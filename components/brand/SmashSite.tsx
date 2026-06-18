@@ -1,0 +1,431 @@
+"use client";
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useCart } from "@/lib/cart";
+import { createSupabaseBrowser } from "@/lib/auth/client";
+import { formatCzk } from "@/lib/types";
+import type { MenuItem } from "@/lib/types";
+import type { BrandTheme } from "@/lib/brand/registry";
+
+const SECTIONS = [
+  { id: "uvod", label: "Úvod" },
+  { id: "menu", label: "Menu" },
+  { id: "remeslo", label: "Řemeslo" },
+  { id: "galerie", label: "Galerie" },
+  { id: "kontakt", label: "Kontakt" },
+];
+
+const PROCESS = [
+  { n: "01", t: "Umlátíme", d: "Kulička hovězího z farmy, přímo na rozpálenou plotnu. Tlak, sekundy, křupavé okraje." },
+  { n: "02", t: "Roztavíme", d: "Cheddar přímo na placku, dokud nezačne téct přes hranu. Žádný spěch." },
+  { n: "03", t: "Složíme", d: "Bulka z lokální pekárny, kvašená okurka, naše tajná omáčka. Hotovo." },
+];
+
+// Galerie – placeholder bloky (později nahradíš fotkami do /public/smash/)
+const GALLERY = [
+  { tall: true, label: "Plotna v 8 ráno" },
+  { tall: false, label: "Smash #1" },
+  { tall: false, label: "Hands at work" },
+  { tall: true, label: "Cheddar pull" },
+  { tall: false, label: "Backstage" },
+  { tall: false, label: "Plný tác" },
+];
+
+const TICKER = "SMASHED DAILY ✶ NO FREEZER ✶ LOCAL BEEF ✶ HAND-BUILT ✶ PRAHA ✶ ";
+
+export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuItem[] }) {
+  const { addItem, count, openCart } = useCart();
+  const [scrolled, setScrolled] = useState(false);
+  const [active, setActive] = useState("uvod");
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [contactSent, setContactSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", message: "" });
+
+  useEffect(() => {
+    const sb = createSupabaseBrowser();
+    sb.auth.getUser().then(({ data }) => setLoggedIn(!!data.user));
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      (entries) => entries.forEach((e) => { if (e.isIntersecting) setActive(e.target.id); }),
+      { rootMargin: "-45% 0px -50% 0px" }
+    );
+    SECTIONS.forEach((s) => { const el = document.getElementById(s.id); if (el) obs.observe(el); });
+    return () => obs.disconnect();
+  }, []);
+
+  const categories = new Map<string, MenuItem[]>();
+  for (const it of menu) {
+    const list = categories.get(it.category) ?? [];
+    list.push(it);
+    categories.set(it.category, list);
+  }
+
+  async function submitContact() {
+    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) return;
+    setSending(true);
+    try {
+      await fetch("/api/contact", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, concept: "smash" }),
+      });
+    } catch { /* best-effort */ }
+    setSending(false);
+    setContactSent(true);
+  }
+
+  const INK = b.ink;        // krémová/světlá
+  const BG = b.bg;          // skoro černá
+  const SURF = b.surface;
+  const MUTED = b.muted;
+  const LINE = b.line;
+  const ACC = b.accent;     // oranžová
+  const AINK = b.accentInk;
+
+  const DISPLAY = b.displayFont;
+  const BODY = b.bodyFont;
+
+  return (
+    <div style={{ fontFamily: BODY, background: BG, color: INK, overflowX: "hidden" }}>
+      <style>{`
+        .sm-display { font-family: ${DISPLAY}; }
+        .sm-grain {
+          position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.04; mix-blend-mode:overlay;
+          background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          background-size:200px 200px;
+        }
+        .sm-ticker-track { display:inline-flex; white-space:nowrap; animation: sm-slide 30s linear infinite; }
+        @keyframes sm-slide { to { transform: translateX(-50%); } }
+        .sm-hover-card { transition: transform .25s cubic-bezier(.2,.8,.2,1); }
+        .sm-hover-card:hover { transform: translateY(-4px); }
+        .sm-link-underline { position:relative; }
+        .sm-link-underline::after {
+          content:""; position:absolute; left:0; bottom:-3px; height:2px; width:0; background:${ACC}; transition:width .25s;
+        }
+        .sm-link-underline:hover::after { width:100%; }
+        .sm-menu-row { transition: background .2s, padding-left .2s; }
+        .sm-menu-row:hover { background:${SURF}; padding-left:14px; }
+        .sm-add { transition: transform .12s, background .15s; }
+        .sm-add:hover { transform: scale(1.12); }
+        .sm-gal { transition: filter .35s, transform .35s; filter: grayscale(1) contrast(1.05); }
+        .sm-gal:hover { filter: grayscale(0); transform: scale(1.02); }
+        @media(max-width:760px){ .sm-nav-links{ display:none !important; } }
+      `}</style>
+
+      <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+      <div className="sm-grain" />
+
+      {/* ── NAV ── */}
+      <header className="sticky top-0 z-40"
+        style={{
+          background: scrolled ? `color-mix(in srgb, ${BG} 88%, transparent)` : "transparent",
+          backdropFilter: scrolled ? "blur(12px)" : "none",
+          borderBottom: `1px solid ${scrolled ? LINE : "transparent"}`,
+          transition: "all .3s",
+        }}>
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
+          <a href="#uvod" className="flex items-center gap-3">
+            <span className="rounded-full overflow-hidden grid place-items-center"
+              style={{ width: 42, height: 42, background: INK }}>
+              <Image src="/brands/smash.png" alt="Smash" width={42} height={42} className="object-contain p-1" />
+            </span>
+            <span className="sm-display text-2xl font-extrabold tracking-tight" style={{ color: INK }}>SMASH</span>
+          </a>
+
+          <nav className="sm-nav-links flex items-center gap-7">
+            {SECTIONS.map((s) => (
+              <a key={s.id} href={`#${s.id}`}
+                className="sm-link-underline text-sm font-medium tracking-wide uppercase"
+                style={{ color: active === s.id ? INK : MUTED }}>
+                {s.label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-2.5">
+            <Link href={loggedIn ? "/ucet/profil" : "/ucet/prihlaseni"}
+              className="hidden sm:block text-sm font-medium uppercase tracking-wide transition hover:opacity-70"
+              style={{ color: INK }}>
+              {loggedIn ? "Účet" : "Přihlásit"}
+            </Link>
+            <button onClick={openCart}
+              className="text-sm font-bold uppercase tracking-wide px-5 py-2.5 transition hover:scale-105"
+              style={{ background: ACC, color: AINK, borderRadius: 2 }}>
+              Košík{count > 0 ? ` (${count})` : ""}
+            </button>
+            <button onClick={() => setMenuOpen(!menuOpen)} className="sm:hidden p-2" style={{ color: INK }}>
+              {menuOpen ? "✕" : "☰"}
+            </button>
+          </div>
+        </div>
+        {menuOpen && (
+          <nav className="px-5 pb-4 flex flex-col gap-1" style={{ borderTop: `1px solid ${LINE}` }}>
+            {SECTIONS.map((s) => (
+              <a key={s.id} href={`#${s.id}`} onClick={() => setMenuOpen(false)}
+                className="py-2.5 text-sm font-medium uppercase tracking-wide" style={{ color: INK }}>
+                {s.label}
+              </a>
+            ))}
+          </nav>
+        )}
+      </header>
+
+      {/* ── HERO ── */}
+      <section id="uvod" className="scroll-mt-16 relative" style={{ minHeight: "94vh", display: "flex", alignItems: "center" }}>
+        {/* obří watermark číslo/typo na pozadí */}
+        <div aria-hidden className="sm-display absolute select-none pointer-events-none"
+          style={{ right: "-4%", top: "8%", fontSize: "min(46vw, 640px)", fontWeight: 800, lineHeight: .8, color: SURF, zIndex: 0 }}>
+          ®
+        </div>
+
+        <div className="relative z-10 mx-auto max-w-6xl px-5 w-full grid items-center gap-12 lg:grid-cols-12">
+          <div className="lg:col-span-7">
+            <p className="mb-6 inline-flex items-center gap-2 text-xs font-semibold tracking-[0.3em] uppercase"
+              style={{ color: ACC }}>
+              <span style={{ width: 28, height: 1, background: ACC, display: "inline-block" }} />
+              Praha · smash bistro
+            </p>
+            <h1 className="sm-display font-extrabold uppercase"
+              style={{ fontSize: "clamp(52px, 9vw, 132px)", lineHeight: .86, letterSpacing: "-0.02em", color: INK }}>
+              Umlácený.<br />
+              Roztavený.<br />
+              <span style={{ color: ACC }}>Tvůj.</span>
+            </h1>
+            <p className="mt-7 max-w-md text-lg leading-relaxed" style={{ color: MUTED }}>
+              Tence umlácené hovězí placky, roztavený cheddar a domácí omáčky.
+              Žádný mrazák. Žádné kompromisy. Jen řemeslo.
+            </p>
+            <div className="mt-9 flex flex-wrap gap-3">
+              <a href="#menu"
+                className="text-sm font-bold uppercase tracking-wider px-8 py-4 transition hover:scale-105"
+                style={{ background: ACC, color: AINK, borderRadius: 2 }}>
+                Objednat →
+              </a>
+              <a href="#remeslo"
+                className="text-sm font-bold uppercase tracking-wider px-8 py-4 transition hover:scale-105"
+                style={{ color: INK, border: `1px solid ${LINE}`, borderRadius: 2 }}>
+                Naše řemeslo
+              </a>
+            </div>
+          </div>
+
+          {/* Velký kruhový log/medailon */}
+          <div className="lg:col-span-5 flex justify-center">
+            <div className="relative grid place-items-center" style={{ width: "min(380px, 80vw)", aspectRatio: "1" }}>
+              <div className="absolute inset-0 rounded-full" style={{ border: `1px solid ${LINE}` }} />
+              <div className="absolute rounded-full grid place-items-center"
+                style={{ inset: "8%", background: INK }}>
+                <Image src="/brands/smash.png" alt="Smash logo" width={260} height={260} className="object-contain" style={{ width: "72%", height: "auto" }} />
+              </div>
+              {/* rotující text kolem? jednoduchý badge */}
+              <div className="absolute" style={{ bottom: "-2%", right: "6%", background: ACC, color: AINK, padding: "8px 14px", borderRadius: 2, transform: "rotate(-4deg)" }}>
+                <span className="text-xs font-bold uppercase tracking-widest">Est. 2026</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── TICKER ── */}
+      <div className="py-4 overflow-hidden" style={{ borderTop: `1px solid ${LINE}`, borderBottom: `1px solid ${LINE}`, background: INK }}>
+        <div className="sm-ticker-track">
+          <span className="sm-display text-lg font-bold uppercase tracking-wider" style={{ color: BG }}>{TICKER.repeat(6)}</span>
+          <span className="sm-display text-lg font-bold uppercase tracking-wider" style={{ color: BG }}>{TICKER.repeat(6)}</span>
+        </div>
+      </div>
+
+      {/* ── MENU ── */}
+      <section id="menu" className="scroll-mt-24 py-24">
+        <div className="mx-auto max-w-6xl px-5">
+          <div className="flex items-end justify-between mb-14 flex-wrap gap-4">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: ACC }}>Jídelní lístek</p>
+              <h2 className="sm-display text-5xl sm:text-6xl font-extrabold uppercase" style={{ letterSpacing: "-0.02em", color: INK }}>Menu</h2>
+            </div>
+            <p className="max-w-xs text-sm" style={{ color: MUTED }}>
+              Malá karta, velká pozornost. Měníme podle sezóny a toho, co seženeme čerstvé.
+            </p>
+          </div>
+
+          {(categories.size > 0 ? Array.from(categories.entries()) : []).map(([category, items]) => (
+            <div key={category} className="mb-14">
+              <h3 className="sm-display text-sm font-bold tracking-[0.25em] uppercase mb-2 pb-4"
+                style={{ color: ACC, borderBottom: `1px solid ${LINE}` }}>
+                {category}
+              </h3>
+              <div>
+                {items.map((item) => (
+                  <div key={item.id} className="sm-menu-row flex items-baseline gap-4 py-5"
+                    style={{ borderBottom: `1px solid ${LINE}` }}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-3">
+                        <span className="text-lg font-semibold" style={{ color: INK }}>{item.name}</span>
+                        {item.tags?.includes("vegetarian") && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5" style={{ color: ACC, border: `1px solid ${ACC}`, borderRadius: 2 }}>veg</span>
+                        )}
+                      </div>
+                      {item.description && <p className="mt-1 text-sm" style={{ color: MUTED }}>{item.description}</p>}
+                    </div>
+                    <span className="sm-display text-xl font-bold tabular-nums" style={{ color: INK }}>{formatCzk(item.priceCzk)}</span>
+                    <button onClick={() => addItem(item)} disabled={!item.available}
+                      className="sm-add shrink-0 w-9 h-9 grid place-items-center text-lg font-bold disabled:opacity-30"
+                      style={{ background: ACC, color: AINK, borderRadius: 2 }}>
+                      +
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {categories.size === 0 && (
+            <p style={{ color: MUTED }}>Menu se právě připravuje…</p>
+          )}
+        </div>
+      </section>
+
+      {/* ── ŘEMESLO / PROCESS ── */}
+      <section id="remeslo" className="scroll-mt-24 py-24" style={{ background: SURF }}>
+        <div className="mx-auto max-w-6xl px-5">
+          <div className="grid lg:grid-cols-12 gap-12 items-start">
+            <div className="lg:col-span-4">
+              <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: ACC }}>Jak to děláme</p>
+              <h2 className="sm-display text-4xl sm:text-5xl font-extrabold uppercase leading-[0.9]" style={{ color: INK }}>
+                Řemeslo,<br />ne fastfood.
+              </h2>
+              <p className="mt-5 text-sm leading-relaxed" style={{ color: MUTED }}>
+                Stojíme za plotnou s rukama v rukavicích a hlídáme každou placku.
+                Kvalita má cenu — a my ji nesnižujeme.
+              </p>
+            </div>
+            <div className="lg:col-span-8 grid sm:grid-cols-3 gap-px" style={{ background: LINE }}>
+              {PROCESS.map((p) => (
+                <div key={p.n} className="p-7" style={{ background: SURF }}>
+                  <div className="sm-display text-5xl font-extrabold mb-4" style={{ color: ACC }}>{p.n}</div>
+                  <h3 className="sm-display text-xl font-bold uppercase mb-2" style={{ color: INK }}>{p.t}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: MUTED }}>{p.d}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── GALERIE ── */}
+      <section id="galerie" className="scroll-mt-24 py-24">
+        <div className="mx-auto max-w-6xl px-5">
+          <div className="flex items-end justify-between mb-12 flex-wrap gap-4">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: ACC }}>Backstage</p>
+              <h2 className="sm-display text-5xl sm:text-6xl font-extrabold uppercase" style={{ letterSpacing: "-0.02em", color: INK }}>Galerie</h2>
+            </div>
+            <p className="max-w-xs text-sm" style={{ color: MUTED }}>Sem přijdou fotky z plotny a kuchyně. Zatím placeholdery.</p>
+          </div>
+
+          {/* Masonry-ish grid placeholderů */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[220px]">
+            {GALLERY.map((g, i) => (
+              <div key={i} className={`sm-gal relative overflow-hidden grid place-items-center ${g.tall ? "row-span-2" : ""}`}
+                style={{ background: SURF, border: `1px solid ${LINE}`, borderRadius: 2 }}>
+                <span className="sm-display text-7xl font-extrabold" style={{ color: LINE }}>✶</span>
+                <span className="absolute bottom-3 left-3 text-[11px] font-semibold uppercase tracking-widest" style={{ color: MUTED }}>{g.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section className="py-28" style={{ background: ACC, color: AINK }}>
+        <div className="mx-auto max-w-4xl px-5 text-center">
+          <h2 className="sm-display text-5xl sm:text-7xl font-extrabold uppercase leading-[0.9]" style={{ letterSpacing: "-0.02em" }}>
+            Pořádný hlad?
+          </h2>
+          <p className="mx-auto mt-5 max-w-md text-lg font-medium opacity-80">
+            Objednej smash online — vyzvednutí za rohem, nebo rozvoz až ke dveřím.
+          </p>
+          <a href="#menu"
+            className="mt-9 inline-block text-sm font-bold uppercase tracking-wider px-10 py-4 transition hover:scale-105"
+            style={{ background: AINK, color: ACC, borderRadius: 2 }}>
+            Objednat teď →
+          </a>
+        </div>
+      </section>
+
+      {/* ── KONTAKT ── */}
+      <section id="kontakt" className="scroll-mt-24 py-24">
+        <div className="mx-auto max-w-2xl px-5">
+          <div className="text-center mb-10">
+            <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: ACC }}>Napiš nám</p>
+            <h2 className="sm-display text-4xl font-extrabold uppercase" style={{ color: INK }}>Kontakt</h2>
+          </div>
+          {contactSent ? (
+            <div className="text-center p-10" style={{ background: SURF, border: `1px solid ${LINE}`, borderRadius: 2 }}>
+              <div className="sm-display text-5xl font-extrabold mb-3" style={{ color: ACC }}>✶</div>
+              <p className="sm-display text-xl font-bold uppercase" style={{ color: INK }}>Díky!</p>
+              <p className="mt-1" style={{ color: MUTED }}>Ozveme se co nejdřív.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid sm:grid-cols-2 gap-3">
+                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="Jméno" className="px-4 py-3.5 text-sm focus:outline-none"
+                  style={{ background: SURF, border: `1px solid ${LINE}`, color: INK, borderRadius: 2 }} />
+                <input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  type="email" placeholder="E-mail" className="px-4 py-3.5 text-sm focus:outline-none"
+                  style={{ background: SURF, border: `1px solid ${LINE}`, color: INK, borderRadius: 2 }} />
+              </div>
+              <textarea value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+                rows={4} placeholder="Tvoje zpráva…" className="w-full px-4 py-3.5 text-sm focus:outline-none resize-none"
+                style={{ background: SURF, border: `1px solid ${LINE}`, color: INK, borderRadius: 2 }} />
+              <button onClick={submitContact} disabled={sending}
+                className="w-full py-4 text-sm font-bold uppercase tracking-wider transition hover:scale-[1.01] disabled:opacity-50"
+                style={{ background: ACC, color: AINK, borderRadius: 2 }}>
+                {sending ? "Odesílám…" : "Odeslat"}
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer style={{ borderTop: `1px solid ${LINE}` }}>
+        <div className="mx-auto max-w-6xl px-5 py-12 grid sm:grid-cols-3 gap-8 items-start">
+          <div>
+            <div className="flex items-center gap-3 mb-3">
+              <span className="rounded-full overflow-hidden grid place-items-center" style={{ width: 38, height: 38, background: INK }}>
+                <Image src="/brands/smash.png" alt="Smash" width={38} height={38} className="object-contain p-1" />
+              </span>
+              <span className="sm-display text-xl font-extrabold" style={{ color: INK }}>SMASH</span>
+            </div>
+            <p className="text-sm" style={{ color: MUTED }}>Smash bistro · Praha</p>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: ACC }}>Otevřeno</h4>
+            <p className="text-sm" style={{ color: MUTED }}>Po–Ne 11:00 — 22:00</p>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: ACC }}>Sledujte</h4>
+            <p className="text-sm" style={{ color: MUTED }}>Instagram · Facebook</p>
+          </div>
+        </div>
+        <div className="mx-auto max-w-6xl px-5 py-5 flex items-center justify-between text-xs" style={{ borderTop: `1px solid ${LINE}`, color: MUTED }}>
+          <span>© {new Date().getFullYear()} Smash · Food Factory</span>
+          <a href="/" className="hover:opacity-100 transition" style={{ opacity: .6, color: INK }}>Food Factory</a>
+        </div>
+      </footer>
+    </div>
+  );
+}

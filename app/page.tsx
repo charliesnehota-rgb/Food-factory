@@ -6,6 +6,7 @@ import { concepts } from "@/lib/data/concepts";
 const LOGOS: Record<string, string> = {
   dumply: "/brands/dumply.png",
   "sunny-side": "/brands/sunny-side.webp",
+  smash: "/brands/smash.png",
 };
 
 export const metadata = {
@@ -48,7 +49,7 @@ export default function Hub() {
                 <div className="absolute inset-x-0 top-0 h-1.5" style={{ background: c.accent }} />
                 <div className="mb-4 flex items-center justify-between">
                   {LOGOS[c.slug] ? (
-                    <span className="block rounded-full overflow-hidden" style={{ width: 48, height: 48, border: "2px solid var(--border)" }}>
+                    <span className="block rounded-full overflow-hidden grid place-items-center" style={{ width: 48, height: 48, border: "2px solid var(--border)", background: c.slug === "smash" ? "#fff" : "transparent" }}>
                       <Image src={LOGOS[c.slug]} alt={c.name} width={48} height={48} className="object-cover" />
                     </span>
                   ) : (
