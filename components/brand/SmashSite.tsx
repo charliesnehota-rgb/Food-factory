@@ -139,7 +139,7 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
           <a href="#uvod" className="flex items-center gap-3">
             <span className="rounded-full overflow-hidden grid place-items-center"
               style={{ width: 42, height: 42, background: INK }}>
-              <Image src="/brands/smash.png" alt="Smash" width={42} height={42} className="object-contain p-1" />
+              <Image src="/brands/smash.png" alt="Smash" width={42} height={42} className="object-contain" style={{ width: "82%", height: "82%" }} />
             </span>
             <span className="sm-display text-2xl font-extrabold tracking-tight" style={{ color: INK }}>SMASH</span>
           </a>
@@ -225,9 +225,9 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
           <div className="lg:col-span-5 flex justify-center">
             <div className="relative grid place-items-center" style={{ width: "min(380px, 80vw)", aspectRatio: "1" }}>
               <div className="absolute inset-0 rounded-full" style={{ border: `1px solid ${LINE}` }} />
-              <div className="absolute rounded-full grid place-items-center"
+              <div className="absolute rounded-full grid place-items-center overflow-hidden"
                 style={{ inset: "8%", background: INK }}>
-                <Image src="/brands/smash.png" alt="Smash logo" width={260} height={260} className="object-contain" style={{ width: "72%", height: "auto" }} />
+                <Image src="/brands/smash.png" alt="Smash logo" width={320} height={320} className="object-contain" style={{ width: "82%", height: "82%" }} />
               </div>
               {/* rotující text kolem? jednoduchý badge */}
               <div className="absolute" style={{ bottom: "-2%", right: "6%", background: ACC, color: AINK, padding: "8px 14px", borderRadius: 2, transform: "rotate(-4deg)" }}>
@@ -406,7 +406,7 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
           <div>
             <div className="flex items-center gap-3 mb-3">
               <span className="rounded-full overflow-hidden grid place-items-center" style={{ width: 38, height: 38, background: INK }}>
-                <Image src="/brands/smash.png" alt="Smash" width={38} height={38} className="object-contain p-1" />
+                <Image src="/brands/smash.png" alt="Smash" width={38} height={38} className="object-contain" style={{ width: "82%", height: "82%" }} />
               </span>
               <span className="sm-display text-xl font-extrabold" style={{ color: INK }}>SMASH</span>
             </div>
