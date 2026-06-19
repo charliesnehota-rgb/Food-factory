@@ -24,10 +24,12 @@ export default function CheckoutPage() {
   const muted     = brand?.muted     ?? "var(--muted)";
 
   const [authChecked, setAuthChecked] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
   const [hasCard, setHasCard] = useState(false);
   const [fulfilment, setFulfilment] = useState<Fulfilment>("delivery");
   const [payment, setPayment] = useState<Payment>("card");
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [note, setNote] = useState("");
@@ -37,7 +39,9 @@ export default function CheckoutPage() {
   useEffect(() => {
     const supabase = createSupabaseBrowser();
     supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.push("/ucet/prihlaseni?next=/checkout"); return; }
+      if (!data.user) { setAuthChecked(true); return; } // host pokračuje bez přihlášení
+      setLoggedIn(true);
+      setEmail(data.user.email ?? "");
       fetch("/api/account/profile").then(r => r.json()).then(d => {
         const p = d.profile ?? {};
         setName(p.full_name ?? "");
@@ -57,6 +61,7 @@ export default function CheckoutPage() {
 
   async function handleSubmit() {
     if (!name.trim()) { setError("Zadej jméno."); return; }
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Zadej platný e-mail pro potvrzení."); return; }
     if (fulfilment === "delivery" && !address.trim()) { setError("Zadej adresu doručení."); return; }
     if (items.length === 0) { setError("Košík je prázdný."); return; }
     setLoading(true); setError("");
@@ -66,13 +71,12 @@ export default function CheckoutPage() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           conceptSlug: primaryConcept, channel: "web", fulfilment,
-          customer: { name: name.trim(), phone: phone.trim(), address: address.trim() },
+          customer: { name: name.trim(), email: email.trim(), phone: phone.trim(), address: address.trim() },
           note: note.trim(),
           items: items.map(i => ({ productId: i.product.id, name: i.product.name, qty: i.qty, unitPriceCzk: i.product.priceCzk })),
         }),
       });
       const data = await res.json();
-      if (res.status === 401) { router.push("/ucet/prihlaseni?next=/checkout"); return; }
       if (!res.ok) { setError(data.error ?? "Chyba při odeslání."); setLoading(false); return; }
 
       if (payment === "card") {
@@ -120,9 +124,16 @@ export default function CheckoutPage() {
       </header>
 
       <div className="mx-auto max-w-2xl px-4 py-10">
-        <h1 className="text-2xl font-semibold mb-8" style={{ color: ink, fontFamily: brand?.displayFont }}>
+        <h1 className="text-2xl font-semibold mb-2" style={{ color: ink, fontFamily: brand?.displayFont }}>
           Objednávka
         </h1>
+        {authChecked && !loggedIn && (
+          <p className="mb-8 text-sm" style={{ color: muted }}>
+            Objednáváš jako host — registrace není potřeba.{" "}
+            <a href="/ucet/prihlaseni?next=/checkout" className="underline" style={{ color: accent }}>Máš účet? Přihlas se</a>
+          </p>
+        )}
+        {loggedIn && <div className="mb-8" />}
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Formulář */}
@@ -165,12 +176,16 @@ export default function CheckoutPage() {
 
             {[
               { label: "Jméno *", value: name, set: setName, type: "text", placeholder: "Jana Nováková" },
+              { label: "E-mail *", value: email, set: setEmail, type: "email", placeholder: "jana@email.cz" },
               { label: "Telefon", value: phone, set: setPhone, type: "tel", placeholder: "+420 777 123 456" },
             ].map(f => (
               <div key={f.label}>
                 <label className="mb-1 block text-sm font-medium" style={{ color: ink }}>{f.label}</label>
                 <input value={f.value} onChange={e => f.set(e.target.value)} type={f.type} placeholder={f.placeholder}
                   className={inputCls} style={{ background: surface, border: `1px solid ${line}`, color: ink }} />
+                {f.label === "E-mail *" && (
+                  <p className="mt-1 text-xs" style={{ color: muted }}>Pošleme potvrzení a budeme informovat o stavu objednávky.</p>
+                )}
               </div>
             ))}
 

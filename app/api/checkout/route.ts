@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Nepřihlášen" }, { status: 401 });
+  // Host (bez přihlášení) může platit kartou přes standardní Stripe Checkout.
 
   try {
     const { orderId } = await req.json();
@@ -23,12 +23,14 @@ export async function POST(req: NextRequest) {
     const totalAmount = Math.round(Number(order.total_czk) * 100);
     const origin = req.headers.get("origin") ?? "https://food-factory-zeta.vercel.app";
 
-    // Má zákazník uloženou kartu?
-    const { data: profile } = await supabaseAdmin
-      .from("user_profiles").select("stripe_customer_id").eq("id", user.id).single();
-    const customerId = profile?.stripe_customer_id;
+    // Rychlá platba uloženou kartou jen pro přihlášené zákazníky
+    let customerId: string | undefined;
+    if (user) {
+      const { data: profile } = await supabaseAdmin
+        .from("user_profiles").select("stripe_customer_id").eq("id", user.id).single();
+      customerId = profile?.stripe_customer_id;
 
-    if (customerId) {
+      if (customerId) {
       // Zkus zaplatit uloženou kartou (jeden klik, off_session)
       const methods = await stripe.paymentMethods.list({ customer: customerId, type: "card", limit: 1 });
       if (methods.data.length > 0) {
@@ -49,6 +51,7 @@ export async function POST(req: NextRequest) {
         } catch {
           // karta selhala (např. vyžaduje 3DS) → spadni na Checkout níže
         }
+      }
       }
     }
 

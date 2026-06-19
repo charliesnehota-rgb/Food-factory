@@ -18,26 +18,30 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (supabaseAdmin) {
       (async () => {
         try {
-          // Najdi objednávku a zákazníka
+          // Najdi objednávku a zákazníka (vč. e-mailu hosta)
           const { data: order } = await supabaseAdmin
-            .from("orders").select("user_id, customer_name").eq("id", id).single();
-          if (!order?.user_id) return;
+            .from("orders").select("*").eq("id", id).single();
+          if (!order) return;
 
-          // Push subscriptions zákazníka
-          const { data: subs } = await supabaseAdmin
-            .from("push_subscriptions").select("endpoint, p256dh, auth_key").eq("user_id", order.user_id);
+          // Push + profilové info jen pro přihlášené zákazníky
+          let email: string | null = order.customer_email ?? null;
+          let name: string = order.customer_name ?? "";
 
-          if (subs?.length) {
-            await sendPushNotification(subs, id, status as OrderStatus);
+          if (order.user_id) {
+            const { data: subs } = await supabaseAdmin
+              .from("push_subscriptions").select("endpoint, p256dh, auth_key").eq("user_id", order.user_id);
+            if (subs?.length) {
+              await sendPushNotification(subs, id, status as OrderStatus);
+            }
+            const { data: profile } = await supabaseAdmin
+              .from("user_profiles").select("full_name").eq("id", order.user_id).single();
+            const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(order.user_id);
+            email = authUser?.user?.email ?? email;
+            name = profile?.full_name ?? name;
           }
 
-          // E-mail zákazníka
-          const { data: profile } = await supabaseAdmin
-            .from("user_profiles").select("full_name").eq("id", order.user_id).single();
-          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(order.user_id);
-          const email = authUser?.user?.email;
           if (email) {
-            await sendStatusEmail(email, profile?.full_name ?? order.customer_name, id, status as OrderStatus);
+            await sendStatusEmail(email, name, id, status as OrderStatus);
           }
         } catch { /* notifikace jsou best-effort */ }
       })();
