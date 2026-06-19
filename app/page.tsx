@@ -10,7 +10,7 @@ const LOGOS: Record<string, string> = {
 };
 
 export const metadata = {
-  title: "Food Factory — pět konceptů, jedna kuchyně",
+  title: "Food Factory — naše projekty",
   description: "Cloud kitchen v Praze. Vyber si koncept.",
 };
 
@@ -29,13 +29,9 @@ export default function Hub() {
       <main className="flex-1">
         {/* Hero */}
         <section className="mx-auto max-w-5xl px-5 pt-16 pb-10 text-center sm:pt-24">
-          <p className="mb-4 text-sm tracking-wide text-[var(--muted)]">Cloud kitchen</p>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-            Pět konceptů. Jedna kuchyně.
+            Naše projekty
           </h1>
-          <p className="mx-auto mt-4 max-w-md text-[var(--muted)]">
-            Vyber si, na co máš dnes chuť. Každý koncept má svůj svět.
-          </p>
         </section>
 
         {/* Rozcestník brandů */}

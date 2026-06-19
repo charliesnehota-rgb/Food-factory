@@ -439,8 +439,7 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
           </div>
         </div>
         <div className="mx-auto max-w-6xl px-5 py-5 flex items-center justify-between text-xs" style={{ borderTop: `1px solid ${LINE}`, color: MUTED }}>
-          <span>© {new Date().getFullYear()} L.T. Smash · Powered by Food Factory</span>
-          <a href="/" className="hover:opacity-100 transition" style={{ opacity: .6, color: INK }}>Food Factory</a>
+          <span>© {new Date().getFullYear()} L.T. Smash · <a href="/" className="transition hover:underline underline-offset-2" style={{ color: "inherit" }}>Powered by Food Factory</a></span>
         </div>
       </footer>
     </div>
