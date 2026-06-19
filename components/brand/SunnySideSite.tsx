@@ -399,14 +399,14 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
               <img src={LOGO_SRC} alt="" style={{ width: 54, height: 54 }} />
               <span style={{ fontFamily: '"Anton",Impact,sans-serif', textTransform: "uppercase", fontSize: 24, color: "var(--cream)" }}>Prostě snídaně</span>
             </a>
-            <p style={{ color: "#b9ab92", maxWidth: "30ch", marginTop: 12, fontSize: 14 }}>Snídaně po celý den. Praha.</p>
+            <p style={{ color: "#b9ab92", maxWidth: "30ch", marginTop: 12, fontSize: 14 }}>Snídaně po celý den.</p>
           </div>
           <div className="ss-foot-col"><h4>Lístek</h4><a href="#menu">Z pánve</a><a href="#menu">Toasty & sladké</a><a href="#menu">Káva</a></div>
           <div className="ss-foot-col"><h4>Otevřeno</h4><p>Po–Pá 7–22</p><p>So–Ne 8–22</p></div>
-          <div className="ss-foot-col"><h4>Kde nás najdeš</h4><p>Praha 1</p><a href="#">Instagram</a><a href="#">Facebook</a></div>
+          <div className="ss-foot-col"><h4>Sledujte nás</h4><a href="#">Instagram</a><a href="#">Facebook</a></div>
         </div>
         <div className="ss-copy">
-          <span>© 2026 Prostě snídaně · součást Food Factory</span>
+          <span>© 2026 Prostě snídaně · Powered by Food Factory</span>
           <span>Snídaně kdykoliv <Spark size="11px" color="#9c8e76" /></span>
         </div>
       </footer>

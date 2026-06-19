@@ -16,11 +16,9 @@ interface Product {
 }
 
 const CONCEPTS = [
-  { slug: "sunny-side", name: "Sunny Side", accent: "#f59e0b" },
+  { slug: "sunny-side", name: "Prostě snídaně", accent: "#f59e0b" },
   { slug: "dumply", name: "Dumply", accent: "#ef4444" },
-  { slug: "smash", name: "Smash", accent: "#f97316" },
-  { slug: "bowlevard", name: "Bowlevard", accent: "#22c55e" },
-  { slug: "rizkarna", name: "Řízkárna", accent: "#eab308" },
+  { slug: "smash", name: "L.T. Smash", accent: "#f97316" },
 ];
 
 export default function ProductsPage() {

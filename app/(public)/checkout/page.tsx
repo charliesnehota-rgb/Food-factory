@@ -177,7 +177,7 @@ export default function CheckoutPage() {
             {fulfilment === "delivery" && (
               <div>
                 <label className="mb-1 block text-sm font-medium" style={{ color: ink }}>Adresa doručení *</label>
-                <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Korunní 12, Praha 2"
+                <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Ulice a číslo, město"
                   className={inputCls} style={{ background: surface, border: `1px solid ${line}`, color: ink }} />
               </div>
             )}

@@ -23,7 +23,7 @@ export function BrandHeroArt({ brand }: { brand: BrandTheme }) {
   }
   // Ostatní brandy zatím velké emoji s nádechem accentu
   const emoji: Record<string, string> = {
-    "sunny-side": "🍳", smash: "🍔", bowlevard: "🥗", rizkarna: "🍗",
+    "sunny-side": "🍳", smash: "🍔",
   };
   return (
     <div className="relative flex items-center justify-center" aria-hidden>

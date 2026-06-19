@@ -286,7 +286,7 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
             </span>
             <span className="font-bold text-lg" style={{ fontFamily: b.displayFont, color: b.accentInk }}>Dumply</span>
           </div>
-          <p className="text-sm" style={{ color: b.accentInk, opacity: 0.8 }}>© {new Date().getFullYear()} Dumply · Praha</p>
+          <p className="text-sm" style={{ color: b.accentInk, opacity: 0.8 }}>© {new Date().getFullYear()} Dumply · Powered by Food Factory</p>
           <a href="/" className="text-sm" style={{ color: b.accentInk, opacity: 0.7 }}>Food Factory</a>
         </div>
       </footer>

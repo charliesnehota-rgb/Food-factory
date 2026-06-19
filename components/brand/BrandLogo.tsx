@@ -16,7 +16,7 @@ export function BrandLogo({ brand, size = "md", className = "" }: Props) {
   const px = size === "sm" ? 32 : size === "md" ? 40 : 56;
   const textSizes = { sm: "text-base", md: "text-xl", lg: "text-3xl" };
   const emoji: Record<string, string> = {
-    "sunny-side": "🍳", smash: "🍔", bowlevard: "🥗", rizkarna: "🍗", dumply: "🥟",
+    "sunny-side": "🍳", smash: "🍔", dumply: "🥟",
   };
   const imgSrc = IMG_LOGOS[brand.slug];
 

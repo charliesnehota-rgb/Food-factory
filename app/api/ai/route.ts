@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     const { data: products } = await supabaseAdmin.from("products")
       .select("id, concept_slug, name, price_czk").eq("available", true);
 
-    const aiPrompt = `Jsi AI koordinátor multi-concept restaurace Food Factory (Praha).
+    const aiPrompt = `Jsi AI koordinátor multi-concept restaurace Food Factory.
 Aktuální zatížení konceptů za posledních 30 min: ${JSON.stringify(load)}.
 Dostupné produkty: ${JSON.stringify((products ?? []).map(p => ({ id: p.id, concept: p.concept_slug, name: p.name, price: p.price_czk })))}
 

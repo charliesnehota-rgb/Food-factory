@@ -7,7 +7,7 @@ import { CartDrawer } from "@/components/CartDrawer";
 
 export const metadata: Metadata = {
   title: "Food Factory",
-  description: "Cloud kitchen Praha.",
+  description: "Cloud kitchen.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

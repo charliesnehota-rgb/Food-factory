@@ -55,40 +55,6 @@ export const concepts: Concept[] = [
       { id: "smash-6", conceptSlug: "smash", name: "Craft lemonade", description: "Domácí limonáda, citron & máta", priceCzk: 69, category: "Nápoje", available: true },
     ],
   },
-  {
-    slug: "bowlevard",
-    name: "Bowlevard",
-    tagline: "Grain & poke bowls",
-    description: "Vyvážené misky inspirované Sweetgreen a Pokéworks. Čerstvé, sytě, bez tíhy.",
-    daypart: "lunch",
-    accent: "#22c55e",
-    emoji: "🥗",
-    menu: [
-      { id: "bowlevard-1", conceptSlug: "bowlevard", name: "Salmon poke", description: "Losos, rýže, edamame, avokádo", priceCzk: 199, category: "Poke", available: true },
-      { id: "bowlevard-2", conceptSlug: "bowlevard", name: "Chicken teriyaki bowl", description: "Grilované kuře, teriyaki, zelenina", priceCzk: 179, category: "Grain", available: true },
-      { id: "bowlevard-3", conceptSlug: "bowlevard", name: "Falafel grain bowl", description: "Falafel, quinoa, hummus, salát", priceCzk: 159, category: "Grain", tags: ["vegetarian"], available: true },
-      { id: "bowlevard-4", conceptSlug: "bowlevard", name: "Tuna poke", description: "Tuňák, rýže, mango, sezam", priceCzk: 209, category: "Poke", available: true },
-      { id: "bowlevard-5", conceptSlug: "bowlevard", name: "Build-your-own", description: "Vyber si základ, protein a topping", priceCzk: 169, category: "Vlastní", available: true },
-      { id: "bowlevard-6", conceptSlug: "bowlevard", name: "Kombucha", description: "Fermentovaný čaj, lehce perlivý", priceCzk: 79, category: "Nápoje", available: true },
-    ],
-  },
-  {
-    slug: "rizkarna",
-    name: "Řízkárna",
-    tagline: "Řízek nově i klasika",
-    description: "Český řízek jako USP potkává katsu trend. Sando, wrap, bowl i poctivá klasika.",
-    daypart: "dinner",
-    accent: "#eab308",
-    emoji: "🍗",
-    menu: [
-      { id: "rizkarna-1", conceptSlug: "rizkarna", name: "Vídeňský řízek", description: "Telecí, citron, bramborový salát", priceCzk: 189, category: "Klasika", available: true },
-      { id: "rizkarna-2", conceptSlug: "rizkarna", name: "Katsu sando", description: "Řízek v toastu, tonkatsu omáčka, zelí", priceCzk: 169, category: "Novinky", available: true },
-      { id: "rizkarna-3", conceptSlug: "rizkarna", name: "Smash řízek wrap", description: "Řízek nadrobno, omáčka, do tortilly", priceCzk: 159, category: "Novinky", available: true },
-      { id: "rizkarna-4", conceptSlug: "rizkarna", name: "Sýrová krusta", description: "Řízek se zapečenou sýrovou krustou", priceCzk: 199, category: "Klasika", available: true },
-      { id: "rizkarna-5", conceptSlug: "rizkarna", name: "Řízek bowl", description: "Řízek nakrájený na misce s rýží a zeleninou", priceCzk: 179, category: "Novinky", available: true },
-      { id: "rizkarna-6", conceptSlug: "rizkarna", name: "Domácí limonáda", description: "Citron & bezinka", priceCzk: 59, category: "Nápoje", available: true },
-    ],
-  },
 ];
 
 export function getConcept(slug: string): Concept | undefined {

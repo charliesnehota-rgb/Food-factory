@@ -25,20 +25,6 @@ export const mockOrders: Order[] = [
     delivery: { provider: "wolt", trackingId: "W-88231" }, payment: { provider: "stripe", status: "paid" },
   },
   {
-    id: "FF-1040", conceptSlug: "bowlevard", channel: "web", fulfilment: "pickup", status: "ready",
-    items: [ { productId: "bowlevard-1", name: "Salmon poke", qty: 1, unitPriceCzk: 199 } ],
-    totalCzk: 199, customer: { name: "Tomáš H.", phone: "+420 602 000 111" },
-    createdAt: new Date(Date.now() - 16 * 60000).toISOString(),
-    payment: { provider: "stripe", status: "paid" },
-  },
-  {
-    id: "FF-1039", conceptSlug: "rizkarna", channel: "foodora", fulfilment: "delivery", status: "out_for_delivery",
-    items: [ { productId: "rizkarna-2", name: "Katsu sando", qty: 1, unitPriceCzk: 169 }, { productId: "rizkarna-6", name: "Domácí limonáda", qty: 2, unitPriceCzk: 59 } ],
-    totalCzk: 287, customer: { name: "Foodora zákazník", address: "Vinohradská 88, Praha 3" },
-    createdAt: new Date(Date.now() - 28 * 60000).toISOString(),
-    delivery: { provider: "foodora", trackingId: "FD-55012" }, payment: { provider: "stripe", status: "paid" },
-  },
-  {
     id: "FF-1038", conceptSlug: "sunny-side", channel: "web", fulfilment: "delivery", status: "delivered",
     items: [ { productId: "sunny-side-1", name: "Avocado toast", qty: 2, unitPriceCzk: 159 }, { productId: "sunny-side-6", name: "Flat white", qty: 2, unitPriceCzk: 79 } ],
     totalCzk: 476, customer: { name: "Jana K.", address: "Belgická 5, Praha 2" },

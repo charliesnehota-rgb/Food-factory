@@ -29,7 +29,7 @@ export default function Hub() {
       <main className="flex-1">
         {/* Hero */}
         <section className="mx-auto max-w-5xl px-5 pt-16 pb-10 text-center sm:pt-24">
-          <p className="mb-4 text-sm tracking-wide text-[var(--muted)]">Praha · cloud kitchen</p>
+          <p className="mb-4 text-sm tracking-wide text-[var(--muted)]">Cloud kitchen</p>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
             Pět konceptů. Jedna kuchyně.
           </h1>
@@ -71,7 +71,7 @@ export default function Hub() {
       {/* Footer — diskrétní odkaz do adminu pro personál */}
       <footer className="border-t border-[var(--border)]">
         <div className="mx-auto max-w-5xl px-5 py-6 flex items-center justify-between text-sm text-[var(--muted)]">
-          <span>© {new Date().getFullYear()} Food Factory · Praha</span>
+          <span>© {new Date().getFullYear()} · Powered by Food Factory</span>
           <Link href="/admin" className="opacity-50 hover:opacity-100 transition">Admin</Link>
         </div>
       </footer>

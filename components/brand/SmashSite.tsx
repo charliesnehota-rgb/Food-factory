@@ -32,7 +32,7 @@ const GALLERY = [
   { tall: false, label: "Plný tác" },
 ];
 
-const TICKER = "SMASHED DAILY ✶ NO FREEZER ✶ LOCAL BEEF ✶ HAND-BUILT ✶ PRAHA ✶ ";
+const TICKER = "SMASHED DAILY ✶ NO FREEZER ✶ LOCAL BEEF ✶ HAND-BUILT ✶ ";
 
 export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuItem[] }) {
   const { addItem, count, openCart } = useCart();
@@ -206,7 +206,7 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
                 </defs>
                 <text fill={MUTED} style={{ fontFamily: DISPLAY, fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>
                   <textPath href="#sm-textcircle" startOffset="0%">
-                    SMASHED TO ORDER ✶ LOCAL BEEF ✶ NO FREEZER ✶ PRAHA ✶ 
+                    SMASHED TO ORDER ✶ LOCAL BEEF ✶ NO FREEZER ✶ HAND-BUILT ✶ 
                   </textPath>
                 </text>
               </svg>
@@ -222,7 +222,7 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
           <div className="flex items-center justify-center gap-4 mb-7">
             <span style={{ width: 40, height: 1, background: LINE }} />
             <p className="text-xs font-semibold tracking-[0.35em] uppercase" style={{ color: ACC }}>
-              L.T. Smash · Praha
+              L.T. Smash
             </p>
             <span style={{ width: 40, height: 1, background: LINE }} />
           </div>
@@ -427,7 +427,7 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
               </span>
               <span className="sm-display text-xl font-extrabold" style={{ color: INK }}>L.T. SMASH</span>
             </div>
-            <p className="text-sm" style={{ color: MUTED }}>Smash bistro · Praha</p>
+            <p className="text-sm" style={{ color: MUTED }}>L.T. Smash bistro</p>
           </div>
           <div>
             <h4 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: ACC }}>Otevřeno</h4>
@@ -439,7 +439,7 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
           </div>
         </div>
         <div className="mx-auto max-w-6xl px-5 py-5 flex items-center justify-between text-xs" style={{ borderTop: `1px solid ${LINE}`, color: MUTED }}>
-          <span>© {new Date().getFullYear()} Smash · Food Factory</span>
+          <span>© {new Date().getFullYear()} L.T. Smash · Powered by Food Factory</span>
           <a href="/" className="hover:opacity-100 transition" style={{ opacity: .6, color: INK }}>Food Factory</a>
         </div>
       </footer>

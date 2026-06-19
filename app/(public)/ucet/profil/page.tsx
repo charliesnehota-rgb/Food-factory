@@ -95,7 +95,7 @@ function ProfileInner() {
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">Adresa doručení</label>
-          <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Korunní 12, Praha 2"
+          <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Ulice a číslo, město"
             className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm focus:border-neutral-500 focus:outline-none" />
         </div>
 
