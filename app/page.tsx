@@ -11,64 +11,146 @@ const LOGOS: Record<string, string> = {
 
 export const metadata = {
   title: "Food Factory — naše projekty",
-  description: "Cloud kitchen v Praze. Vyber si koncept.",
+  description: "Jedna kuchyně, jedna platforma, několik značek.",
 };
 
 export default function Hub() {
+  const year = new Date().getFullYear();
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Minimální hlavička — jen wordmark, žádný košík/přihlášení */}
-      <header className="border-b border-[var(--border)]">
-        <div className="mx-auto max-w-5xl px-5 py-4">
-          <span className="flex items-center gap-2 font-semibold tracking-tight">
-            <span className="text-xl">🍴</span> Food Factory
-          </span>
+    <div className="hub">
+      <style>{`
+        .hub {
+          --paper:#FBFBFA; --surface:#FFFFFF; --ink:#16161A; --muted:#6B6B72;
+          --hair:#ECECEC; --hair-soft:#F2F2F0;
+          --mono:"DM Mono", ui-monospace, monospace;
+          --sans:"DM Sans", system-ui, sans-serif;
+          background:var(--paper); color:var(--ink); min-height:100vh;
+          display:flex; flex-direction:column; font-family:var(--sans);
+        }
+        .hub a { color:inherit; text-decoration:none; }
+        .hub-wrap { width:100%; max-width:940px; margin:0 auto; padding:0 24px; }
+
+        /* top bar */
+        .hub-top { border-bottom:1px solid var(--hair); }
+        .hub-top-inner { display:flex; align-items:center; justify-content:space-between; padding:20px 0; }
+        .hub-mark { display:flex; align-items:center; gap:10px; font-weight:600; letter-spacing:-0.01em; font-size:16px; }
+        .hub-mark-dot { width:9px; height:9px; border-radius:50%; background:var(--ink); display:inline-block; }
+        .hub-top-meta { font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+
+        /* hero */
+        .hub-hero { padding:84px 0 52px; }
+        .hub-eyebrow { font-family:var(--mono); font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-bottom:22px; display:flex; align-items:center; gap:10px; }
+        .hub-eyebrow::before { content:""; width:24px; height:1px; background:var(--ink); display:inline-block; opacity:.4; }
+        .hub-h1 { font-size:clamp(40px, 7vw, 72px); font-weight:600; letter-spacing:-0.035em; line-height:1.0; margin:0; }
+        .hub-sub { margin-top:20px; max-width:46ch; font-size:17px; line-height:1.6; color:var(--muted); }
+        .hub-stats { margin-top:30px; display:flex; gap:28px; flex-wrap:wrap; font-family:var(--mono); font-size:12px; letter-spacing:.06em; color:var(--muted); }
+        .hub-stats b { color:var(--ink); font-weight:500; }
+
+        /* projects list */
+        .hub-list-head { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); padding:0 0 14px; border-bottom:1px solid var(--hair); }
+        .hub-row {
+          --acc:var(--ink);
+          position:relative; display:grid; grid-template-columns:56px 1fr auto auto;
+          align-items:center; gap:22px; padding:26px 16px 26px 14px;
+          border-bottom:1px solid var(--hair);
+          transition: background .25s ease;
+        }
+        .hub-row::before {
+          content:""; position:absolute; left:0; top:0; bottom:0; width:3px;
+          background:var(--acc); transform:scaleY(0); transform-origin:center;
+          transition:transform .28s cubic-bezier(.2,.8,.2,1);
+        }
+        .hub-row:hover { background:color-mix(in srgb, var(--acc) 5%, transparent); }
+        .hub-row:hover::before { transform:scaleY(1); }
+
+        .hub-logo {
+          width:56px; height:56px; border-radius:50%; overflow:hidden;
+          display:grid; place-items:center; border:1px solid var(--hair);
+          background:var(--surface); flex:none;
+          filter:grayscale(1); opacity:.78; transition:filter .3s, opacity .3s;
+        }
+        .hub-row:hover .hub-logo { filter:grayscale(0); opacity:1; }
+        .hub-logo--light { background:#fff; }
+        .hub-logo img { width:100%; height:100%; object-fit:cover; }
+        .hub-logo .emoji { font-size:26px; }
+
+        .hub-name { font-size:23px; font-weight:600; letter-spacing:-0.02em; line-height:1.15; }
+        .hub-tag { margin-top:3px; font-size:14px; color:var(--muted); }
+
+        .hub-status { font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); display:inline-flex; align-items:center; gap:7px; white-space:nowrap; }
+        .hub-status .dot { width:6px; height:6px; border-radius:50%; background:var(--acc); display:inline-block; }
+
+        .hub-arrow { font-size:20px; color:var(--muted); transform:translateX(0); transition:transform .25s, color .25s; }
+        .hub-row:hover .hub-arrow { transform:translateX(5px); color:var(--acc); }
+
+        /* footer */
+        .hub-foot { margin-top:auto; border-top:1px solid var(--hair); }
+        .hub-foot-inner { display:flex; align-items:center; justify-content:space-between; padding:22px 0; font-size:13px; color:var(--muted); }
+        .hub-foot a { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; opacity:.6; transition:opacity .2s; }
+        .hub-foot a:hover { opacity:1; }
+
+        @media (max-width:620px){
+          .hub-hero { padding:56px 0 36px; }
+          .hub-row { grid-template-columns:48px 1fr auto; gap:16px; padding:22px 10px; }
+          .hub-status { display:none; }
+          .hub-logo { width:48px; height:48px; }
+        }
+        @media (prefers-reduced-motion: reduce){
+          .hub-row, .hub-row::before, .hub-arrow, .hub-logo { transition:none !important; }
+        }
+      `}</style>
+
+      {/* ── TOP BAR ── */}
+      <header className="hub-top">
+        <div className="hub-wrap hub-top-inner">
+          <span className="hub-mark"><span className="hub-mark-dot" /> Food Factory</span>
+          <span className="hub-top-meta">Kuchyňská platforma</span>
         </div>
       </header>
 
-      <main className="flex-1">
-        {/* Hero */}
-        <section className="mx-auto max-w-5xl px-5 pt-16 pb-10 text-center sm:pt-24">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-            Naše projekty
-          </h1>
+      {/* ── HERO ── */}
+      <main>
+        <section className="hub-wrap hub-hero">
+          <div className="hub-eyebrow">Food Factory</div>
+          <h1 className="hub-h1">Naše projekty</h1>
+          <p className="hub-sub">
+            Jedna kuchyně, jedna platforma, několik samostatných značek.
+            Každá s vlastním světem — postavená na sdílené technologii.
+          </p>
+          <div className="hub-stats">
+            <span><b>{concepts.length}</b> značky</span>
+            <span><b>1</b> kuchyně</span>
+            <span><b>1</b> platforma</span>
+            <span>Est. <b>2026</b></span>
+          </div>
         </section>
 
-        {/* Rozcestník brandů */}
-        <section className="mx-auto max-w-5xl px-5 pb-24">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {concepts.map((c) => (
-              <Link key={c.slug} href={`/${c.slug}`}
-                className="group relative overflow-hidden rounded-3xl p-6 transition hover:-translate-y-1"
-                style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
-                {/* barevný nádech brandu */}
-                <div className="absolute inset-x-0 top-0 h-1.5" style={{ background: c.accent }} />
-                <div className="mb-4 flex items-center justify-between">
-                  {LOGOS[c.slug] ? (
-                    <span className="block rounded-full overflow-hidden grid place-items-center" style={{ width: 48, height: 48, border: "2px solid var(--border)", background: c.slug === "smash" ? "#fff" : "transparent" }}>
-                      <Image src={LOGOS[c.slug]} alt={c.name} width={48} height={48} className="object-cover" />
-                    </span>
-                  ) : (
-                    <span className="text-4xl">{c.emoji}</span>
-                  )}
-                  <span className="text-sm font-medium opacity-0 transition group-hover:opacity-100" style={{ color: c.accent }}>
-                    Otevřít →
-                  </span>
-                </div>
-                <h2 className="text-2xl font-bold tracking-tight" style={{ color: c.accent }}>{c.name}</h2>
-                <p className="mt-1 text-sm text-[var(--muted)]">{c.tagline}</p>
-                <p className="mt-3 text-sm text-[var(--muted)] line-clamp-2">{c.description}</p>
-              </Link>
-            ))}
-          </div>
+        {/* ── PROJECTS ── */}
+        <section className="hub-wrap" style={{ paddingBottom: 80 }}>
+          <div className="hub-list-head">Projekty / {String(concepts.length).padStart(2, "0")}</div>
+          {concepts.map((c) => (
+            <Link key={c.slug} href={`/${c.slug}`} className="hub-row" style={{ ["--acc" as string]: c.accent }}>
+              <span className={`hub-logo${c.slug === "smash" ? " hub-logo--light" : ""}`}>
+                {LOGOS[c.slug]
+                  ? <Image src={LOGOS[c.slug]} alt={c.name} width={56} height={56} />
+                  : <span className="emoji">{c.emoji}</span>}
+              </span>
+              <span>
+                <span className="hub-name">{c.name}</span>
+                <span className="hub-tag">{c.tagline}</span>
+              </span>
+              <span className="hub-status"><span className="dot" /> V provozu</span>
+              <span className="hub-arrow">→</span>
+            </Link>
+          ))}
         </section>
       </main>
 
-      {/* Footer — diskrétní odkaz do adminu pro personál */}
-      <footer className="border-t border-[var(--border)]">
-        <div className="mx-auto max-w-5xl px-5 py-6 flex items-center justify-between text-sm text-[var(--muted)]">
-          <span>© {new Date().getFullYear()} · Powered by Food Factory</span>
-          <Link href="/admin" className="opacity-50 hover:opacity-100 transition">Admin</Link>
+      {/* ── FOOTER ── */}
+      <footer className="hub-foot">
+        <div className="hub-wrap hub-foot-inner">
+          <span>© {year} · Powered by Food Factory</span>
+          <Link href="/admin">Admin</Link>
         </div>
       </footer>
     </div>
