@@ -43,6 +43,17 @@ export async function GET() {
   }
   const margin = revenue - cogs;
 
+  // Odpisy a inventurní rozdíly za 30 dní
+  const { data: wo } = await supabaseAdmin
+    .from("stock_movements").select("qty_change, unit_price_czk")
+    .eq("type", "write_off").gte("created_at", sinceIso);
+  const writeOffs = (wo ?? []).reduce((s, m) => s + Math.abs(Number(m.qty_change)) * Number(m.unit_price_czk ?? 0), 0);
+
+  const { data: st } = await supabaseAdmin
+    .from("stock_movements").select("qty_change, unit_price_czk")
+    .eq("type", "stocktake").gte("created_at", sinceIso);
+  const stocktakeNet = (st ?? []).reduce((s, m) => s + Number(m.qty_change) * Number(m.unit_price_czk ?? 0), 0);
+
   return NextResponse.json({
     stock_value_czk: Math.round(stockValue * 100) / 100,
     items_count: items?.length ?? 0,
@@ -53,5 +64,7 @@ export async function GET() {
     revenue_30d_czk: Math.round(revenue * 100) / 100,
     cogs_30d_czk: Math.round(cogs * 100) / 100,
     margin_30d_czk: Math.round(margin * 100) / 100,
+    write_offs_30d_czk: Math.round(writeOffs * 100) / 100,
+    stocktake_30d_czk: Math.round(stocktakeNet * 100) / 100,
   });
 }

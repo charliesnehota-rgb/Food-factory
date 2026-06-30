@@ -14,6 +14,8 @@ interface Overview {
   revenue_30d_czk: number;
   cogs_30d_czk: number;
   margin_30d_czk: number;
+  write_offs_30d_czk: number;
+  stocktake_30d_czk: number;
 }
 
 export default function SkladPrehledPage() {
@@ -60,6 +62,15 @@ export default function SkladPrehledPage() {
           accent={data && data.margin_30d_czk < 0 ? "#f87171" : "#4ade80"} />
       </div>
       <p className="mt-2 text-xs text-[var(--muted)]">Marže pokrývá jen suroviny (ne práci, energie, nájem). Funguje pro produkty, které mají recepturu.</p>
+
+      <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Ztráty (30 dní)</h2>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card title="Odpisy" value={data ? formatCzk(data.write_offs_30d_czk) : "—"}
+          hint="expirace, poškození…" accent={data && data.write_offs_30d_czk > 0 ? "#f59e0b" : undefined} />
+        <Card title="Inventurní rozdíl" value={data ? formatCzk(data.stocktake_30d_czk) : "—"}
+          hint="− manko / + přebytek"
+          accent={data && data.stocktake_30d_czk < 0 ? "#f87171" : undefined} />
+      </div>
 
       <div className="mt-8 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
         <h2 className="mb-3 font-medium">Rychlé akce</h2>

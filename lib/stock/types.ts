@@ -86,3 +86,26 @@ export interface StockMovement {
   created_at: string;
   stock_item?: { name: string; base_unit: BaseUnit } | null;
 }
+
+export interface Stocktake {
+  id: string;
+  stocktake_number: string;
+  status: "draft" | "closed";
+  note: string | null;
+  created_by: string | null;
+  closed_at: string | null;
+  created_at: string;
+  items?: StocktakeItem[];
+}
+
+export interface StocktakeItem {
+  id: string;
+  stocktake_id: string;
+  stock_item_id: string;
+  counted_qty: number | null;
+  system_qty: number | null;
+  diff_qty: number | null;
+  unit_price_czk: number | null;
+  note: string | null;
+  stock_item?: { name: string; base_unit: BaseUnit; current_qty: number; avg_price_czk: number } | null;
+}

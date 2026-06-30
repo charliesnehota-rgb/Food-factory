@@ -9,6 +9,8 @@ const tabs = [
   { href: "/admin/sklad/karty", label: "Skladové karty" },
   { href: "/admin/sklad/receptury", label: "Receptury" },
   { href: "/admin/sklad/prijem", label: "Příjem" },
+  { href: "/admin/sklad/odpisy", label: "Odpisy" },
+  { href: "/admin/sklad/inventura", label: "Inventura" },
   { href: "/admin/sklad/pohyby", label: "Pohyby" },
   { href: "/admin/sklad/dodavatele", label: "Dodavatelé" },
   { href: "/admin/sklad/kategorie", label: "Kategorie" },
