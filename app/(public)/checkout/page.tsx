@@ -176,16 +176,40 @@ export default function CheckoutPage() {
 
             {[
               { label: "Jméno *", value: name, set: setName, type: "text", placeholder: "Jana Nováková" },
-              { label: "E-mail *", value: email, set: setEmail, type: "email", placeholder: "jana@email.cz" },
+            ].map(f => (
+              <div key={f.label}>
+                <label className="mb-1 block text-sm font-medium" style={{ color: ink }}>{f.label}</label>
+                <input value={f.value} onChange={e => f.set(e.target.value)} type={f.type} placeholder={f.placeholder}
+                  className={inputCls} style={{ background: surface, border: `1px solid ${line}`, color: ink }} />
+              </div>
+            ))}
+
+            {/* E-mail: u přihlášeného zamčený z účtu, u hosta editovatelný */}
+            <div>
+              <label className="mb-1 block text-sm font-medium" style={{ color: ink }}>E-mail *</label>
+              <input
+                value={email}
+                onChange={e => { if (!loggedIn) setEmail(e.target.value); }}
+                type="email"
+                placeholder="jana@email.cz"
+                readOnly={loggedIn}
+                disabled={loggedIn}
+                className={inputCls}
+                style={{ background: surface, border: `1px solid ${line}`, color: ink, opacity: loggedIn ? 0.7 : 1, cursor: loggedIn ? "not-allowed" : "text" }} />
+              <p className="mt-1 text-xs" style={{ color: muted }}>
+                {loggedIn
+                  ? "E-mail z tvého účtu — potvrzení a stav objednávky pošleme sem."
+                  : "Pošleme potvrzení a budeme informovat o stavu objednávky."}
+              </p>
+            </div>
+
+            {[
               { label: "Telefon", value: phone, set: setPhone, type: "tel", placeholder: "+420 777 123 456" },
             ].map(f => (
               <div key={f.label}>
                 <label className="mb-1 block text-sm font-medium" style={{ color: ink }}>{f.label}</label>
                 <input value={f.value} onChange={e => f.set(e.target.value)} type={f.type} placeholder={f.placeholder}
                   className={inputCls} style={{ background: surface, border: `1px solid ${line}`, color: ink }} />
-                {f.label === "E-mail *" && (
-                  <p className="mt-1 text-xs" style={{ color: muted }}>Pošleme potvrzení a budeme informovat o stavu objednávky.</p>
-                )}
               </div>
             ))}
 
