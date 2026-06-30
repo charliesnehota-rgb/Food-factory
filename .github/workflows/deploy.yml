@@ -1,8 +1,8 @@
 name: Deploy to GitHub Pages
 
+# VYPNUTO: appka má API routes a potřebuje server, statický export na GitHub Pages
+# proto nefunguje. Skutečný deploy běží přes vercel.yml. Ponecháno jen pro ruční spuštění.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
