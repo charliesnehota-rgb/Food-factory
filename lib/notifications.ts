@@ -93,7 +93,6 @@ export async function sendOrderConfirmationEmail(
   totalCzk: number
 ) {
   const apiKey = process.env.RESEND_API_KEY;
-  console.error(`[email-diag] confirmation order=${orderId} key_present=${!!apiKey} key_len=${apiKey?.length ?? 0} from=${process.env.RESEND_FROM ?? "default"}`);
   if (!apiKey) return; // bez klíče tiše přeskočíme
 
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://food-factory-zeta.vercel.app";
@@ -112,7 +111,7 @@ export async function sendOrderConfirmationEmail(
     </div>
   `;
 
-  const res = await fetch("https://api.resend.com/emails", {
+  await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -121,9 +120,5 @@ export async function sendOrderConfirmationEmail(
       subject: `Objednávka ${orderId} přijata`,
       html,
     }),
-  }).catch((e) => { console.error(`[email-diag] fetch error: ${e}`); return null; });
-  if (res) {
-    const body = await res.text().catch(() => "");
-    console.error(`[email-diag] resend status=${res.status} body=${body.slice(0, 300)}`);
-  }
+  }).catch(() => null);
 }
