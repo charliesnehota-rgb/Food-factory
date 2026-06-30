@@ -9,6 +9,7 @@ const links = [
   { href: "/admin", label: "Přehled" },
   { href: "/admin/objednavky", label: "Objednávky" },
   { href: "/admin/produkty", label: "Produkty" },
+  { href: "/admin/sklad", label: "Sklad" },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -44,7 +45,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </div>
           <nav className="flex gap-1 sm:flex-col">
             {links.map((l) => {
-              const active = pathname === l.href;
+              const active = l.href === "/admin"
+                ? pathname === "/admin"
+                : pathname === l.href || pathname.startsWith(l.href + "/");
               return (
                 <Link
                   key={l.href}
