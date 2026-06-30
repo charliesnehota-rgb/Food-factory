@@ -56,10 +56,11 @@ export async function sendStatusEmail(
   status: OrderStatus
 ) {
   const apiKey = process.env.RESEND_API_KEY;
+  console.error(`[email-diag] status=${status} order=${orderId} to=${toEmail} key_present=${!!apiKey}`);
   if (!apiKey) return; // bez klíče tiše přeskočíme
 
   const msg = STATUS_MESSAGES[status];
-  if (!msg) return;
+  if (!msg) { console.error(`[email-diag] status=${status} nemá definovaný text — přeskakuji`); return; }
 
   const html = `
     <div style="font-family:sans-serif;max-width:500px;margin:0 auto;color:#1a1a1a">
@@ -74,7 +75,7 @@ export async function sendStatusEmail(
     </div>
   `;
 
-  await fetch("https://api.resend.com/emails", {
+  const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -83,7 +84,11 @@ export async function sendStatusEmail(
       subject: `${msg.title} — objednávka ${orderId}`,
       html,
     }),
-  }).catch(() => null);
+  }).catch((e) => { console.error(`[email-diag] status fetch error: ${e}`); return null; });
+  if (res) {
+    const body = await res.text().catch(() => "");
+    console.error(`[email-diag] status resend status=${res.status} body=${body.slice(0, 200)}`);
+  }
 }
 
 // Potvrzení o přijetí objednávky (i pro hosty bez registrace)

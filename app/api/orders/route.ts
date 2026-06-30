@@ -6,6 +6,20 @@ import { supabaseAdmin } from "@/lib/db/supabase";
 import { createSupabaseServer } from "@/lib/auth/server";
 import { requireStaff } from "@/lib/auth/require-staff";
 import { sendOrderConfirmationEmail } from "@/lib/notifications";
+import { getBrand } from "@/lib/brand/registry";
+
+// Kód objednávky podle značky: "L.T. Smash" → "L_T_SMASH-123456", "Dumply" → "DUMPLY-123456"
+function makeOrderId(conceptSlug: string): string {
+  const name = getBrand(conceptSlug)?.name ?? conceptSlug;
+  const code = name
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // odstraň diakritiku
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")                       // nealfanumerické → _
+    .replace(/^_+|_+$/g, "")                           // ořež _ na krajích
+    || "ORDER";
+  const num = Math.floor(100000 + Math.random() * 900000);
+  return `${code}-${num}`;
+}
 
 export async function GET(req: NextRequest) {
   // Seznam všech objednávek je jen pro pracovníky
@@ -46,6 +60,7 @@ export async function POST(req: NextRequest) {
     const { data: order, error } = await supabaseAdmin
       .from("orders")
       .insert({
+        id: makeOrderId(conceptSlug),
         user_id: user?.id ?? null,
         concept_slug: conceptSlug, channel, fulfilment,
         customer_name: customer.name, customer_phone: customer.phone,
