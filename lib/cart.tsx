@@ -25,6 +25,7 @@ interface CartCtx {
 
 const Ctx = createContext<CartCtx | null>(null);
 const STORAGE_KEY = "ff-carts-v1";
+const ACTIVE_KEY = "ff-cart-active-v1";
 
 // Košíky jsou oddělené per značka (slug). Položky z jedné restaurace
 // se nikdy nemíchají s jinou — každá značka má vlastní izolovaný košík.
@@ -41,6 +42,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setCarts(JSON.parse(raw));
+      const act = localStorage.getItem(ACTIVE_KEY);
+      if (act) setActiveSlug(act);
     } catch { /* ignore */ }
     hydrated.current = true;
   }, []);
@@ -51,7 +54,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(carts)); } catch { /* ignore */ }
   }, [carts]);
 
-  const items = (activeSlug ? carts[activeSlug] : undefined) ?? [];
+  useEffect(() => {
+    if (!hydrated.current) return;
+    try {
+      if (activeSlug) localStorage.setItem(ACTIVE_KEY, activeSlug);
+    } catch { /* ignore */ }
+  }, [activeSlug]);
+
+  // Vyber aktivní košík; pojistka: když aktivní slug nemá položky,
+  // ale existuje právě jeden neprázdný košík, použij ho (typicky na /checkout po reloadu)
+  const nonEmpty = Object.entries(carts).filter(([, v]) => v.length > 0);
+  const effectiveSlug = (activeSlug && (carts[activeSlug]?.length ?? 0) > 0)
+    ? activeSlug
+    : (nonEmpty.length === 1 ? nonEmpty[0][0] : activeSlug);
+  const items = (effectiveSlug ? carts[effectiveSlug] : undefined) ?? [];
+
+  // Když pojistka vybrala košík, nastav ho jako aktivní (ať fungují úpravy i vyčištění)
+  useEffect(() => {
+    if (effectiveSlug && effectiveSlug !== activeSlug) setActiveSlug(effectiveSlug);
+  }, [effectiveSlug, activeSlug]);
 
   const addItem = useCallback((product: MenuItem, qty = 1) => {
     // Položka vždy patří do košíku své vlastní značky
