@@ -26,6 +26,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const isLogin = pathname === "/admin/login" || pathname === "/admin/reset" || pathname === "/admin/nove-heslo" || pathname === "/admin/pristup-zamitnut";
 
   const isAccountant = me?.role === "accountant";
+  const isAdmin = me?.role === "admin";
 
   // Účetního drž na exportech
   useEffect(() => {
@@ -45,7 +46,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
-  const links = isAccountant ? accountantLinks : allLinks;
+  const links = isAccountant
+    ? accountantLinks
+    : isAdmin
+      ? [...allLinks, { href: "/admin/personal", label: "Personál" }]
+      : allLinks;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
