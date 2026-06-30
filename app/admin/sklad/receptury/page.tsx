@@ -38,6 +38,9 @@ export default function RecepturyPage() {
   // inline editace
   const [editId, setEditId] = useState<string | null>(null);
   const [editQty, setEditQty] = useState("");
+  // kopírování z jiného produktu
+  const [copyFrom, setCopyFrom] = useState("");
+  const [copying, setCopying] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -89,6 +92,23 @@ export default function RecepturyPage() {
     loadLines(productId);
   }
 
+  async function copyRecipe() {
+    if (!copyFrom || !productId) return;
+    setCopying(true);
+    const src: RecipeLine[] = await fetch(`/api/sklad/recipes?product=${copyFrom}`).then((r) => r.json());
+    let added = 0, skipped = 0;
+    for (const l of Array.isArray(src) ? src : []) {
+      const r = await fetch("/api/sklad/recipes", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: productId, stock_item_id: l.stock_item_id, qty_per_portion: l.qty_per_portion }),
+      });
+      if (r.ok) added++; else skipped++;
+    }
+    setCopying(false); setCopyFrom("");
+    loadLines(productId);
+    alert(`Zkopírováno ${added} surovin.${skipped ? ` ${skipped} přeskočeno (už v receptuře).` : ""}`);
+  }
+
   const cost = lines.reduce((s, l) => s + Number(l.qty_per_portion) * Number(l.stock_item?.avg_price_czk ?? 0), 0);
   const price = product ? Number(product.price_czk) : 0;
   const margin = price - cost;
@@ -119,6 +139,16 @@ export default function RecepturyPage() {
         </div>
       ) : (
         <>
+          {lines.length === 0 && products.filter((p) => p.id !== productId).length > 0 && (
+            <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] p-3">
+              <span className="text-sm text-[var(--muted)]">Zkopírovat recepturu z:</span>
+              <select value={copyFrom} onChange={(e) => setCopyFrom(e.target.value)} className={inputCls + " min-w-[200px]"}>
+                <option value="">— produkt —</option>
+                {products.filter((p) => p.id !== productId).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              <button onClick={copyRecipe} disabled={!copyFrom || copying} className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--muted)] hover:text-white disabled:opacity-50">{copying ? "Kopíruji…" : "Zkopírovat"}</button>
+            </div>
+          )}
           <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--card)]">
             <table className="w-full text-sm">
               <thead className="border-b border-[var(--border)] text-left text-[var(--muted)]">

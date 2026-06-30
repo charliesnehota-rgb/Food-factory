@@ -88,24 +88,51 @@ export async function GET(req: NextRequest) {
   }
 
   if (type === "stock") {
-    // Stav skladu k dnešku (aktuální ocenění váženým průměrem).
+    const asOf = sp.get("as_of"); // volitelně stav k minulému datu
     const { data: items } = await supabaseAdmin
       .from("stock_items")
-      .select("sku, name, base_unit, current_qty, avg_price_czk, category:stock_categories!category_id(name, vat_rate)")
+      .select("id, sku, name, base_unit, current_qty, avg_price_czk, category:stock_categories!category_id(name, vat_rate)")
       .eq("is_active", true).order("name");
+
+    // Rekonstrukce stavu k datu: přehrání knihy pohybů (stejná logika jako DB trigger)
+    let qtyAtDate: Map<string, number> | null = null;
+    let avgAtDate: Map<string, number> | null = null;
+    if (asOf) {
+      const { data: mv } = await supabaseAdmin
+        .from("stock_movements").select("stock_item_id, type, qty_change, unit_price_czk")
+        .lte("created_at", `${asOf}T23:59:59.999`)
+        .order("stock_item_id", { ascending: true }).order("created_at", { ascending: true });
+      qtyAtDate = new Map(); avgAtDate = new Map();
+      for (const m of mv ?? []) {
+        const sid = m.stock_item_id as string;
+        const oldQty = qtyAtDate.get(sid) ?? 0;
+        let avg = avgAtDate.get(sid) ?? 0;
+        const price = m.unit_price_czk != null ? Number(m.unit_price_czk) : null;
+        const q = Number(m.qty_change);
+        if (m.type === "receipt" && q > 0 && price != null) {
+          avg = oldQty > 0 ? ((oldQty * avg) + (q * price)) / (oldQty + q) : price;
+        }
+        qtyAtDate.set(sid, oldQty + q);
+        avgAtDate.set(sid, avg);
+      }
+    }
+
     let total = 0;
     const rows = (items ?? []).map((it) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const cat: any = Array.isArray((it as any).category) ? (it as any).category[0] : (it as any).category;
-      const value = Number(it.current_qty) * Number(it.avg_price_czk);
+      const qty = asOf ? (qtyAtDate!.get(it.id) ?? 0) : Number(it.current_qty);
+      const avg = asOf ? (avgAtDate!.get(it.id) ?? 0) : Number(it.avg_price_czk);
+      const value = qty * avg;
       total += value;
       return {
         sku: it.sku ?? "", item: it.name, category: cat?.name ?? "", unit: it.base_unit,
-        qty: Number(it.current_qty), avg_price: Number(it.avg_price_czk), value: round2(value),
+        qty, avg_price: avg, value: round2(value),
         vat_rate: cat ? Number(cat.vat_rate) : null,
       };
-    });
-    return NextResponse.json({ type, as_of: new Date().toISOString().slice(0, 10), rows, total_value: round2(total) });
+    }).filter((r) => !asOf || r.qty !== 0); // k datu skryj nulové
+
+    return NextResponse.json({ type, as_of: asOf || new Date().toISOString().slice(0, 10), rows, total_value: round2(total) });
   }
 
   return NextResponse.json({ error: "Neznámý typ exportu" }, { status: 400 });

@@ -22,6 +22,7 @@ interface Overview {
   products_total: number;
   products_with_recipe: number;
   no_price_count: number;
+  days: number;
 }
 
 interface ShopItem {
@@ -37,27 +38,38 @@ export default function SkladPrehledPage() {
   const [data, setData] = useState<Overview | null>(null);
   const [low, setLow] = useState<ShopItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [days, setDays] = useState(30);
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/sklad/overview").then((r) => r.json()),
+      fetch(`/api/sklad/overview?days=${days}`).then((r) => r.json()),
       fetch("/api/sklad/shopping").then((r) => r.json()),
     ]).then(([d, s]) => {
       if (!d.error) setData(d);
       if (Array.isArray(s.items)) setLow(s.items);
     }).finally(() => setLoading(false));
-  }, []);
+  }, [days]);
 
   const { me } = useMe();
   const isAdmin = me?.role === "admin";
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Sklad — přehled</h1>
-        <p className="text-sm text-[var(--muted)]">
-          {loading ? "načítám…" : "Hospodaření skladu. Náklady a marže přibudou s recepturami (fáze 2)."}
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Sklad — přehled</h1>
+          <p className="text-sm text-[var(--muted)]">
+            {loading ? "načítám…" : "Hospodaření skladu."}
+          </p>
+        </div>
+        {isAdmin && (
+          <select value={days} onChange={(e) => setDays(Number(e.target.value))}
+            className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm">
+            <option value={7}>7 dní</option>
+            <option value={30}>30 dní</option>
+            <option value={90}>90 dní</option>
+          </select>
+        )}
       </div>
 
       {data && (low.length > 0 || data.negative_count > 0 || data.no_price_count > 0 || (data.products_total > data.products_with_recipe)) && (
@@ -112,18 +124,18 @@ export default function SkladPrehledPage() {
             hint="vážený průměr × stav, bez DPH" />
         )}
         {isAdmin && (
-          <Card title="Příjem (30 dní)" value={data ? formatCzk(data.receipts_30d_net_czk) : "—"}
+          <Card title={`Příjem (${days} dní)`} value={data ? formatCzk(data.receipts_30d_net_czk) : "—"}
             hint={`bez DPH · ${data?.receipts_30d_count ?? 0} příjemek`} />
         )}
         {isAdmin && (
-          <Card title="Příjem s DPH (30 dní)" value={data ? formatCzk(data.receipts_30d_gross_czk) : "—"}
+          <Card title={`Příjem s DPH (${days} dní)`} value={data ? formatCzk(data.receipts_30d_gross_czk) : "—"}
             hint="vč. DPH" />
         )}
       </div>
 
       {isAdmin && (
         <>
-          <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Náklady a marže (30 dní)</h2>
+          <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Náklady a marže ({days} dní)</h2>
           <div className="grid gap-4 sm:grid-cols-3">
             <Card title="Tržby" value={data ? formatCzk(data.revenue_30d_czk) : "—"}
               hint="předané a hotové objednávky" />
@@ -135,7 +147,7 @@ export default function SkladPrehledPage() {
           </div>
           <p className="mt-2 text-xs text-[var(--muted)]">Marže pokrývá jen suroviny (ne práci, energie, nájem). Funguje pro produkty, které mají recepturu.</p>
 
-          <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Ztráty (30 dní)</h2>
+          <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Ztráty ({days} dní)</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <Card title="Odpisy" value={data ? formatCzk(data.write_offs_30d_czk) : "—"}
               hint="expirace, poškození…" accent={data && data.write_offs_30d_czk > 0 ? "#f59e0b" : undefined} />

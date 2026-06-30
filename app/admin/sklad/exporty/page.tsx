@@ -10,7 +10,7 @@ type ExportType = "vat" | "movements" | "stock";
 const TYPES: { id: ExportType; label: string; desc: string; usesRange: boolean }[] = [
   { id: "vat", label: "Podklad DPH", desc: "Nákup surovin rozpadený po sazbách (DPH na vstupu).", usesRange: true },
   { id: "movements", label: "Spotřeba a ztráty", desc: "Výdeje (spotřeba, odpisy, inventura) za období, oceněné.", usesRange: true },
-  { id: "stock", label: "Stav skladu", desc: "Ocenění skladu k dnešku (vážený průměr).", usesRange: false },
+  { id: "stock", label: "Stav skladu", desc: "Ocenění skladu k vybranému datu (vážený průměr).", usesRange: false },
 ];
 
 const MOVE_LABEL: Record<string, string> = { consumption: "Spotřeba", write_off: "Odpis", stocktake: "Inventura" };
@@ -20,6 +20,7 @@ export default function ExportyPage() {
   const firstOfMonth = new Date(); firstOfMonth.setDate(1);
   const [from, setFrom] = useState(firstOfMonth.toISOString().slice(0, 10));
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10));
+  const [asOf, setAsOf] = useState(new Date().toISOString().slice(0, 10));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -30,6 +31,7 @@ export default function ExportyPage() {
     setLoading(true); setData(null);
     const qs = new URLSearchParams({ type });
     if (meta.usesRange) { qs.set("from", from); qs.set("to", to); }
+    if (type === "stock") qs.set("as_of", asOf);
     const d = await fetch(`/api/sklad/exports?${qs}`).then((r) => r.json());
     setData(d.error ? null : d);
     if (d.error) alert(d.error);
@@ -67,6 +69,12 @@ export default function ExportyPage() {
               <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={inputCls} />
             </div>
           </>
+        )}
+        {type === "stock" && (
+          <div>
+            <label className="text-xs text-[var(--muted)]">Stav k datu</label>
+            <input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} className={inputCls} />
+          </div>
         )}
         <button onClick={loadPreview} disabled={loading} className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-black hover:bg-neutral-200 disabled:opacity-50">{loading ? "Načítám…" : "Načíst náhled"}</button>
       </div>

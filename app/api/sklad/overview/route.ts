@@ -1,10 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/db/supabase";
 import { requireStaff } from "@/lib/auth/require-staff";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   if (!(await requireStaff())) return NextResponse.json({ error: "Přístup zamítnut" }, { status: 403 });
   if (!supabaseAdmin) return NextResponse.json({ error: "DB nedostupná" }, { status: 503 });
+
+  const daysParam = Number(req.nextUrl.searchParams.get("days"));
+  const days = [7, 30, 90].includes(daysParam) ? daysParam : 30;
 
   const { data: items } = await supabaseAdmin
     .from("stock_items").select("current_qty, avg_price_czk, min_qty, is_active").eq("is_active", true);
@@ -18,7 +21,7 @@ export async function GET() {
     if (Number(it.current_qty) < 0) negative++;
   }
 
-  const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+  const since = new Date(Date.now() - days * 24 * 3600 * 1000).toISOString().slice(0, 10);
   const { data: receipts } = await supabaseAdmin
     .from("goods_receipts").select("total_net_czk, total_gross_czk")
     .eq("status", "posted").gte("received_at", since);
@@ -26,8 +29,8 @@ export async function GET() {
   const receiptsNet = (receipts ?? []).reduce((s, r) => s + Number(r.total_net_czk), 0);
   const receiptsGross = (receipts ?? []).reduce((s, r) => s + Number(r.total_gross_czk), 0);
 
-  // Tržby z předaných/hotových objednávek za 30 dní
-  const sinceIso = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+  // Tržby z předaných/hotových objednávek za období
+  const sinceIso = new Date(Date.now() - days * 24 * 3600 * 1000).toISOString();
   const { data: ord } = await supabaseAdmin
     .from("orders").select("total_czk")
     .in("status", ["ready", "delivered"]).gte("created_at", sinceIso);
@@ -86,5 +89,6 @@ export async function GET() {
     products_total: prods?.length ?? 0,
     products_with_recipe: withRecipe,
     no_price_count: noPrice.size,
+    days,
   });
 }

@@ -124,6 +124,29 @@ export default function PrijemPage() {
       received_at: d.received_at ?? today(),
       note: d.note ?? "",
     });
+    setLines(linesFromDetail(d));
+    setOpen(true);
+  }
+
+  // Zopakovat: předvyplní NOVOU příjemku položkami z existující (stejný dodavatel),
+  // datum dnešní, číslo faktury prázdné. Pro pravidelné dodávky.
+  async function repeatReceipt(id: string) {
+    const d = await fetch(`/api/sklad/receipts/${id}`).then((x) => x.json());
+    setEditingId(null);
+    setPricesGross(false);
+    setInvoiceTotal("");
+    setHead({
+      supplier_id: d.supplier_id ?? "",
+      supplier_invoice_no: "",
+      received_at: today(),
+      note: "",
+    });
+    setLines(linesFromDetail(d));
+    setOpen(true);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function linesFromDetail(d: any): DraftLine[] {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const dlines: DraftLine[] = (d.items ?? []).map((it: any) => {
       const base = it.stock_item?.base_unit ?? "g";
@@ -136,8 +159,7 @@ export default function PrijemPage() {
         vat_rate: String(Number(it.vat_rate)),
       };
     });
-    setLines(dlines.length ? dlines : [{ ...emptyLine }]);
-    setOpen(true);
+    return dlines.length ? dlines : [{ ...emptyLine }];
   }
 
   async function postReceipt(id: string) {
@@ -281,7 +303,10 @@ export default function PrijemPage() {
                         <button onClick={() => deleteReceipt(r.id)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-red-400 hover:border-red-500/30">Smazat</button>
                       </div>
                     ) : (
-                      <button onClick={() => toggleDetail(r.id)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-white hover:border-neutral-600">Detail</button>
+                      <div className="flex gap-1">
+                        <button onClick={() => toggleDetail(r.id)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-white hover:border-neutral-600">Detail</button>
+                        <button onClick={() => repeatReceipt(r.id)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-white hover:border-neutral-600">Zopakovat</button>
+                      </div>
                     )}
                   </td>
                 </tr>
