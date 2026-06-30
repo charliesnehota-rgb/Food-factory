@@ -85,6 +85,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           {me?.email && (
             <div className="mt-6 border-t border-[var(--border)] pt-4">
               <p className="text-xs text-[var(--muted)] mb-2 truncate" title={me.email}>{me.email}</p>
+              <Link
+                href="/admin/nove-heslo"
+                className="mb-2 block text-xs text-[var(--muted)] hover:text-white rounded-md border border-[var(--border)] px-3 py-1.5 w-full text-left hover:border-neutral-600 transition"
+              >
+                Změnit heslo
+              </Link>
               <button
                 onClick={signOut}
                 className="text-xs text-[var(--muted)] hover:text-white rounded-md border border-[var(--border)] px-3 py-1.5 w-full text-left hover:border-neutral-600 transition"
