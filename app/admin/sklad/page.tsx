@@ -11,6 +11,9 @@ interface Overview {
   receipts_30d_count: number;
   receipts_30d_net_czk: number;
   receipts_30d_gross_czk: number;
+  revenue_30d_czk: number;
+  cogs_30d_czk: number;
+  margin_30d_czk: number;
 }
 
 export default function SkladPrehledPage() {
@@ -45,6 +48,18 @@ export default function SkladPrehledPage() {
         <Card title="Příjem s DPH (30 dní)" value={data ? formatCzk(data.receipts_30d_gross_czk) : "—"}
           hint="vč. DPH" />
       </div>
+
+      <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Náklady a marže (30 dní)</h2>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card title="Tržby" value={data ? formatCzk(data.revenue_30d_czk) : "—"}
+          hint="předané a hotové objednávky" />
+        <Card title="Náklady surovin" value={data ? formatCzk(data.cogs_30d_czk) : "—"}
+          hint="spotřeba dle receptur" />
+        <Card title="Hrubá marže" value={data ? formatCzk(data.margin_30d_czk) : "—"}
+          hint="tržby − suroviny"
+          accent={data && data.margin_30d_czk < 0 ? "#f87171" : "#4ade80"} />
+      </div>
+      <p className="mt-2 text-xs text-[var(--muted)]">Marže pokrývá jen suroviny (ne práci, energie, nájem). Funguje pro produkty, které mají recepturu.</p>
 
       <div className="mt-8 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
         <h2 className="mb-3 font-medium">Rychlé akce</h2>

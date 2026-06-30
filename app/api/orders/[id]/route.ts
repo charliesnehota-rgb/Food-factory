@@ -3,6 +3,7 @@ import { updateOrderStatus } from "@/lib/db/orders";
 import { requireStaff } from "@/lib/auth/require-staff";
 import { supabaseAdmin } from "@/lib/db/supabase";
 import { sendPushNotification, sendStatusEmail } from "@/lib/notifications";
+import { consumeForOrder, reverseForOrder } from "@/lib/stock/consumption";
 import type { OrderStatus } from "@/lib/types";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -13,6 +14,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const { status } = await req.json();
     await updateOrderStatus(id, status as OrderStatus);
+
+    // Skladový odečet podle receptur (fáze 2). Best-effort — nikdy neblokuje
+    // změnu stavu. Odečet při předání, vrácení při stornu; obojí idempotentní.
+    if (supabaseAdmin) {
+      try {
+        const by = staff.email ?? staff.id;
+        if (status === "ready" || status === "delivered") {
+          await consumeForOrder(supabaseAdmin, id, by);
+        } else if (status === "cancelled") {
+          await reverseForOrder(supabaseAdmin, id, by);
+        }
+      } catch { /* sklad je best-effort, stav objednávky se mění tak jako tak */ }
+    }
 
     // Notifikace — await, jinak serverless funkci zmrazí dřív než se e-mail odešle
     if (supabaseAdmin) {

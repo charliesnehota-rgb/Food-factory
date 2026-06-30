@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 const tabs = [
   { href: "/admin/sklad", label: "Přehled" },
   { href: "/admin/sklad/karty", label: "Skladové karty" },
+  { href: "/admin/sklad/receptury", label: "Receptury" },
   { href: "/admin/sklad/prijem", label: "Příjem" },
   { href: "/admin/sklad/pohyby", label: "Pohyby" },
   { href: "/admin/sklad/dodavatele", label: "Dodavatelé" },
