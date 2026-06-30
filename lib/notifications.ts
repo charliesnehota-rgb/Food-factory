@@ -77,7 +77,7 @@ export async function sendStatusEmail(
     method: "POST",
     headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: "Food Factory <notifikace@foodfactory.cz>",
+      from: process.env.RESEND_FROM ?? "Food Factory <onboarding@resend.dev>",
       to: toEmail,
       subject: `${msg.title} — objednávka ${orderId}`,
       html,
@@ -115,7 +115,7 @@ export async function sendOrderConfirmationEmail(
     method: "POST",
     headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: "Food Factory <notifikace@foodfactory.cz>",
+      from: process.env.RESEND_FROM ?? "Food Factory <onboarding@resend.dev>",
       to: toEmail,
       subject: `Objednávka ${orderId} přijata`,
       html,
