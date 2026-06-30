@@ -70,7 +70,9 @@ export default function OrdersBoard() {
     }
   }
 
-  const columns: OrderStatus[] = ["new", "preparing", "ready", "out_for_delivery"];
+  const columns: OrderStatus[] = ["new", "preparing", "ready", "out_for_delivery", "delivered"];
+  // Vlastní popisky sloupců v adminu (nezávislé na zákaznických textech)
+  const COLUMN_LABEL: Partial<Record<OrderStatus, string>> = { delivered: "Předáno" };
 
   return (
     <div>
@@ -92,13 +94,13 @@ export default function OrdersBoard() {
         <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(null)} />
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {columns.map((col) => {
           const items = orders.filter((o) => o.status === col);
           return (
             <div key={col} className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3">
               <div className="mb-3 flex items-center justify-between px-1">
-                <span className="text-sm font-medium">{STATUS_LABEL[col]}</span>
+                <span className="text-sm font-medium">{COLUMN_LABEL[col] ?? STATUS_LABEL[col]}</span>
                 <span className="rounded-md bg-[var(--bg)] px-2 py-0.5 text-xs text-[var(--muted)]">{items.length}</span>
               </div>
               <div className="space-y-2">

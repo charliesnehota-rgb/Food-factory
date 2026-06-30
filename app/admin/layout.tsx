@@ -49,10 +49,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 <Link
                   key={l.href}
                   href={l.href}
+                  style={active ? { background: "#ffffff", color: "#111111" } : undefined}
                   className={
-                    "rounded-md px-3 py-2 text-sm " +
+                    "rounded-md px-3 py-2 text-sm font-medium " +
                     (active
-                      ? "bg-white text-black"
+                      ? ""
                       : "text-[var(--muted)] hover:bg-[var(--card)] hover:text-white")
                   }
                 >
