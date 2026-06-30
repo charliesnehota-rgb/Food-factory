@@ -16,9 +16,16 @@ function nextStatus(s: OrderStatus): OrderStatus | null {
   return FLOW[i + 1];
 }
 
+function prevStatus(s: OrderStatus): OrderStatus | null {
+  const i = FLOW.indexOf(s);
+  if (i <= 0) return null;
+  return FLOW[i - 1];
+}
+
 export default function OrdersBoard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -39,15 +46,10 @@ export default function OrdersBoard() {
     return () => clearInterval(t);
   }, [load]);
 
-  async function advance(id: string) {
-    const order = orders.find(o => o.id === id);
-    if (!order) return;
-    const ns = nextStatus(order.status);
-    if (!ns) return;
-
+  async function setStatus(id: string, ns: OrderStatus) {
+    setMenuOpen(null);
     // optimistický update
     setOrders(prev => prev.map(o => o.id === id ? { ...o, status: ns } : o));
-
     // persist do DB
     try {
       await fetch(`/api/orders/${id}`, {
@@ -57,6 +59,14 @@ export default function OrdersBoard() {
       });
     } catch {
       load(); // při chybě znovu načti pravdu z DB
+    }
+  }
+
+  function cancelOrder(id: string) {
+    if (confirm(`Opravdu zrušit objednávku ${id}? Zákazníkovi přijde e-mail o zrušení.`)) {
+      setStatus(id, "cancelled");
+    } else {
+      setMenuOpen(null);
     }
   }
 
@@ -77,6 +87,11 @@ export default function OrdersBoard() {
         </div>
       )}
 
+      {/* zavření menu kliknutím mimo */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(null)} />
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {columns.map((col) => {
           const items = orders.filter((o) => o.status === col);
@@ -87,28 +102,55 @@ export default function OrdersBoard() {
                 <span className="rounded-md bg-[var(--bg)] px-2 py-0.5 text-xs text-[var(--muted)]">{items.length}</span>
               </div>
               <div className="space-y-2">
-                {items.map((o) => (
-                  <div key={o.id} className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">{o.id}</span>
-                      <span className="rounded bg-[var(--card)] px-1.5 py-0.5 text-xs text-[var(--muted)]">{CHANNEL_LABEL[o.channel]}</span>
+                {items.map((o) => {
+                  const ns = nextStatus(o.status);
+                  const ps = prevStatus(o.status);
+                  return (
+                    <div key={o.id} className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">{o.id}</span>
+                        <span className="rounded bg-[var(--card)] px-1.5 py-0.5 text-xs text-[var(--muted)]">{CHANNEL_LABEL[o.channel]}</span>
+                      </div>
+                      <ul className="mt-2 space-y-0.5 text-sm text-[var(--muted)]">
+                        {o.items.map((it, idx) => (
+                          <li key={idx}>{it.qty}× {it.name}</li>
+                        ))}
+                      </ul>
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="text-sm font-medium">{formatCzk(o.totalCzk)}</span>
+
+                        {/* Akce dropdown */}
+                        <div className="relative z-20">
+                          <button
+                            onClick={() => setMenuOpen(menuOpen === o.id ? null : o.id)}
+                            className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-2.5 py-1 text-xs font-medium hover:bg-[var(--border)] transition">
+                            Akce ▾
+                          </button>
+                          {menuOpen === o.id && (
+                            <div className="absolute right-0 mt-1 w-48 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-lg">
+                              {ns && (
+                                <button onClick={() => setStatus(o.id, ns)}
+                                  className="block w-full px-3 py-2 text-left text-xs hover:bg-[var(--bg)] transition">
+                                  Posunout vpřed → {STATUS_LABEL[ns]}
+                                </button>
+                              )}
+                              {ps && (
+                                <button onClick={() => setStatus(o.id, ps)}
+                                  className="block w-full px-3 py-2 text-left text-xs hover:bg-[var(--bg)] transition">
+                                  ← Vrátit zpět na {STATUS_LABEL[ps]}
+                                </button>
+                              )}
+                              <button onClick={() => cancelOrder(o.id)}
+                                className="block w-full border-t border-[var(--border)] px-3 py-2 text-left text-xs text-red-400 hover:bg-[var(--bg)] transition">
+                                Zrušit objednávku
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <ul className="mt-2 space-y-0.5 text-sm text-[var(--muted)]">
-                      {o.items.map((it, idx) => (
-                        <li key={idx}>{it.qty}× {it.name}</li>
-                      ))}
-                    </ul>
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className="text-sm font-medium">{formatCzk(o.totalCzk)}</span>
-                      {nextStatus(o.status) && (
-                        <button onClick={() => advance(o.id)}
-                          className="rounded-lg bg-white px-2.5 py-1 text-xs font-medium text-black hover:bg-neutral-200 transition">
-                          Posunout →
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );

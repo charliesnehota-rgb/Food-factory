@@ -17,6 +17,7 @@ const STATUS_MESSAGES: Partial<Record<OrderStatus, { title: string; body: string
   ready:            { title: "🎉 Hotovo!",                body: "Objednávka je připravena k vyzvednutí." },
   out_for_delivery: { title: "🛵 Na cestě",               body: "Kurýr vyjel s vaší objednávkou." },
   delivered:        { title: "✓ Doručeno",                body: "Dobrou chuť! Objednávka je doručena." },
+  cancelled:        { title: "❌ Objednávka zrušena",     body: "Vaše objednávka byla zrušena. V případě dotazů nás kontaktujte." },
 };
 
 interface PushSub {
