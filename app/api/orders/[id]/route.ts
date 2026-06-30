@@ -14,16 +14,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { status } = await req.json();
     await updateOrderStatus(id, status as OrderStatus);
 
-    // Spustí notifikace asynchronně (neblokuje odpověď)
+    // Notifikace — await, jinak serverless funkci zmrazí dřív než se e-mail odešle
     if (supabaseAdmin) {
-      (async () => {
-        try {
+      try {
           // Najdi objednávku a zákazníka (vč. e-mailu hosta)
           const { data: order } = await supabaseAdmin
             .from("orders").select("*").eq("id", id).single();
-          if (!order) return;
-
-          // Push + profilové info jen pro přihlášené zákazníky
+          if (order) {
           let email: string | null = order.customer_email ?? null;
           let name: string = order.customer_name ?? "";
 
@@ -43,8 +40,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           if (email) {
             await sendStatusEmail(email, name, id, status as OrderStatus);
           }
-        } catch { /* notifikace jsou best-effort */ }
-      })();
+          }
+      } catch { /* notifikace jsou best-effort */ }
     }
 
     return NextResponse.json({ ok: true });

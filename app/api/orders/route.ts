@@ -74,9 +74,10 @@ export async function POST(req: NextRequest) {
       }))
     );
 
-    // Potvrzení o přijetí objednávky (best-effort)
+    // Potvrzení o přijetí objednávky — await, jinak serverless funkci zmrazí dřív než se odešle
     if (customerEmail) {
-      sendOrderConfirmationEmail(customerEmail, customer.name, order.id, Number(order.total_czk)).catch(() => null);
+      try { await sendOrderConfirmationEmail(customerEmail, customer.name, order.id, Number(order.total_czk)); }
+      catch { /* best-effort */ }
     }
 
     return NextResponse.json({ orderId: order.id, total: order.total_czk }, { status: 201 });
