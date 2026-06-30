@@ -20,7 +20,7 @@ export default function AccessDeniedPage() {
         Tento účet nemá oprávnění pro vstup do administrace. Admin sekce je jen pro pracovníky.
       </p>
       <div className="flex flex-col gap-3">
-        <a href="/" className="rounded-xl bg-white px-6 py-3 text-sm font-semibold text-black hover:bg-neutral-200 transition">
+        <a href="/" style={{ background: "#ffffff", color: "#111111" }} className="rounded-xl px-6 py-3 text-sm font-semibold hover:bg-neutral-200 transition">
           Zpět na hlavní stránku
         </a>
         <button onClick={signOut} className="text-sm text-[var(--muted)] hover:text-white underline">

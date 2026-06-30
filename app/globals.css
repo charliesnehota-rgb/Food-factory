@@ -18,7 +18,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-a { color: inherit; }
+/* V base layeru, aby utility třídy (text-black, text-white…) na odkazech vyhrály.
+   Jinak by nezalayerované `a { color: inherit }` přebilo Tailwind utility a bílé
+   odkazy by měly neviditelný (zděděný světlý) text. */
+@layer base {
+  a { color: inherit; }
+}
 
 @keyframes ff-steam {
   0%   { transform: translateY(0) scaleX(1); opacity: 0; }
