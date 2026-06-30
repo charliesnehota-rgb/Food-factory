@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatCzk } from "@/lib/types";
 import { formatQty, type BaseUnit } from "@/lib/stock/units";
+import { useMe } from "@/lib/auth/use-me";
 
 interface Overview {
   stock_value_czk: number;
@@ -46,6 +47,9 @@ export default function SkladPrehledPage() {
       if (Array.isArray(s.items)) setLow(s.items);
     }).finally(() => setLoading(false));
   }, []);
+
+  const { me } = useMe();
+  const isAdmin = me?.role === "admin";
 
   return (
     <div>
@@ -99,38 +103,48 @@ export default function SkladPrehledPage() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card title="Hodnota skladu" value={data ? formatCzk(data.stock_value_czk) : "—"}
-          hint="vážený průměr × stav, bez DPH" />
         <Card title="Skladové karty" value={data ? String(data.items_count) : "—"}
           hint="aktivní položky" />
         <Card title="Dochází" value={data ? String(data.below_min_count) : "—"}
           hint="pod minimem" accent={data && data.below_min_count > 0 ? "#f59e0b" : undefined} />
-        <Card title="Příjem (30 dní)" value={data ? formatCzk(data.receipts_30d_net_czk) : "—"}
-          hint={`bez DPH · ${data?.receipts_30d_count ?? 0} příjemek`} />
-        <Card title="Příjem s DPH (30 dní)" value={data ? formatCzk(data.receipts_30d_gross_czk) : "—"}
-          hint="vč. DPH" />
+        {isAdmin && (
+          <Card title="Hodnota skladu" value={data ? formatCzk(data.stock_value_czk) : "—"}
+            hint="vážený průměr × stav, bez DPH" />
+        )}
+        {isAdmin && (
+          <Card title="Příjem (30 dní)" value={data ? formatCzk(data.receipts_30d_net_czk) : "—"}
+            hint={`bez DPH · ${data?.receipts_30d_count ?? 0} příjemek`} />
+        )}
+        {isAdmin && (
+          <Card title="Příjem s DPH (30 dní)" value={data ? formatCzk(data.receipts_30d_gross_czk) : "—"}
+            hint="vč. DPH" />
+        )}
       </div>
 
-      <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Náklady a marže (30 dní)</h2>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card title="Tržby" value={data ? formatCzk(data.revenue_30d_czk) : "—"}
-          hint="předané a hotové objednávky" />
-        <Card title="Náklady surovin" value={data ? formatCzk(data.cogs_30d_czk) : "—"}
-          hint="spotřeba dle receptur" />
-        <Card title="Hrubá marže" value={data ? formatCzk(data.margin_30d_czk) : "—"}
-          hint="tržby − suroviny"
-          accent={data && data.margin_30d_czk < 0 ? "#f87171" : "#4ade80"} />
-      </div>
-      <p className="mt-2 text-xs text-[var(--muted)]">Marže pokrývá jen suroviny (ne práci, energie, nájem). Funguje pro produkty, které mají recepturu.</p>
+      {isAdmin && (
+        <>
+          <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Náklady a marže (30 dní)</h2>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Card title="Tržby" value={data ? formatCzk(data.revenue_30d_czk) : "—"}
+              hint="předané a hotové objednávky" />
+            <Card title="Náklady surovin" value={data ? formatCzk(data.cogs_30d_czk) : "—"}
+              hint="spotřeba dle receptur" />
+            <Card title="Hrubá marže" value={data ? formatCzk(data.margin_30d_czk) : "—"}
+              hint="tržby − suroviny"
+              accent={data && data.margin_30d_czk < 0 ? "#f87171" : "#4ade80"} />
+          </div>
+          <p className="mt-2 text-xs text-[var(--muted)]">Marže pokrývá jen suroviny (ne práci, energie, nájem). Funguje pro produkty, které mají recepturu.</p>
 
-      <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Ztráty (30 dní)</h2>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card title="Odpisy" value={data ? formatCzk(data.write_offs_30d_czk) : "—"}
-          hint="expirace, poškození…" accent={data && data.write_offs_30d_czk > 0 ? "#f59e0b" : undefined} />
-        <Card title="Inventurní rozdíl" value={data ? formatCzk(data.stocktake_30d_czk) : "—"}
-          hint="− manko / + přebytek"
-          accent={data && data.stocktake_30d_czk < 0 ? "#f87171" : undefined} />
-      </div>
+          <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Ztráty (30 dní)</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Card title="Odpisy" value={data ? formatCzk(data.write_offs_30d_czk) : "—"}
+              hint="expirace, poškození…" accent={data && data.write_offs_30d_czk > 0 ? "#f59e0b" : undefined} />
+            <Card title="Inventurní rozdíl" value={data ? formatCzk(data.stocktake_30d_czk) : "—"}
+              hint="− manko / + přebytek"
+              accent={data && data.stocktake_30d_czk < 0 ? "#f87171" : undefined} />
+          </div>
+        </>
+      )}
 
       <div className="mt-8 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
         <h2 className="mb-3 font-medium">Rychlé akce</h2>

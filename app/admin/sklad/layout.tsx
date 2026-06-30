@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { useMe } from "@/lib/auth/use-me";
 
 const groups: { label: string; tabs: { href: string; label: string }[] }[] = [
   {
@@ -33,12 +34,20 @@ const groups: { label: string; tabs: { href: string; label: string }[] }[] = [
   },
 ];
 
+// Účetní vidí ve skladu jen exporty.
+const accountantGroups: typeof groups = [
+  { label: "Účetní", tabs: [{ href: "/admin/sklad/exporty", label: "Exporty" }] },
+];
+
 export default function SkladLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const { me } = useMe();
+  const visibleGroups = me?.role === "accountant" ? accountantGroups : groups;
+
   return (
     <div>
       <div className="mb-6 space-y-2 border-b border-[var(--border)] pb-3">
-        {groups.map((g) => (
+        {visibleGroups.map((g) => (
           <div key={g.label} className="flex flex-wrap items-center gap-1">
             <span className="mr-1 w-20 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">{g.label}</span>
             {g.tabs.map((t) => {

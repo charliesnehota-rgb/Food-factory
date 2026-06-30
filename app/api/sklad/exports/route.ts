@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/db/supabase";
-import { requireStaff } from "@/lib/auth/require-staff";
+import { requireExports } from "@/lib/auth/require-staff";
 
 // Účetní exporty (podklady pro DPH, spotřebu/ztráty a stav skladu).
 // Vrací strukturovaný JSON; klient z něj sestaví CSV ke stažení.
 export async function GET(req: NextRequest) {
-  if (!(await requireStaff())) return NextResponse.json({ error: "Přístup zamítnut" }, { status: 403 });
+  if (!(await requireExports())) return NextResponse.json({ error: "Přístup zamítnut" }, { status: 403 });
   if (!supabaseAdmin) return NextResponse.json({ error: "DB nedostupná" }, { status: 503 });
 
   const sp = req.nextUrl.searchParams;
