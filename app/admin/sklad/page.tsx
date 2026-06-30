@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatCzk } from "@/lib/types";
+import { formatQty, type BaseUnit } from "@/lib/stock/units";
 
 interface Overview {
   stock_value_czk: number;
@@ -16,17 +17,34 @@ interface Overview {
   margin_30d_czk: number;
   write_offs_30d_czk: number;
   stocktake_30d_czk: number;
+  negative_count: number;
+  products_total: number;
+  products_with_recipe: number;
+  no_price_count: number;
+}
+
+interface ShopItem {
+  id: string;
+  name: string;
+  base_unit: string;
+  current_qty: number;
+  min_qty: number;
+  suggested_base: number;
 }
 
 export default function SkladPrehledPage() {
   const [data, setData] = useState<Overview | null>(null);
+  const [low, setLow] = useState<ShopItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/sklad/overview")
-      .then((r) => r.json())
-      .then((d) => { if (!d.error) setData(d); })
-      .finally(() => setLoading(false));
+    Promise.all([
+      fetch("/api/sklad/overview").then((r) => r.json()),
+      fetch("/api/sklad/shopping").then((r) => r.json()),
+    ]).then(([d, s]) => {
+      if (!d.error) setData(d);
+      if (Array.isArray(s.items)) setLow(s.items);
+    }).finally(() => setLoading(false));
   }, []);
 
   return (
@@ -37,6 +55,48 @@ export default function SkladPrehledPage() {
           {loading ? "načítám…" : "Hospodaření skladu. Náklady a marže přibudou s recepturami (fáze 2)."}
         </p>
       </div>
+
+      {data && (low.length > 0 || data.negative_count > 0 || data.no_price_count > 0 || (data.products_total > data.products_with_recipe)) && (
+        <div className="mb-6 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Co řešit</h2>
+            {low.length > 0 && <Link href="/admin/sklad/nakup" className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-black hover:bg-neutral-200">Otevřít nákup →</Link>}
+          </div>
+
+          {low.length > 0 && (
+            <div className="mb-3">
+              <div className="mb-1 text-sm text-[var(--muted)]">Dochází ({low.length}) — návrh k doplnění:</div>
+              <ul className="space-y-1 text-sm">
+                {low.slice(0, 8).map((it) => (
+                  <li key={it.id} className="flex justify-between gap-3 border-b border-[var(--border)] py-1 last:border-0">
+                    <span className="font-medium">{it.name}</span>
+                    <span className="text-[var(--muted)]">stav {formatQty(it.current_qty, it.base_unit as BaseUnit)} · koupit ~{formatQty(it.suggested_base, it.base_unit as BaseUnit)}</span>
+                  </li>
+                ))}
+              </ul>
+              {low.length > 8 && <div className="mt-1 text-xs text-[var(--muted)]">+{low.length - 8} dalších v nákupu</div>}
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2 text-xs">
+            {data.products_total > data.products_with_recipe && (
+              <Link href="/admin/sklad/receptury" className="rounded-full bg-amber-500/15 px-3 py-1 text-amber-400 hover:bg-amber-500/25">
+                Receptury: {data.products_with_recipe}/{data.products_total} produktů — {data.products_total - data.products_with_recipe} bez receptury
+              </Link>
+            )}
+            {data.no_price_count > 0 && (
+              <Link href="/admin/sklad/prijem" className="rounded-full bg-amber-500/15 px-3 py-1 text-amber-400 hover:bg-amber-500/25">
+                {data.no_price_count} surovin v recepturách bez ceny
+              </Link>
+            )}
+            {data.negative_count > 0 && (
+              <Link href="/admin/sklad/karty" className="rounded-full bg-red-500/15 px-3 py-1 text-red-400 hover:bg-red-500/25">
+                {data.negative_count} položek v záporném stavu
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card title="Hodnota skladu" value={data ? formatCzk(data.stock_value_czk) : "—"}

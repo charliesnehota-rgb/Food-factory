@@ -11,9 +11,11 @@ export async function GET() {
 
   let stockValue = 0;
   let belowMin = 0;
+  let negative = 0;
   for (const it of items ?? []) {
     stockValue += Number(it.current_qty) * Number(it.avg_price_czk);
     if (Number(it.min_qty) > 0 && Number(it.current_qty) <= Number(it.min_qty)) belowMin++;
+    if (Number(it.current_qty) < 0) negative++;
   }
 
   const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().slice(0, 10);
@@ -54,10 +56,25 @@ export async function GET() {
     .eq("type", "stocktake").gte("created_at", sinceIso);
   const stocktakeNet = (st ?? []).reduce((s, m) => s + Number(m.qty_change) * Number(m.unit_price_czk ?? 0), 0);
 
+  // Pokrytí receptur a suroviny bez ceny
+  const { data: prods } = await supabaseAdmin.from("products").select("id");
+  const { data: recAll } = await supabaseAdmin
+    .from("product_recipe_items")
+    .select("product_id, stock_item:stock_items!stock_item_id(avg_price_czk)");
+  const withRecipe = new Set((recAll ?? []).map((r) => r.product_id)).size;
+  const noPrice = new Set<string>();
+  for (const r of recAll ?? []) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const si: any = Array.isArray((r as any).stock_item) ? (r as any).stock_item[0] : (r as any).stock_item;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (si && Number(si.avg_price_czk) === 0) noPrice.add((r as any).stock_item_id ?? JSON.stringify(r));
+  }
+
   return NextResponse.json({
     stock_value_czk: Math.round(stockValue * 100) / 100,
     items_count: items?.length ?? 0,
     below_min_count: belowMin,
+    negative_count: negative,
     receipts_30d_count: receipts?.length ?? 0,
     receipts_30d_net_czk: Math.round(receiptsNet * 100) / 100,
     receipts_30d_gross_czk: Math.round(receiptsGross * 100) / 100,
@@ -66,5 +83,8 @@ export async function GET() {
     margin_30d_czk: Math.round(margin * 100) / 100,
     write_offs_30d_czk: Math.round(writeOffs * 100) / 100,
     stocktake_30d_czk: Math.round(stocktakeNet * 100) / 100,
+    products_total: prods?.length ?? 0,
+    products_with_recipe: withRecipe,
+    no_price_count: noPrice.size,
   });
 }

@@ -28,6 +28,7 @@ export interface StockItem {
   base_unit: BaseUnit;
   current_qty: number;
   min_qty: number;
+  target_qty: number;
   last_purchase_price_czk: number | null;
   avg_price_czk: number;
   default_supplier_id: string | null;

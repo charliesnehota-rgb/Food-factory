@@ -8,7 +8,7 @@ import type { StockItem, StockCategory, Supplier } from "@/lib/stock/types";
 const inputCls = "w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
 const UNITS: BaseUnit[] = ["g", "ml", "ks"];
 
-const emptyForm: Partial<StockItem> = { name: "", base_unit: "g", min_qty: 0 };
+const emptyForm: Partial<StockItem> = { name: "", base_unit: "g", min_qty: 0, target_qty: 0 };
 
 export default function KartyPage() {
   const [items, setItems] = useState<StockItem[]>([]);
@@ -16,9 +16,13 @@ export default function KartyPage() {
   const [sups, setSups] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInactive, setShowInactive] = useState(false);
+  const [search, setSearch] = useState("");
+  const [catFilter, setCatFilter] = useState("");
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<Partial<StockItem>>(emptyForm);
+  const [initQty, setInitQty] = useState("");
+  const [initPrice, setInitPrice] = useState("");
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -34,26 +38,37 @@ export default function KartyPage() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const visible = items.filter((it) => showInactive || it.is_active);
+  const visible = items.filter((it) =>
+    (showInactive || it.is_active) &&
+    (!catFilter || it.category_id === catFilter) &&
+    (!search ||
+      it.name.toLowerCase().includes(search.toLowerCase()) ||
+      (it.sku ?? "").toLowerCase().includes(search.toLowerCase())));
 
-  function startNew() { setForm(emptyForm); setEditingId(null); setOpen(true); }
+  function startNew() { setForm(emptyForm); setInitQty(""); setInitPrice(""); setEditingId(null); setOpen(true); }
   function startEdit(it: StockItem) {
-    setForm({ name: it.name, sku: it.sku, category_id: it.category_id, base_unit: it.base_unit, min_qty: it.min_qty, default_supplier_id: it.default_supplier_id, note: it.note });
-    setEditingId(it.id); setOpen(true);
+    setForm({ name: it.name, sku: it.sku, category_id: it.category_id, base_unit: it.base_unit, min_qty: it.min_qty, target_qty: it.target_qty, default_supplier_id: it.default_supplier_id, note: it.note });
+    setInitQty(""); setInitPrice(""); setEditingId(it.id); setOpen(true);
   }
 
   async function submit() {
     if (!form.name) return;
     setSaving(true);
     const url = editingId ? `/api/sklad/items/${editingId}` : "/api/sklad/items";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload: any = { ...form };
+    if (!editingId && Number(initQty) > 0) {
+      payload.initial_qty = Number(initQty);
+      if (initPrice !== "") payload.initial_price_czk = Number(initPrice);
+    }
     const r = await fetch(url, {
       method: editingId ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     });
     setSaving(false);
     if (!r.ok) { const e = await r.json(); alert(e.error ?? "Chyba"); return; }
-    setOpen(false); setForm(emptyForm); setEditingId(null); load();
+    setOpen(false); setForm(emptyForm); setInitQty(""); setInitPrice(""); setEditingId(null); load();
   }
 
   async function remove(it: StockItem) {
@@ -69,7 +84,12 @@ export default function KartyPage() {
           <h1 className="text-xl font-semibold">Skladové karty</h1>
           <p className="text-sm text-[var(--muted)]">{visible.length} položek{loading ? " · načítám…" : ""}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <input placeholder="hledat…" value={search} onChange={(e) => setSearch(e.target.value)} className="rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none" />
+          <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm">
+            <option value="">Všechny kategorie</option>
+            {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
           <label className="flex items-center gap-2 text-xs text-[var(--muted)]">
             <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} /> i neaktivní
           </label>
@@ -104,6 +124,11 @@ export default function KartyPage() {
               <input type="number" value={form.min_qty ?? 0} onChange={(e) => setForm({ ...form, min_qty: Number(e.target.value) })} className={inputCls} />
             </div>
             <div>
+              <label className="text-xs text-[var(--muted)]">Doplnit do / cíl (v {form.base_unit})</label>
+              <input type="number" value={form.target_qty ?? 0} onChange={(e) => setForm({ ...form, target_qty: Number(e.target.value) })} className={inputCls} />
+              <p className="mt-1 text-[10px] text-[var(--muted)]">Nákup navrhne doplnit do tohoto stavu (prázdné = na minimum).</p>
+            </div>
+            <div>
               <label className="text-xs text-[var(--muted)]">Výchozí dodavatel</label>
               <select value={form.default_supplier_id ?? ""} onChange={(e) => setForm({ ...form, default_supplier_id: e.target.value || null })} className={inputCls}>
                 <option value="">—</option>
@@ -119,6 +144,22 @@ export default function KartyPage() {
               <input value={form.note ?? ""} onChange={(e) => setForm({ ...form, note: e.target.value })} className={inputCls} />
             </div>
           </div>
+          {!editingId && (
+            <div className="mt-3 rounded-lg border border-[var(--border)] p-3">
+              <div className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--muted)]">Počáteční stav (volitelné)</div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs text-[var(--muted)]">Množství na skladě teď (v {form.base_unit})</label>
+                  <input type="number" value={initQty} onChange={(e) => setInitQty(e.target.value)} className={inputCls} placeholder="0" />
+                </div>
+                <div>
+                  <label className="text-xs text-[var(--muted)]">Nákupní cena za {form.base_unit} (bez DPH)</label>
+                  <input type="number" value={initPrice} onChange={(e) => setInitPrice(e.target.value)} className={inputCls} placeholder="0" />
+                </div>
+              </div>
+              <p className="mt-1 text-[10px] text-[var(--muted)]">Naskladní se hned jako počáteční zásoba a nastaví průměrnou cenu. Pro rozjezd existujícího skladu.</p>
+            </div>
+          )}
           <div className="mt-3 flex gap-2">
             <button onClick={submit} disabled={saving} className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-neutral-200 disabled:opacity-50">{saving ? "Ukládám…" : "Uložit"}</button>
             <button onClick={() => setOpen(false)} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm text-[var(--muted)] hover:text-white">Zrušit</button>

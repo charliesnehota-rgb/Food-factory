@@ -163,6 +163,8 @@ function Detail({ take, counts, setCounts, busy, onSave, onClose }: {
 }) {
   const closed = take.status === "closed";
   const items = take.items ?? [];
+  const [q, setQ] = useState("");
+  const filtered = q ? items.filter((it) => (it.stock_item?.name ?? "").toLowerCase().includes(q.toLowerCase())) : items;
 
   function valueOf(it: StocktakeItem, diff: number) {
     const avg = Number(it.unit_price_czk ?? it.stock_item?.avg_price_czk ?? 0);
@@ -190,6 +192,10 @@ function Detail({ take, counts, setCounts, busy, onSave, onClose }: {
         )}
       </div>
 
+      <div className="mb-3">
+        <input placeholder="hledat surovinu…" value={q} onChange={(e) => setQ(e.target.value)} className="rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none" />
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="border-b border-[var(--border)] text-left text-[var(--muted)]">
@@ -202,7 +208,7 @@ function Detail({ take, counts, setCounts, busy, onSave, onClose }: {
             </tr>
           </thead>
           <tbody>
-            {items.map((it) => {
+            {filtered.map((it) => {
               const base: BaseUnit = it.stock_item?.base_unit ?? "ks";
               const sys = closed ? Number(it.system_qty ?? 0) : Number(it.stock_item?.current_qty ?? 0);
               const countedStr = closed ? (it.counted_qty != null ? String(Number(it.counted_qty)) : "") : (counts[it.id] ?? "");

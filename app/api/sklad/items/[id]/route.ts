@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/db/supabase";
 import { requireStaff } from "@/lib/auth/require-staff";
 
 // current_qty a ceny NIKDY neměníme přímo — jen přes pohyby (korekce).
-const FIELDS = ["name", "sku", "category_id", "base_unit", "min_qty", "default_supplier_id", "note", "is_active"];
+const FIELDS = ["name", "sku", "category_id", "base_unit", "min_qty", "target_qty", "default_supplier_id", "note", "is_active"];
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireStaff())) return NextResponse.json({ error: "Přístup zamítnut" }, { status: 403 });

@@ -30,10 +30,25 @@ export async function POST(req: NextRequest) {
     category_id: body.category_id || null,
     base_unit: body.base_unit,
     min_qty: body.min_qty ?? 0,
+    target_qty: body.target_qty ?? 0,
     default_supplier_id: body.default_supplier_id || null,
     note: body.note || null,
   }).select().single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Počáteční stav: volitelně naskladnit při založení karty (nastaví i průměr).
+  const initQty = Number(body.initial_qty);
+  if (data && initQty > 0) {
+    await supabaseAdmin.from("stock_movements").insert({
+      stock_item_id: data.id,
+      type: "receipt",
+      qty_change: initQty,
+      unit_price_czk: body.initial_price_czk != null ? Number(body.initial_price_czk) : null,
+      reason: "pocatecni-stav",
+      created_by: "system",
+    });
+  }
+
   return NextResponse.json(data, { status: 201 });
 }
