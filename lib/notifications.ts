@@ -123,3 +123,59 @@ export async function sendOrderConfirmationEmail(
     }),
   }).catch(() => null);
 }
+
+// Denní upozornění na docházející zásoby (adminům)
+export async function sendLowStockEmail(
+  toEmails: string[],
+  items: { name: string; current: number; min: number; unit: string; suggested: number }[]
+) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || toEmails.length === 0 || items.length === 0) return;
+
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://food-factory-zeta.vercel.app";
+  const rows = items.map((i) =>
+    `<tr>
+       <td style="padding:6px 10px;border-bottom:1px solid #eee">${escapeHtml(i.name)}</td>
+       <td style="padding:6px 10px;border-bottom:1px solid #eee;color:#b45309">${fmt(i.current)} ${i.unit}</td>
+       <td style="padding:6px 10px;border-bottom:1px solid #eee;color:#888">${fmt(i.min)} ${i.unit}</td>
+       <td style="padding:6px 10px;border-bottom:1px solid #eee"><strong>${fmt(i.suggested)} ${i.unit}</strong></td>
+     </tr>`).join("");
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
+      <h2 style="font-size:20px;margin-bottom:4px">🛒 Sklad: ${items.length} položek pod minimem</h2>
+      <p style="color:#555;margin-bottom:16px">Doporučené množství k doplnění:</p>
+      <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <thead><tr>
+          <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #333">Surovina</th>
+          <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #333">Stav</th>
+          <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #333">Min</th>
+          <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #333">Koupit</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <a href="${site}/admin/sklad/nakup"
+         style="display:inline-block;margin-top:16px;padding:10px 20px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-size:14px">
+        Otevřít nákup →
+      </a>
+      <p style="margin-top:32px;font-size:12px;color:#999">Food Factory — sklad</p>
+    </div>`;
+
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: process.env.RESEND_FROM ?? "Food Factory <onboarding@resend.dev>",
+      to: toEmails,
+      subject: `Sklad: ${items.length} položek dochází`,
+      html,
+    }),
+  }).catch(() => null);
+}
+
+function escapeHtml(s: string) {
+  return s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c] ?? c));
+}
+function fmt(n: number) {
+  return (Math.round(Number(n) * 1000) / 1000).toString().replace(".", ",");
+}

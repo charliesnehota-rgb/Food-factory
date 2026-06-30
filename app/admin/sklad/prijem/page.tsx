@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, Fragment } from "react";
+import { useEffect, useState, useCallback, useRef, Fragment } from "react";
 import { formatCzk } from "@/lib/types";
-import { displayUnitsFor, toBaseQty, toBaseUnitPrice } from "@/lib/stock/units";
+import { displayUnitsFor, toBaseQty, toBaseUnitPrice, type BaseUnit } from "@/lib/stock/units";
 import type { GoodsReceipt, StockItem, Supplier, ReceiptItem } from "@/lib/stock/types";
 
 const inputCls = "w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
@@ -16,6 +16,9 @@ interface DraftLine {
 }
 
 const emptyLine: DraftLine = { stock_item_id: "", displayUnit: "", qty: "", price: "", vat_rate: "12" };
+
+interface AiLine { name: string; qty: number; unit: string; unit_price: number; total: number; vat_rate?: number; }
+interface AiMatchedLine extends AiLine { matched_stock_item_id: string | null; matched_name: string | null; matched_base_unit: string | null; }
 
 export default function PrijemPage() {
   const [receipts, setReceipts] = useState<GoodsReceipt[]>([]);
@@ -32,6 +35,90 @@ export default function PrijemPage() {
   const [pricesGross, setPricesGross] = useState(false);
   const [invoiceTotal, setInvoiceTotal] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [unmatched, setUnmatched] = useState<AiLine[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function reloadItems() {
+    const i = await fetch("/api/sklad/items").then((x) => x.json());
+    if (Array.isArray(i)) setItems(i);
+    return Array.isArray(i) ? (i as StockItem[]) : items;
+  }
+
+  function aiUnitToBase(unit: string): "g" | "ml" | "ks" {
+    if (["kg", "g"].includes(unit)) return "g";
+    if (["l", "ml"].includes(unit)) return "ml";
+    return "ks";
+  }
+  // AI řádek + zvolená karta → DraftLine (jednotka karty, množství, cena)
+  function aiToDraftLine(stockItemId: string, base: BaseUnit, ai: AiLine): DraftLine {
+    const units = displayUnitsFor(base);
+    const du = units.find((u) => u.unit === ai.unit) ?? units[0];
+    return {
+      stock_item_id: stockItemId,
+      displayUnit: du.unit,
+      qty: String(ai.qty || ""),
+      price: String(ai.unit_price || ""),
+      vat_rate: String(ai.vat_rate ?? 12),
+    };
+  }
+
+  async function onScanFile(file: File) {
+    setScanning(true);
+    try {
+      const b64 = await new Promise<string>((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(String(r.result).split(",")[1]);
+        r.onerror = () => rej(new Error("read"));
+        r.readAsDataURL(file);
+      });
+      const resp = await fetch("/api/sklad/receipt-scan", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ file_base64: b64, media_type: file.type }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) { alert(data.error ?? "Čtení účtenky selhalo"); return; }
+      const aiLines: AiMatchedLine[] = data.lines ?? [];
+
+      const matchedDraft: DraftLine[] = [];
+      const rest: AiLine[] = [];
+      for (const l of aiLines) {
+        if (l.matched_stock_item_id && l.matched_base_unit) {
+          matchedDraft.push(aiToDraftLine(l.matched_stock_item_id, l.matched_base_unit as BaseUnit, l));
+        } else {
+          rest.push(l);
+        }
+      }
+      setEditingId(null);
+      setHead({ supplier_id: "", supplier_invoice_no: "", received_at: today(), note: "" });
+      setPricesGross(true); // účtenky bývají s DPH
+      setInvoiceTotal("");
+      setLines(matchedDraft.length ? matchedDraft : [{ ...emptyLine }]);
+      setUnmatched(rest);
+      setOpen(true);
+    } finally {
+      setScanning(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  // Z nenapárované položky založí kartu a přidá ji do příjemky
+  async function createCardFromUnmatched(idx: number) {
+    const ai = unmatched[idx];
+    const base = aiUnitToBase(ai.unit);
+    const r = await fetch("/api/sklad/items", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: ai.name, base_unit: base }),
+    });
+    if (!r.ok) { const e = await r.json(); alert(e.error ?? "Kartu se nepodařilo založit"); return; }
+    const card = await r.json();
+    await reloadItems();
+    setLines((p) => {
+      const withoutEmpty = p.filter((l) => l.stock_item_id || l.qty || l.price);
+      return [...withoutEmpty, aiToDraftLine(card.id, base, ai)];
+    });
+    setUnmatched((p) => p.filter((_, i) => i !== idx));
+  }
 
   const load = useCallback(async () => {
     const [r, i, s] = await Promise.all([
@@ -190,7 +277,14 @@ export default function PrijemPage() {
           <h1 className="text-xl font-semibold">Příjem zásob</h1>
           <p className="text-sm text-[var(--muted)]">Ceny zadávej bez DPH. Po „Naskladnit" se navýší stav.</p>
         </div>
-        <button onClick={() => { if (open) { resetForm(); } else { resetForm(); setOpen(true); } }} className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-neutral-200">+ Nový příjem</button>
+        <div className="flex flex-wrap gap-2">
+          <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) onScanFile(f); }} />
+          <button onClick={() => fileRef.current?.click()} disabled={scanning} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--muted)] hover:text-white hover:border-neutral-600 disabled:opacity-50">
+            {scanning ? "Čtu účtenku…" : "📷 Nahrát účtenku (AI)"}
+          </button>
+          <button onClick={() => { if (open) { resetForm(); } else { resetForm(); setOpen(true); } }} className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-neutral-200">+ Nový příjem</button>
+        </div>
       </div>
 
       {open && (
@@ -245,6 +339,23 @@ export default function PrijemPage() {
             })}
             <button onClick={addLine} className="text-sm text-[var(--muted)] hover:text-white">+ přidat řádek</button>
           </div>
+
+          {unmatched.length > 0 && (
+            <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+              <div className="mb-2 text-xs font-medium text-amber-400">Z účtenky se nepodařilo napárovat ({unmatched.length}). Založ kartu, nebo přiřaď ručně přidáním řádku výše:</div>
+              <ul className="space-y-1 text-sm">
+                {unmatched.map((u, idx) => (
+                  <li key={idx} className="flex items-center justify-between gap-2 border-b border-[var(--border)] py-1 last:border-0">
+                    <span><span className="font-medium">{u.name}</span> <span className="text-[var(--muted)]">· {u.qty} {u.unit} · {formatCzk(u.unit_price)}</span></span>
+                    <span className="flex gap-1">
+                      <button onClick={() => createCardFromUnmatched(idx)} className="rounded-lg bg-white px-2.5 py-1 text-xs font-medium text-black hover:bg-neutral-200">Založit kartu</button>
+                      <button onClick={() => setUnmatched((p) => p.filter((_, i) => i !== idx))} className="rounded-lg border border-[var(--border)] px-2 text-xs text-[var(--muted)] hover:text-red-400" title="Zahodit">✕</button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-4">
             <div className="text-sm text-[var(--muted)]">
