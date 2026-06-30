@@ -14,6 +14,7 @@ const tabs = [
   { href: "/admin/sklad/pohyby", label: "Pohyby" },
   { href: "/admin/sklad/dodavatele", label: "Dodavatelé" },
   { href: "/admin/sklad/kategorie", label: "Kategorie" },
+  { href: "/admin/sklad/exporty", label: "Exporty" },
 ];
 
 export default function SkladLayout({ children }: { children: ReactNode }) {
