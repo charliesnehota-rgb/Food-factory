@@ -30,6 +30,10 @@ export default function PrijemPage() {
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [detail, setDetail] = useState<Record<string, ReceiptItem[]>>({});
+  const [attachmentUrls, setAttachmentUrls] = useState<Record<string, string | null>>({});
+  const [uploadingFor, setUploadingFor] = useState<string | null>(null);
+  const attachFileRef = useRef<HTMLInputElement>(null);
+  const [attachTargetId, setAttachTargetId] = useState<string | null>(null);
 
   const [head, setHead] = useState({ supplier_id: "", supplier_invoice_no: "", received_at: today(), note: "" });
   const [lines, setLines] = useState<DraftLine[]>([{ ...emptyLine }]);
@@ -272,6 +276,44 @@ export default function PrijemPage() {
       const r = await fetch(`/api/sklad/receipts/${id}`).then((x) => x.json());
       setDetail((p) => ({ ...p, [id]: r.items ?? [] }));
     }
+    // Vždy obnovíme URL přílohy (mohla přibýt nebo být smazána)
+    loadAttachmentUrl(id);
+  }
+
+  async function loadAttachmentUrl(receiptId: string) {
+    const r = await fetch(`/api/sklad/receipts/${receiptId}/attachment`);
+    if (r.ok) {
+      const d = await r.json();
+      setAttachmentUrls((p) => ({ ...p, [receiptId]: d.url }));
+    } else {
+      setAttachmentUrls((p) => ({ ...p, [receiptId]: null }));
+    }
+  }
+
+  function triggerAttachUpload(receiptId: string) {
+    setAttachTargetId(receiptId);
+    attachFileRef.current?.click();
+  }
+
+  async function onAttachFile(file: File) {
+    if (!attachTargetId) return;
+    const id = attachTargetId;
+    setUploadingFor(id);
+    const fd = new FormData();
+    fd.append("file", file);
+    const r = await fetch(`/api/sklad/receipts/${id}/attachment`, { method: "POST", body: fd });
+    setUploadingFor(null);
+    if (!r.ok) { const e = await r.json(); alert(e.error ?? "Nahrání selhalo"); return; }
+    loadAttachmentUrl(id);
+    // Refresh receipts list so attachment_path updates
+    load();
+  }
+
+  async function deleteAttachment(receiptId: string) {
+    if (!confirm("Smazat přílohu?")) return;
+    await fetch(`/api/sklad/receipts/${receiptId}/attachment`, { method: "DELETE" });
+    setAttachmentUrls((p) => ({ ...p, [receiptId]: null }));
+    load();
   }
 
   return (
@@ -284,6 +326,8 @@ export default function PrijemPage() {
         <div className="flex flex-wrap gap-2">
           <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) onScanFile(f); }} />
+          <input ref={attachFileRef} type="file" accept="image/*,application/pdf" className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) onAttachFile(f); if (attachFileRef.current) attachFileRef.current.value = ""; }} />
           <button onClick={() => fileRef.current?.click()} disabled={scanning} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--muted)] hover:text-white hover:border-neutral-600 disabled:opacity-50">
             {scanning ? "Čtu účtenku…" : "📷 Nahrát účtenku (AI)"}
           </button>
@@ -449,6 +493,35 @@ export default function PrijemPage() {
                             </tbody>
                           </table>
                         )}
+                        {/* Příloha — foto/PDF účtenky nebo dodacího listu */}
+                        <div className="mt-3 flex items-center gap-3 border-t border-[var(--border)] pt-3">
+                          <span className="text-xs text-[var(--muted)]">Příloha:</span>
+                          {attachmentUrls[r.id] ? (
+                            <>
+                              <a href={attachmentUrls[r.id]!} target="_blank" rel="noopener noreferrer"
+                                className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-white hover:border-neutral-600">
+                                📎 Zobrazit
+                              </a>
+                              <button onClick={() => triggerAttachUpload(r.id)}
+                                disabled={uploadingFor === r.id}
+                                className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-white hover:border-neutral-600 disabled:opacity-40">
+                                {uploadingFor === r.id ? "Nahrávám…" : "Nahradit"}
+                              </button>
+                              <button onClick={() => deleteAttachment(r.id)}
+                                className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-red-400 hover:border-red-500/30">
+                                Smazat
+                              </button>
+                            </>
+                          ) : attachmentUrls[r.id] === undefined ? (
+                            <span className="text-xs text-[var(--muted)]">načítám…</span>
+                          ) : (
+                            <button onClick={() => triggerAttachUpload(r.id)}
+                              disabled={uploadingFor === r.id}
+                              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-white hover:border-neutral-600 disabled:opacity-40">
+                              {uploadingFor === r.id ? "Nahrávám…" : "📎 Přiložit foto / PDF"}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>

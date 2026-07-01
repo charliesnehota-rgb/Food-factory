@@ -67,6 +67,7 @@ export interface GoodsReceipt {
   note: string | null;
   posted_at: string | null;
   created_at: string;
+  attachment_path?: string | null;  // cesta k souboru v bucketu receipt-attachments
   // embedded
   supplier?: { name: string } | null;
   items?: ReceiptItem[];
