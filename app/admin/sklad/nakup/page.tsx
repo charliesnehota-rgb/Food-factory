@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { displayUnitsFor, type BaseUnit } from "@/lib/stock/units";
 import type { StockItem } from "@/lib/stock/types";
 import { useT } from "@/lib/i18n";
+import { useToast } from "@/lib/toast";
+import { SkeletonTable } from "@/components/skeleton";
 
 const inputCls = "rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
 
@@ -21,6 +23,7 @@ function esc(s: string) { return s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": 
 
 export default function NakupPage() {
   const t = useT();
+  const { toast } = useToast();
   const router = useRouter();
 
   const STATUS_MAP = {
@@ -57,7 +60,7 @@ export default function NakupPage() {
     setBusy(true);
     const r = await fetch("/api/sklad/shopping-lists", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
     setBusy(false);
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? t("common.error")); return; }
+    if (!r.ok) { const e = await r.json(); toast(e.error ?? t("common.error"), "error"); return; }
     const l = await r.json(); await loadLists(); openList(l.id);
   }
   async function patchItem(itemId: string, patch: Record<string, unknown>) {
@@ -89,7 +92,7 @@ export default function NakupPage() {
     setBusy(true);
     const r = await fetch(`/api/sklad/shopping-lists/${detail.id}/receipt`, { method: "POST" });
     setBusy(false);
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? t("common.error")); return; }
+    if (!r.ok) { const e = await r.json(); toast(e.error ?? t("common.error"), "error"); return; }
     router.push("/admin/sklad/prijem");
   }
 
@@ -124,6 +127,8 @@ export default function NakupPage() {
             </tr>
           </thead>
           <tbody>
+            {loading && <SkeletonTable rows={5} cols={5} />}
+            
             {lists.map(l => {
               const s = STATUS_MAP[l.status] ?? STATUS_MAP.open;
               return (

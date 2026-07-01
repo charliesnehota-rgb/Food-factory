@@ -5,6 +5,7 @@ import { formatCzk } from "@/lib/types";
 import { baseUnitLabel, type BaseUnit } from "@/lib/stock/units";
 import type { StockItem } from "@/lib/stock/types";
 import { useT } from "@/lib/i18n";
+import { useToast } from "@/lib/toast";
 
 const inputCls = "rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
 
@@ -25,6 +26,7 @@ interface RecipeLine {
 
 export default function RecepturyPage() {
   const t = useT();
+  const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [items, setItems] = useState<StockItem[]>([]);
   const [concept, setConcept] = useState("");
@@ -72,7 +74,7 @@ export default function RecepturyPage() {
       body: JSON.stringify({ product_id: productId, stock_item_id: newItem, qty_per_portion: Number(newQty) }),
     });
     setSaving(false);
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? "Chyba"); return; }
+    if (!r.ok) { const e = await r.json(); toast(e.error ?? "Chyba", "error"); return; }
     setNewItem(""); setNewQty(""); loadLines(productId);
   }
 
@@ -105,7 +107,7 @@ export default function RecepturyPage() {
     }
     setCopying(false); setCopyFrom("");
     loadLines(productId);
-    alert(`Zkopírováno ${added} surovin.${skipped ? ` ${skipped} přeskočeno (už v receptuře).` : ""}`);
+    toast(`Zkopírováno ${added} surovin.${skipped ? ` ${skipped} přeskočeno (už v receptuře, "error").` : ""}`);
   }
 
   const cost = lines.reduce((s, l) => s + Number(l.qty_per_portion) * Number(l.stock_item?.avg_price_czk ?? 0), 0);

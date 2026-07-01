@@ -5,11 +5,13 @@ import { formatCzk } from "@/lib/types";
 import { formatQty, baseUnitLabel, type BaseUnit } from "@/lib/stock/units";
 import type { Stocktake, StocktakeItem, StockCategory } from "@/lib/stock/types";
 import { useT } from "@/lib/i18n";
+import { useToast } from "@/lib/toast";
 
 const inputCls = "rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
 
 export default function InventuraPage() {
   const t = useT();
+  const { toast } = useToast();
   const [takes, setTakes] = useState<Stocktake[]>([]);
   const [cats, setCats] = useState<StockCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +50,7 @@ export default function InventuraPage() {
     setCreating(true);
     const r = await fetch("/api/sklad/stocktakes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ category_ids: selCats, note }) });
     setCreating(false);
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? t("common.error")); return; }
+    if (!r.ok) { const e = await r.json(); toast(e.error ?? t("common.error"), "error"); return; }
     const tk = await r.json();
     setShowNew(false); setSelCats([]); setNote("");
     await loadList(); openDetail(tk.id);
@@ -61,7 +63,7 @@ export default function InventuraPage() {
     await fetch(`/api/sklad/stocktakes/${detail.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ counts: payload }) });
   }
 
-  async function handleSave() { setBusy(true); await saveCounts(); setBusy(false); alert(t("inventura.saved")); }
+  async function handleSave() { setBusy(true); await saveCounts(); setBusy(false); toast(t("inventura.saved"), "success"); }
 
   async function handleClose() {
     if (!detail) return;
@@ -70,14 +72,14 @@ export default function InventuraPage() {
     await saveCounts();
     const r = await fetch(`/api/sklad/stocktakes/${detail.id}/close`, { method: "POST" });
     setBusy(false);
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? t("common.error")); return; }
+    if (!r.ok) { const e = await r.json(); toast(e.error ?? t("common.error"), "error"); return; }
     await loadList(); openDetail(detail.id);
   }
 
   async function deleteTake(id: string) {
     if (!confirm(t("inventura.deleteConfirm"))) return;
     const r = await fetch(`/api/sklad/stocktakes/${id}`, { method: "DELETE" });
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? t("common.error")); return; }
+    if (!r.ok) { const e = await r.json(); toast(e.error ?? t("common.error"), "error"); return; }
     if (openId === id) { setOpenId(null); setDetail(null); }
     loadList();
   }

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import type { Supplier } from "@/lib/stock/types";
 import { useT } from "@/lib/i18n";
+import { SkeletonTable } from "@/components/skeleton";
 
 const inputCls = "w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
 const empty: Partial<Supplier> = { name: "", ico: "", dic: "", email: "", phone: "", address: "", note: "" };
@@ -78,6 +79,8 @@ export default function DodavatelePage() {
             </tr>
           </thead>
           <tbody>
+            {loading && <SkeletonTable rows={5} cols={4} />}
+            
             {rows.map((s) => (
               <tr key={s.id} className="border-b border-[var(--border)] last:border-0">
                 <td className="p-3"><span className="font-medium">{s.name}</span>{s.address && <div className="text-xs text-[var(--muted)]">{s.address}</div>}</td>

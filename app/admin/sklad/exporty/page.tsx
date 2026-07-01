@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { formatCzk } from "@/lib/types";
 import { useT } from "@/lib/i18n";
+import { useToast } from "@/lib/toast";
 
 const inputCls = "rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
 
@@ -16,6 +17,7 @@ const MOVE_LABEL_KEY: Record<string, string> = {
 
 export default function ExportyPage() {
   const t = useT();
+  const { toast } = useToast();
   const [type, setType] = useState<ExportType>("vat");
   const firstOfMonth = new Date(); firstOfMonth.setDate(1);
   const [from, setFrom] = useState(firstOfMonth.toISOString().slice(0, 10));
@@ -40,7 +42,7 @@ export default function ExportyPage() {
     if (type === "stock") qs.set("as_of", asOf);
     const d = await fetch(`/api/sklad/exports?${qs}`).then((r) => r.json());
     setData(d.error ? null : d);
-    if (d.error) alert(d.error);
+    if (d.error) toast(d.error, "error");
     setLoading(false);
   }
 

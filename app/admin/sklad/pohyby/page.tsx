@@ -5,11 +5,13 @@ import { formatCzk } from "@/lib/types";
 import { formatQty } from "@/lib/stock/units";
 import type { StockMovement, StockItem } from "@/lib/stock/types";
 import { useT } from "@/lib/i18n";
+import { useToast } from "@/lib/toast";
 
 const inputCls = "rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
 
 export default function PohybyPage() {
   const t = useT();
+  const { toast } = useToast();
   const TYPE_LABEL: Record<string, string> = {
     receipt: t("pohyby.type.receipt"), consumption: t("pohyby.type.consumption"),
     write_off: t("pohyby.type.write_off"), adjustment: t("pohyby.type.adjustment"), stocktake: t("pohyby.type.stocktake"),
@@ -45,7 +47,7 @@ export default function PohybyPage() {
       body: JSON.stringify({ stock_item_id: adjItem, qty_change: Number(adjQty), reason: adjReason || "korekce" }),
     });
     setSaving(false);
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? t("common.error")); return; }
+    if (!r.ok) { const e = await r.json(); toast(e.error ?? t("common.error"), "error"); return; }
     setAdjItem(""); setAdjQty(""); setAdjReason(""); load(filter);
   }
 

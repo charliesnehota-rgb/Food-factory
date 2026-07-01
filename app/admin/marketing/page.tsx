@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useT } from "@/lib/i18n";
+import { useToast } from "@/lib/toast";
 
 // --- Typy ---
 interface Proposal {
@@ -165,6 +166,7 @@ function ProposalCard({
 // --- Hlavní stránka ---
 export default function MarketingPage() {
   const t = useT();
+  const { toast } = useToast();
   const [tab, setTab] = useState<"pending" | "history">("pending");
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(false);
@@ -226,7 +228,7 @@ export default function MarketingPage() {
     });
     const d = await r.json();
     setActionLoading(null);
-    if (d.error) alert(d.error);
+    if (d.error) toast(d.error, "error");
     load();
   }
 

@@ -6,6 +6,7 @@ import { formatCzk } from "@/lib/types";
 import { formatQty, type BaseUnit } from "@/lib/stock/units";
 import { useMe } from "@/lib/auth/use-me";
 import { useT } from "@/lib/i18n";
+import { useToast } from "@/lib/toast";
 
 interface Overview {
   stock_value_czk: number; items_count: number; below_min_count: number;
@@ -22,6 +23,7 @@ interface ExpiringItem {
 
 export default function SkladPrehledPage() {
   const t = useT();
+  const { toast } = useToast();
   const [data, setData] = useState<Overview | null>(null);
   const [low, setLow] = useState<ShopItem[]>([]);
   const [expiring, setExpiring] = useState<ExpiringItem[]>([]);
@@ -50,7 +52,7 @@ export default function SkladPrehledPage() {
       body: JSON.stringify({ stock_item_id: item.stock_item_id, qty: item.current_qty, reason: "expirace", note: `Expirace ${item.nearest_expiry}` }),
     });
     setWritingOff(null);
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? t("common.error")); return; }
+    if (!r.ok) { const e = await r.json(); toast(e.error ?? t("common.error"), "error"); return; }
     const ex = await fetch("/api/sklad/expiring?days=7").then(x => x.json());
     if (Array.isArray(ex)) setExpiring(ex);
     const ov = await fetch(`/api/sklad/overview?days=${days}`).then(x => x.json());

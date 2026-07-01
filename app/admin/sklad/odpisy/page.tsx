@@ -5,6 +5,7 @@ import { formatCzk } from "@/lib/types";
 import { formatQty, type BaseUnit } from "@/lib/stock/units";
 import type { StockItem } from "@/lib/stock/types";
 import { useT } from "@/lib/i18n";
+import { useToast } from "@/lib/toast";
 
 const inputCls = "rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
 
@@ -16,6 +17,7 @@ interface WriteOff {
 
 export default function OdpisyPage() {
   const t = useT();
+  const { toast } = useToast();
 
   const REASONS = [
     { key: "expirace", label: t("odpisy.reason.expiry") },
@@ -54,7 +56,7 @@ export default function OdpisyPage() {
       body: JSON.stringify({ stock_item_id: item, qty: Number(qty), reason, note }),
     });
     setSaving(false);
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? t("common.error")); return; }
+    if (!r.ok) { const e = await r.json(); toast(e.error ?? t("common.error"), "error"); return; }
     setItem(""); setQty(""); setNote(""); setReason("expirace"); load();
   }
 

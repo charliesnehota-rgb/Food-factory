@@ -3,11 +3,14 @@
 import { useEffect, useState, useCallback } from "react";
 import type { StockCategory } from "@/lib/stock/types";
 import { useT } from "@/lib/i18n";
+import { useToast } from "@/lib/toast";
+import { SkeletonTable } from "@/components/skeleton";
 
 const inputCls = "w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
 
 export default function KategoriePage() {
   const t = useT();
+  const { toast } = useToast();
   const [rows, setRows] = useState<StockCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
@@ -38,7 +41,7 @@ export default function KategoriePage() {
   async function remove(id: string) {
     if (!confirm(t("kategorie.deleteConfirm"))) return;
     const r = await fetch(`/api/sklad/categories/${id}`, { method: "DELETE" });
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? t("common.error")); return; }
+    if (!r.ok) { const e = await r.json(); toast(e.error ?? t("common.error"), "error"); return; }
     load();
   }
 
@@ -88,6 +91,8 @@ export default function KategoriePage() {
             </tr>
           </thead>
           <tbody>
+            {loading && <SkeletonTable rows={5} cols={3} />}
+            
             {rows.map((c) => {
               const isE = editing === c.id;
               return (

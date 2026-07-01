@@ -1,5 +1,7 @@
 "use client";
 
+import { useToast } from "@/lib/toast";
+
 import { useEffect, useState, useCallback, useRef, Fragment } from "react";
 import { formatCzk } from "@/lib/types";
 import { displayUnitsFor, toBaseQty, toBaseUnitPrice, type BaseUnit } from "@/lib/stock/units";
@@ -22,6 +24,7 @@ interface AiLine { name: string; qty: number; unit: string; unit_price: number; 
 interface AiMatchedLine extends AiLine { matched_stock_item_id: string | null; matched_name: string | null; matched_base_unit: string | null; }
 
 export default function PrijemPage() {
+  const { toast } = useToast();
   const [receipts, setReceipts] = useState<GoodsReceipt[]>([]);
   const [items, setItems] = useState<StockItem[]>([]);
   const [sups, setSups] = useState<Supplier[]>([]);
@@ -83,7 +86,7 @@ export default function PrijemPage() {
         body: JSON.stringify({ file_base64: b64, media_type: file.type }),
       });
       const data = await resp.json();
-      if (!resp.ok) { alert(data.error ?? "Čtení účtenky selhalo"); return; }
+      if (!resp.ok) { toast(data.error ?? "Čtení účtenky selhalo", "error"); return; }
       const aiLines: AiMatchedLine[] = data.lines ?? [];
 
       const matchedDraft: DraftLine[] = [];
@@ -116,7 +119,7 @@ export default function PrijemPage() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: ai.name, base_unit: base }),
     });
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? "Kartu se nepodařilo založit"); return; }
+    if (!r.ok) { const e = await r.json(); toast(e.error ?? "Kartu se nepodařilo založit", "error"); return; }
     const card = await r.json();
     await reloadItems();
     setLines((p) => {
@@ -188,7 +191,7 @@ export default function PrijemPage() {
   }
 
   async function save(thenPost: boolean) {
-    if (validLines.length === 0) { alert("Přidej aspoň jednu položku."); return; }
+    if (validLines.length === 0) { toast("Přidej aspoň jednu položku.", "error"); return; }
     setSaving(true);
     const payload = { ...head, supplier_id: head.supplier_id || null, items: buildItemsPayload() };
     const url = editingId ? `/api/sklad/receipts/${editingId}` : "/api/sklad/receipts";
@@ -198,11 +201,11 @@ export default function PrijemPage() {
       body: JSON.stringify(payload),
     });
     const saved = await res.json();
-    if (!res.ok) { setSaving(false); alert(saved.error ?? "Chyba"); return; }
+    if (!res.ok) { setSaving(false); toast(saved.error ?? "Chyba", "error"); return; }
     const targetId = editingId ?? saved.id;
     if (thenPost && targetId) {
       const pr = await fetch(`/api/sklad/receipts/${targetId}/post`, { method: "POST" });
-      if (!pr.ok) { const e = await pr.json(); alert(e.error ?? "Naskladnění selhalo"); }
+      if (!pr.ok) { const e = await pr.json(); toast(e.error ?? "Naskladnění selhalo", "error"); }
     }
     setSaving(false); resetForm(); load();
   }
@@ -260,13 +263,13 @@ export default function PrijemPage() {
   async function postReceipt(id: string) {
     if (!confirm("Naskladnit příjemku? Tím se navýší stav skladu a příjemka se uzamkne.")) return;
     const r = await fetch(`/api/sklad/receipts/${id}/post`, { method: "POST" });
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? "Chyba"); return; }
+    if (!r.ok) { const e = await r.json(); toast(e.error ?? "Chyba", "error"); return; }
     load();
   }
   async function deleteReceipt(id: string) {
     if (!confirm("Smazat koncept příjemky?")) return;
     const r = await fetch(`/api/sklad/receipts/${id}`, { method: "DELETE" });
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? "Chyba"); return; }
+    if (!r.ok) { const e = await r.json(); toast(e.error ?? "Chyba", "error"); return; }
     load();
   }
   async function toggleDetail(id: string) {
@@ -303,7 +306,7 @@ export default function PrijemPage() {
     fd.append("file", file);
     const r = await fetch(`/api/sklad/receipts/${id}/attachment`, { method: "POST", body: fd });
     setUploadingFor(null);
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? "Nahrání selhalo"); return; }
+    if (!r.ok) { const e = await r.json(); toast(e.error ?? "Nahrání selhalo", "error"); return; }
     loadAttachmentUrl(id);
     // Refresh receipts list so attachment_path updates
     load();

@@ -5,6 +5,9 @@ import { formatCzk } from "@/lib/types";
 import { formatQty, pricePerBigUnit, type BaseUnit } from "@/lib/stock/units";
 import type { StockItem, StockCategory, Supplier } from "@/lib/stock/types";
 import { useT } from "@/lib/i18n";
+import { useToast } from "@/lib/toast";
+import { SkeletonTable } from "@/components/skeleton";
+import { useSort } from "@/lib/use-sort";
 
 const inputCls = "w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
 const UNITS: BaseUnit[] = ["g", "ml", "ks"];
@@ -28,6 +31,7 @@ const emptyForm: Partial<StockItem> = { name: "", base_unit: "g", min_qty: 0, ta
 
 export default function KartyPage() {
   const t = useT();
+  const { toast } = useToast();
   const [items, setItems] = useState<StockItem[]>([]);
   const [cats, setCats] = useState<StockCategory[]>([]);
   const [sups, setSups] = useState<Supplier[]>([]);
@@ -65,6 +69,8 @@ export default function KartyPage() {
       it.name.toLowerCase().includes(search.toLowerCase()) ||
       (it.sku ?? "").toLowerCase().includes(search.toLowerCase())));
 
+  const { sorted, toggle, SortIcon } = useSort(visible, "name" as keyof typeof visible[0]);
+
   function startNew() { setForm(emptyForm); setInitQty(""); setInitPrice(""); setEditingId(null); setOpen(true); }
   function startEdit(it: StockItem) {
     setForm({ name: it.name, sku: it.sku, category_id: it.category_id, base_unit: it.base_unit, min_qty: it.min_qty, target_qty: it.target_qty, default_supplier_id: it.default_supplier_id, note: it.note });
@@ -87,7 +93,7 @@ export default function KartyPage() {
       body: JSON.stringify(payload),
     });
     setSaving(false);
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? "Chyba"); return; }
+    if (!r.ok) { const e = await r.json(); toast(e.error ?? "Chyba", "error"); return; }
     setOpen(false); setForm(emptyForm); setInitQty(""); setInitPrice(""); setEditingId(null); load();
   }
 
@@ -202,15 +208,17 @@ export default function KartyPage() {
         <table className="w-full text-sm">
           <thead className="border-b border-[var(--border)] text-left text-[var(--muted)]">
             <tr>
-              <th className="p-3 font-medium">{t("karty.col.name")}</th>
-              <th className="p-3 font-medium">{t("karty.col.qty")}</th>
-              <th className="p-3 font-medium">{t("karty.col.avgPrice")}</th>
+              <th className="p-3 font-medium cursor-pointer select-none" onClick={() => toggle("name")}>{t("karty.col.name")}<SortIcon col="name" /></th>
+              <th className="p-3 font-medium cursor-pointer select-none" onClick={() => toggle("current_qty")}>{t("karty.col.qty")}<SortIcon col="current_qty" /></th>
+              <th className="p-3 font-medium cursor-pointer select-none" onClick={() => toggle("avg_price_czk")}>{t("karty.col.avgPrice")}<SortIcon col="avg_price_czk" /></th>
               <th className="p-3 font-medium">{t("karty.col.value")}</th>
               <th className="p-3 font-medium">{t("karty.col.actions")}</th>
             </tr>
           </thead>
           <tbody>
-            {visible.map((it) => {
+            {loading && <SkeletonTable rows={5} cols={5} />}
+            
+            {sorted.map((it) => {
               const low = Number(it.min_qty) > 0 && Number(it.current_qty) <= Number(it.min_qty);
               const big = pricePerBigUnit(Number(it.avg_price_czk), it.base_unit);
               const value = Number(it.current_qty) * Number(it.avg_price_czk);

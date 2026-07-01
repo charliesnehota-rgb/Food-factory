@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useT } from "@/lib/i18n";
+import { useToast } from "@/lib/toast";
+import { SkeletonTable } from "@/components/skeleton";
 
 const inputCls = "rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
 
@@ -9,6 +11,7 @@ interface Staff { id: string; email: string; name: string; role: string; created
 
 export default function PersonalPage() {
   const t = useT();
+  const { toast } = useToast();
 
   const ROLES = [
     { value: "staff", label: t("role.staff") },
@@ -40,7 +43,7 @@ export default function PersonalPage() {
     });
     const d = await r.json();
     setSaving(false);
-    if (!r.ok) { alert(d.error ?? t("common.error")); return; }
+    if (!r.ok) { toast(d.error ?? t("common.error"), "error"); return; }
     setInvited(d.email);
     setForm({ email: "", name: "", role: "staff" });
     setOpen(false);
@@ -57,7 +60,7 @@ export default function PersonalPage() {
   async function remove(s: Staff) {
     if (!confirm(t("personal.deleteConfirm", { name: s.name || s.email }))) return;
     const r = await fetch(`/api/admin/staff/${s.id}`, { method: "DELETE" });
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? t("common.error")); return; }
+    if (!r.ok) { const e = await r.json(); toast(e.error ?? t("common.error"), "error"); return; }
     load();
   }
 
@@ -133,6 +136,8 @@ export default function PersonalPage() {
             </tr>
           </thead>
           <tbody>
+            {loading && <SkeletonTable rows={4} cols={4} />}
+            
             {rows.map((s) => (
               <tr key={s.id} className="border-b border-[var(--border)] last:border-0">
                 <td className="p-3 font-medium">{s.name || "—"}</td>
