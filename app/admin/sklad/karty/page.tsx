@@ -1,12 +1,27 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Fragment } from "react";
 import { formatCzk } from "@/lib/types";
 import { formatQty, pricePerBigUnit, type BaseUnit } from "@/lib/stock/units";
 import type { StockItem, StockCategory, Supplier } from "@/lib/stock/types";
 
 const inputCls = "w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
 const UNITS: BaseUnit[] = ["g", "ml", "ks"];
+
+const CONCEPT_NAMES: Record<string, string> = {
+  "sunny-side": "Prostě snídaně",
+  "dumply": "Dumply",
+  "smash": "L.T. Smash",
+};
+
+interface UsageItem {
+  product_id: string | null;
+  product_name: string;
+  concept_slug: string | null;
+  price_czk: number | null;
+  available: boolean;
+  qty_per_portion: number;
+}
 
 const emptyForm: Partial<StockItem> = { name: "", base_unit: "g", min_qty: 0, target_qty: 0 };
 
@@ -24,6 +39,9 @@ export default function KartyPage() {
   const [initQty, setInitQty] = useState("");
   const [initPrice, setInitPrice] = useState("");
   const [saving, setSaving] = useState(false);
+  const [expandedUsages, setExpandedUsages] = useState<string | null>(null);
+  const [usages, setUsages] = useState<Record<string, UsageItem[]>>({});
+  const [loadingUsage, setLoadingUsage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const [i, c, s] = await Promise.all([
@@ -75,6 +93,17 @@ export default function KartyPage() {
     if (!confirm(`Smazat kartu "${it.name}"? Pokud má pohyby, jen se deaktivuje.`)) return;
     await fetch(`/api/sklad/items/${it.id}`, { method: "DELETE" });
     load();
+  }
+
+  async function toggleUsages(id: string) {
+    if (expandedUsages === id) { setExpandedUsages(null); return; }
+    setExpandedUsages(id);
+    if (!usages[id]) {
+      setLoadingUsage(id);
+      const r = await fetch(`/api/sklad/items/${id}/usages`).then((x) => x.json());
+      setUsages((p) => ({ ...p, [id]: Array.isArray(r) ? r : [] }));
+      setLoadingUsage(null);
+    }
   }
 
   return (
@@ -184,26 +213,76 @@ export default function KartyPage() {
               const low = Number(it.min_qty) > 0 && Number(it.current_qty) <= Number(it.min_qty);
               const big = pricePerBigUnit(Number(it.avg_price_czk), it.base_unit);
               const value = Number(it.current_qty) * Number(it.avg_price_czk);
+              const isExpanded = expandedUsages === it.id;
               return (
-                <tr key={it.id} className="border-b border-[var(--border)] last:border-0">
-                  <td className="p-3">
-                    <span className="font-medium">{it.name}</span>{!it.is_active && <span className="ml-2 text-xs text-[var(--muted)]">(neaktivní)</span>}
-                    {it.sku && <div className="text-xs text-[var(--muted)]">{it.sku}</div>}
-                  </td>
-                  <td className="p-3 text-[var(--muted)]">{it.category?.name ?? "—"}{it.category ? ` · ${Number(it.category.vat_rate)} %` : ""}</td>
-                  <td className="p-3">
-                    <span className={low ? "text-amber-400 font-medium" : ""}>{formatQty(Number(it.current_qty), it.base_unit)}</span>
-                    {low && <span className="ml-2 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-400">dochází</span>}
-                  </td>
-                  <td className="p-3 text-[var(--muted)]">{Number(it.avg_price_czk) > 0 ? `${formatCzk(big.value)}/${big.unit}` : "—"}</td>
-                  <td className="p-3">{formatCzk(value)}</td>
-                  <td className="p-3">
-                    <div className="flex gap-1">
-                      <button onClick={() => startEdit(it)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-white hover:border-neutral-600">Upravit</button>
-                      <button onClick={() => remove(it)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-red-400 hover:border-red-500/30">Smazat</button>
-                    </div>
-                  </td>
-                </tr>
+                <Fragment key={it.id}>
+                  <tr className="border-b border-[var(--border)] last:border-0">
+                    <td className="p-3">
+                      <span className="font-medium">{it.name}</span>{!it.is_active && <span className="ml-2 text-xs text-[var(--muted)]">(neaktivní)</span>}
+                      {it.sku && <div className="text-xs text-[var(--muted)]">{it.sku}</div>}
+                    </td>
+                    <td className="p-3 text-[var(--muted)]">{it.category?.name ?? "—"}{it.category ? ` · ${Number(it.category.vat_rate)} %` : ""}</td>
+                    <td className="p-3">
+                      <span className={low ? "text-amber-400 font-medium" : ""}>{formatQty(Number(it.current_qty), it.base_unit)}</span>
+                      {low && <span className="ml-2 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-400">dochází</span>}
+                    </td>
+                    <td className="p-3 text-[var(--muted)]">{Number(it.avg_price_czk) > 0 ? `${formatCzk(big.value)}/${big.unit}` : "—"}</td>
+                    <td className="p-3">{formatCzk(value)}</td>
+                    <td className="p-3">
+                      <div className="flex gap-1">
+                        <button onClick={() => startEdit(it)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-white hover:border-neutral-600">Upravit</button>
+                        <button
+                          onClick={() => toggleUsages(it.id)}
+                          className={"rounded-lg border px-2.5 py-1 text-xs " + (isExpanded ? "border-neutral-500 text-white" : "border-[var(--border)] text-[var(--muted)] hover:text-white hover:border-neutral-600")}
+                        >
+                          {loadingUsage === it.id ? "…" : "Kde se používá"}
+                        </button>
+                        <button onClick={() => remove(it)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-red-400 hover:border-red-500/30">Smazat</button>
+                      </div>
+                    </td>
+                  </tr>
+                  {isExpanded && (
+                    <tr className="bg-[var(--bg)]/40">
+                      <td colSpan={6} className="px-3 pb-3 pt-1">
+                        <div className="rounded-lg border border-[var(--border)] p-3">
+                          {loadingUsage === it.id ? (
+                            <p className="text-xs text-[var(--muted)]">Načítám…</p>
+                          ) : (usages[it.id] ?? []).length === 0 ? (
+                            <p className="text-xs text-[var(--muted)]">Tato surovina se nepoužívá v žádné receptuře.</p>
+                          ) : (
+                            <>
+                              <div className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
+                                Receptury ({(usages[it.id] ?? []).length})
+                              </div>
+                              <table className="w-full text-xs">
+                                <thead className="text-left text-[var(--muted)]">
+                                  <tr>
+                                    <th className="p-1.5">Produkt</th>
+                                    <th className="p-1.5">Koncept</th>
+                                    <th className="p-1.5">Spotřeba/porci</th>
+                                    <th className="p-1.5">Cena produktu</th>
+                                    <th className="p-1.5">Dostupný</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(usages[it.id] ?? []).map((u, idx) => (
+                                    <tr key={u.product_id ?? idx} className="border-t border-[var(--border)]">
+                                      <td className="p-1.5 font-medium">{u.product_name}</td>
+                                      <td className="p-1.5 text-[var(--muted)]">{u.concept_slug ? (CONCEPT_NAMES[u.concept_slug] ?? u.concept_slug) : "—"}</td>
+                                      <td className="p-1.5">{formatQty(u.qty_per_portion, it.base_unit)}</td>
+                                      <td className="p-1.5">{u.price_czk != null ? formatCzk(Number(u.price_czk)) : "—"}</td>
+                                      <td className="p-1.5">{u.available ? <span className="text-green-400">✓</span> : <span className="text-[var(--muted)]">ne</span>}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               );
             })}
           </tbody>
