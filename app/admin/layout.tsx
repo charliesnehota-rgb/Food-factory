@@ -41,6 +41,7 @@ function AdminInner({ children }: { children: ReactNode }) {
     { href: "/admin/objednavky", label: t("nav.orders") },
     { href: "/admin/produkty", label: t("nav.products") },
     { href: "/admin/sklad", label: t("nav.warehouse") },
+    { href: "/admin/pnl", label: t("nav.pnl") },
   ];
   const accountantLinks = [
     { href: "/admin/sklad/exporty", label: t("nav.exports") },
