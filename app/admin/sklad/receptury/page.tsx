@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { formatCzk } from "@/lib/types";
 import { baseUnitLabel, type BaseUnit } from "@/lib/stock/units";
 import type { StockItem } from "@/lib/stock/types";
+import { useT } from "@/lib/i18n";
 
 const inputCls = "rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
 
@@ -23,6 +24,7 @@ interface RecipeLine {
 }
 
 export default function RecepturyPage() {
+  const t = useT();
   const [products, setProducts] = useState<Product[]>([]);
   const [items, setItems] = useState<StockItem[]>([]);
   const [concept, setConcept] = useState("");
@@ -31,14 +33,11 @@ export default function RecepturyPage() {
   const [loading, setLoading] = useState(true);
   const [loadingLines, setLoadingLines] = useState(false);
 
-  // přidání řádku
   const [newItem, setNewItem] = useState("");
   const [newQty, setNewQty] = useState("");
   const [saving, setSaving] = useState(false);
-  // inline editace
   const [editId, setEditId] = useState<string | null>(null);
   const [editQty, setEditQty] = useState("");
-  // kopírování z jiného produktu
   const [copyFrom, setCopyFrom] = useState("");
   const [copying, setCopying] = useState(false);
 
@@ -87,7 +86,7 @@ export default function RecepturyPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm("Odebrat surovinu z receptury?")) return;
+    if (!confirm(t("receptury.removeConfirm"))) return;
     await fetch(`/api/sklad/recipes/${id}`, { method: "DELETE" });
     loadLines(productId);
   }
@@ -117,8 +116,8 @@ export default function RecepturyPage() {
   return (
     <div>
       <div className="mb-5">
-        <h1 className="text-xl font-semibold">Receptury</h1>
-        <p className="text-sm text-[var(--muted)]">Kolik které suroviny padne na jednu porci. Z toho se počítá náklad a marže a při předání objednávky se sklad odečte.</p>
+        <h1 className="text-xl font-semibold">{t("receptury.title")}</h1>
+        <p className="text-sm text-[var(--muted)]">{t("receptury.desc")}</p>
       </div>
 
       <div className="mb-5 flex flex-wrap gap-2">
@@ -130,34 +129,36 @@ export default function RecepturyPage() {
           <option value="">— vyber produkt —</option>
           {visibleProducts.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
-        {loading && <span className="self-center text-xs text-[var(--muted)]">načítám…</span>}
+        {loading && <span className="self-center text-xs text-[var(--muted)]">{t("common.loading")}</span>}
       </div>
 
       {!productId ? (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-8 text-center text-[var(--muted)]">
-          Vyber produkt a sestav jeho recepturu.
+          {t("receptury.empty")}
         </div>
       ) : (
         <>
           {lines.length === 0 && products.filter((p) => p.id !== productId).length > 0 && (
             <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] p-3">
-              <span className="text-sm text-[var(--muted)]">Zkopírovat recepturu z:</span>
+              <span className="text-sm text-[var(--muted)]">{t("receptury.copy")}:</span>
               <select value={copyFrom} onChange={(e) => setCopyFrom(e.target.value)} className={inputCls + " min-w-[200px]"}>
                 <option value="">— produkt —</option>
                 {products.filter((p) => p.id !== productId).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
-              <button onClick={copyRecipe} disabled={!copyFrom || copying} className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--muted)] hover:text-white disabled:opacity-50">{copying ? "Kopíruji…" : "Zkopírovat"}</button>
+              <button onClick={copyRecipe} disabled={!copyFrom || copying} className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--muted)] hover:text-white disabled:opacity-50">
+                {copying ? t("receptury.copying") : t("receptury.copy")}
+              </button>
             </div>
           )}
           <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--card)]">
             <table className="w-full text-sm">
               <thead className="border-b border-[var(--border)] text-left text-[var(--muted)]">
                 <tr>
-                  <th className="p-3 font-medium">Surovina</th>
-                  <th className="p-3 font-medium">Na porci</th>
-                  <th className="p-3 font-medium">Ø cena/j.</th>
-                  <th className="p-3 font-medium">Náklad</th>
-                  <th className="p-3 font-medium">Akce</th>
+                  <th className="p-3 font-medium">{t("receptury.col.ing.name")}</th>
+                  <th className="p-3 font-medium">{t("receptury.col.ing.qty")}</th>
+                  <th className="p-3 font-medium">{t("receptury.col.cost")}</th>
+                  <th className="p-3 font-medium"></th>
+                  <th className="p-3 font-medium">{t("receptury.col.actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -182,13 +183,13 @@ export default function RecepturyPage() {
                       <td className="p-3">
                         {isE ? (
                           <div className="flex gap-1">
-                            <button onClick={() => saveEdit(l.id)} className="rounded-lg bg-white px-2.5 py-1 text-xs font-medium text-black hover:bg-neutral-200">Uložit</button>
+                            <button onClick={() => saveEdit(l.id)} className="rounded-lg bg-white px-2.5 py-1 text-xs font-medium text-black hover:bg-neutral-200">{t("common.save")}</button>
                             <button onClick={() => setEditId(null)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)]">✕</button>
                           </div>
                         ) : (
                           <div className="flex gap-1">
-                            <button onClick={() => { setEditId(l.id); setEditQty(String(Number(l.qty_per_portion))); }} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-white hover:border-neutral-600">Upravit</button>
-                            <button onClick={() => remove(l.id)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-red-400 hover:border-red-500/30">Odebrat</button>
+                            <button onClick={() => { setEditId(l.id); setEditQty(String(Number(l.qty_per_portion))); }} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-white hover:border-neutral-600">{t("common.edit")}</button>
+                            <button onClick={() => remove(l.id)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-red-400 hover:border-red-500/30">{t("receptury.col.ing.remove")}</button>
                           </div>
                         )}
                       </td>
@@ -197,28 +198,28 @@ export default function RecepturyPage() {
                 })}
               </tbody>
             </table>
-            {lines.length === 0 && !loadingLines && <div className="p-6 text-center text-[var(--muted)]">Receptura je prázdná. Přidej první surovinu níže.</div>}
+            {lines.length === 0 && !loadingLines && <div className="p-6 text-center text-[var(--muted)]">{t("receptury.noRecipe")}</div>}
           </div>
 
-          {/* přidání suroviny */}
           <div className="mt-3 flex flex-wrap items-end gap-2">
             <select value={newItem} onChange={(e) => setNewItem(e.target.value)} className={inputCls + " min-w-[200px]"}>
-              <option value="">— surovina —</option>
+              <option value="">— {t("receptury.selectItem")} —</option>
               {items.map((i) => <option key={i.id} value={i.id}>{i.name} ({i.base_unit})</option>)}
             </select>
             <span className="flex items-center gap-1">
               <input type="number" placeholder="množství" value={newQty} onChange={(e) => setNewQty(e.target.value)} className={inputCls + " w-28"} />
               <span className="text-sm text-[var(--muted)]">{newItemObj ? baseUnitLabel(newItemObj.base_unit) : ""}</span>
             </span>
-            <button onClick={addLine} disabled={saving} className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-black hover:bg-neutral-200 disabled:opacity-50">{saving ? "…" : "+ Přidat surovinu"}</button>
+            <button onClick={addLine} disabled={saving} className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-black hover:bg-neutral-200 disabled:opacity-50">
+              {saving ? t("receptury.saving") : t("receptury.addIngredient")}
+            </button>
           </div>
 
-          {/* souhrn nákladu a marže */}
           <div className="mt-6 grid gap-4 sm:grid-cols-4">
-            <Card title="Náklad porce" value={formatCzk(cost)} hint="suroviny, bez DPH" />
-            <Card title="Prodejní cena" value={formatCzk(price)} hint="bez DPH" />
-            <Card title="Marže" value={formatCzk(margin)} accent={margin < 0 ? "#f87171" : "#4ade80"} />
-            <Card title="Marže %" value={price > 0 ? `${marginPct.toFixed(0)} %` : "—"} accent={margin < 0 ? "#f87171" : undefined} />
+            <Card title={t("receptury.col.cost")} value={formatCzk(cost)} hint="suroviny, bez DPH" />
+            <Card title={t("receptury.col.price")} value={formatCzk(price)} hint="bez DPH" />
+            <Card title={t("receptury.col.margin")} value={formatCzk(margin)} accent={margin < 0 ? "#f87171" : "#4ade80"} />
+            <Card title={`${t("receptury.col.margin")} %`} value={price > 0 ? `${marginPct.toFixed(0)} %` : "—"} accent={margin < 0 ? "#f87171" : undefined} />
           </div>
           <p className="mt-3 text-xs text-[var(--muted)]">Náklad počítáme z aktuálního váženého průměru surovin. Suroviny zatím bez ceny (nikdy nenaskladněné) se do nákladu počítají nulou.</p>
         </>

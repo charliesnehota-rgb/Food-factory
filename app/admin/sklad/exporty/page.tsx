@@ -2,20 +2,20 @@
 
 import { useState } from "react";
 import { formatCzk } from "@/lib/types";
+import { useT } from "@/lib/i18n";
 
 const inputCls = "rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
 
 type ExportType = "vat" | "movements" | "stock";
 
-const TYPES: { id: ExportType; label: string; desc: string; usesRange: boolean }[] = [
-  { id: "vat", label: "Podklad DPH", desc: "Nákup surovin rozpadený po sazbách (DPH na vstupu).", usesRange: true },
-  { id: "movements", label: "Spotřeba a ztráty", desc: "Výdeje (spotřeba, odpisy, inventura) za období, oceněné.", usesRange: true },
-  { id: "stock", label: "Stav skladu", desc: "Ocenění skladu k vybranému datu (vážený průměr).", usesRange: false },
-];
-
-const MOVE_LABEL: Record<string, string> = { consumption: "Spotřeba", write_off: "Odpis", stocktake: "Inventura" };
+const MOVE_LABEL_KEY: Record<string, string> = {
+  consumption: "pohyby.type.consumption",
+  write_off: "pohyby.type.write_off",
+  stocktake: "pohyby.type.stocktake",
+};
 
 export default function ExportyPage() {
+  const t = useT();
   const [type, setType] = useState<ExportType>("vat");
   const firstOfMonth = new Date(); firstOfMonth.setDate(1);
   const [from, setFrom] = useState(firstOfMonth.toISOString().slice(0, 10));
@@ -25,7 +25,13 @@ export default function ExportyPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  const meta = TYPES.find((t) => t.id === type)!;
+  const TYPES: { id: ExportType; label: string; desc: string; usesRange: boolean }[] = [
+    { id: "vat", label: t("exporty.type.vat"), desc: t("exporty.type.vat.desc"), usesRange: true },
+    { id: "movements", label: t("exporty.type.movements"), desc: t("exporty.type.movements.desc"), usesRange: true },
+    { id: "stock", label: t("exporty.type.stock"), desc: t("exporty.type.stock.desc"), usesRange: false },
+  ];
+
+  const meta = TYPES.find((x) => x.id === type)!;
 
   async function loadPreview() {
     setLoading(true); setData(null);
@@ -38,21 +44,21 @@ export default function ExportyPage() {
     setLoading(false);
   }
 
-  function pick(t: ExportType) { setType(t); setData(null); }
+  function pick(id: ExportType) { setType(id); setData(null); }
 
   return (
     <div>
       <div className="mb-5">
-        <h1 className="text-xl font-semibold">Účetní exporty</h1>
-        <p className="text-sm text-[var(--muted)]">Podklady pro DPH, výkazy a přiznání. Stažené CSV se otevře přímo v Excelu (středník, desetinná čárka).</p>
+        <h1 className="text-xl font-semibold">{t("exporty.title")}</h1>
+        <p className="text-sm text-[var(--muted)]">{t("exporty.desc")}</p>
       </div>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        {TYPES.map((t) => (
-          <button key={t.id} onClick={() => pick(t.id)}
-            className={"rounded-2xl border p-4 text-left transition " + (type === t.id ? "border-white bg-[var(--card)]" : "border-[var(--border)] bg-[var(--card)] hover:border-neutral-600")}>
-            <div className="font-medium">{t.label}</div>
-            <div className="mt-1 text-xs text-[var(--muted)]">{t.desc}</div>
+        {TYPES.map((x) => (
+          <button key={x.id} onClick={() => pick(x.id)}
+            className={"rounded-2xl border p-4 text-left transition " + (type === x.id ? "border-white bg-[var(--card)]" : "border-[var(--border)] bg-[var(--card)] hover:border-neutral-600")}>
+            <div className="font-medium">{x.label}</div>
+            <div className="mt-1 text-xs text-[var(--muted)]">{x.desc}</div>
           </button>
         ))}
       </div>
@@ -61,26 +67,28 @@ export default function ExportyPage() {
         {meta.usesRange && (
           <>
             <div>
-              <label className="text-xs text-[var(--muted)]">Od</label>
+              <label className="text-xs text-[var(--muted)]">{t("exporty.from")}</label>
               <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inputCls} />
             </div>
             <div>
-              <label className="text-xs text-[var(--muted)]">Do</label>
+              <label className="text-xs text-[var(--muted)]">{t("exporty.to")}</label>
               <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={inputCls} />
             </div>
           </>
         )}
         {type === "stock" && (
           <div>
-            <label className="text-xs text-[var(--muted)]">Stav k datu</label>
+            <label className="text-xs text-[var(--muted)]">{t("exporty.asOf")}</label>
             <input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} className={inputCls} />
           </div>
         )}
-        <button onClick={loadPreview} disabled={loading} className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-black hover:bg-neutral-200 disabled:opacity-50">{loading ? "Načítám…" : "Načíst náhled"}</button>
+        <button onClick={loadPreview} disabled={loading} className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-black hover:bg-neutral-200 disabled:opacity-50">
+          {loading ? t("exporty.loading") : t("exporty.load")}
+        </button>
       </div>
 
       {data && type === "vat" && <VatPreview data={data} />}
-      {data && type === "movements" && <MovementsPreview data={data} />}
+      {data && type === "movements" && <MovementsPreview data={data} moveLabelKey={MOVE_LABEL_KEY} />}
       {data && type === "stock" && <StockPreview data={data} />}
     </div>
   );
@@ -112,6 +120,7 @@ const cardCls = "overflow-x-auto rounded-2xl border border-[var(--border)] bg-[v
 // ---------- VAT ----------
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function VatPreview({ data }: { data: any }) {
+  const t = useT();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const summary: any[] = data.summary ?? [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -120,7 +129,7 @@ function VatPreview({ data }: { data: any }) {
 
   function dlSummary() {
     downloadCsv(`dph-souhrn_${data.from}_${data.to}.csv`,
-      ["Sazba DPH %", "Základ (bez DPH)", "DPH", "Celkem", "Počet řádků"],
+      [t("exporty.vat.col.rate"), t("exporty.vat.col.net"), t("exporty.vat.col.vat"), t("exporty.vat.col.gross"), t("exporty.vat.col.count")],
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       summary.map((s: any) => [num(s.vat_rate), num(s.base_net), num(s.vat), num(s.gross), s.count]));
   }
@@ -134,26 +143,42 @@ function VatPreview({ data }: { data: any }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
-        <DownloadBtn onClick={dlSummary}>Stáhnout souhrn po sazbách</DownloadBtn>
-        <DownloadBtn onClick={dlDetail}>Stáhnout detail (řádky)</DownloadBtn>
+        <DownloadBtn onClick={dlSummary}>{t("exporty.vat.dlSummary")}</DownloadBtn>
+        <DownloadBtn onClick={dlDetail}>{t("exporty.vat.dlDetail")}</DownloadBtn>
       </div>
       <div className={cardCls}>
         <table className="w-full text-sm">
           <thead className="border-b border-[var(--border)] text-left text-[var(--muted)]">
-            <tr><th className={thCls}>Sazba DPH</th><th className={thCls}>Základ (bez DPH)</th><th className={thCls}>DPH</th><th className={thCls}>Celkem</th><th className={thCls}>Řádků</th></tr>
+            <tr>
+              <th className={thCls}>{t("exporty.vat.col.rate")}</th>
+              <th className={thCls}>{t("exporty.vat.col.net")}</th>
+              <th className={thCls}>{t("exporty.vat.col.vat")}</th>
+              <th className={thCls}>{t("exporty.vat.col.gross")}</th>
+              <th className={thCls}>{t("exporty.vat.col.count")}</th>
+            </tr>
           </thead>
           <tbody>
             {summary.map((s) => (
               <tr key={s.vat_rate} className="border-b border-[var(--border)] last:border-0">
-                <td className="p-2">{Number(s.vat_rate)} %</td><td className="p-2">{formatCzk(s.base_net)}</td><td className="p-2">{formatCzk(s.vat)}</td><td className="p-2">{formatCzk(s.gross)}</td><td className="p-2 text-[var(--muted)]">{s.count}</td>
+                <td className="p-2">{Number(s.vat_rate)} %</td>
+                <td className="p-2">{formatCzk(s.base_net)}</td>
+                <td className="p-2">{formatCzk(s.vat)}</td>
+                <td className="p-2">{formatCzk(s.gross)}</td>
+                <td className="p-2 text-[var(--muted)]">{s.count}</td>
               </tr>
             ))}
             {summary.length > 0 && (
-              <tr className="font-semibold"><td className="p-2">Celkem</td><td className="p-2">{formatCzk(tot.net)}</td><td className="p-2">{formatCzk(tot.vat)}</td><td className="p-2">{formatCzk(tot.gross)}</td><td className="p-2"></td></tr>
+              <tr className="font-semibold">
+                <td className="p-2">{t("exporty.vat.total")}</td>
+                <td className="p-2">{formatCzk(tot.net)}</td>
+                <td className="p-2">{formatCzk(tot.vat)}</td>
+                <td className="p-2">{formatCzk(tot.gross)}</td>
+                <td className="p-2"></td>
+              </tr>
             )}
           </tbody>
         </table>
-        {summary.length === 0 && <div className="p-6 text-center text-[var(--muted)]">V tomto období nejsou žádné naskladněné příjmy.</div>}
+        {summary.length === 0 && <div className="p-6 text-center text-[var(--muted)]">{t("exporty.vat.empty")}</div>}
       </div>
     </div>
   );
@@ -161,7 +186,8 @@ function VatPreview({ data }: { data: any }) {
 
 // ---------- Movements ----------
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function MovementsPreview({ data }: { data: any }) {
+function MovementsPreview({ data, moveLabelKey }: { data: any; moveLabelKey: Record<string, string> }) {
+  const t = useT();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows: any[] = data.rows ?? [];
   const total = rows.reduce((s, r) => s + Number(r.value), 0);
@@ -169,24 +195,30 @@ function MovementsPreview({ data }: { data: any }) {
     downloadCsv(`spotreba-ztraty_${data.from}_${data.to}.csv`,
       ["Datum", "Typ", "Surovina", "Kategorie", "Změna", "Jednotka", "Cena/j.", "Hodnota", "Důvod"],
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      rows.map((r: any) => [new Date(r.date).toLocaleString("cs-CZ"), MOVE_LABEL[r.type] ?? r.type, r.item, r.category, num(r.qty_change), r.unit, num(r.unit_price), num(r.value), r.reason]));
+      rows.map((r: any) => [new Date(r.date).toLocaleString("cs-CZ"), t(moveLabelKey[r.type] ?? r.type), r.item, r.category, num(r.qty_change), r.unit, num(r.unit_price), num(r.value), r.reason]));
   }
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <DownloadBtn onClick={dl}>Stáhnout CSV</DownloadBtn>
-        <span className="text-sm text-[var(--muted)]">{rows.length} pohybů · hodnota {formatCzk(total)}</span>
+        <DownloadBtn onClick={dl}>{t("exporty.mov.dl")}</DownloadBtn>
+        <span className="text-sm text-[var(--muted)]">{t("exporty.mov.summary", { count: rows.length, value: formatCzk(total) })}</span>
       </div>
       <div className={cardCls}>
         <table className="w-full text-sm">
           <thead className="border-b border-[var(--border)] text-left text-[var(--muted)]">
-            <tr><th className={thCls}>Datum</th><th className={thCls}>Typ</th><th className={thCls}>Surovina</th><th className={thCls}>Změna</th><th className={thCls}>Hodnota</th></tr>
+            <tr>
+              <th className={thCls}>{t("exporty.mov.col.date")}</th>
+              <th className={thCls}>{t("exporty.mov.col.type")}</th>
+              <th className={thCls}>{t("exporty.mov.col.item")}</th>
+              <th className={thCls}>{t("exporty.mov.col.qty")}</th>
+              <th className={thCls}>{t("exporty.mov.col.value")}</th>
+            </tr>
           </thead>
           <tbody>
             {rows.slice(0, 50).map((r, i) => (
               <tr key={i} className="border-b border-[var(--border)] last:border-0">
                 <td className="p-2 text-[var(--muted)]">{new Date(r.date).toLocaleDateString("cs-CZ")}</td>
-                <td className="p-2">{MOVE_LABEL[r.type] ?? r.type}</td>
+                <td className="p-2">{t(moveLabelKey[r.type] ?? r.type)}</td>
                 <td className="p-2">{r.item}</td>
                 <td className="p-2">{num(r.qty_change)} {r.unit}</td>
                 <td className="p-2">{formatCzk(r.value)}</td>
@@ -194,8 +226,8 @@ function MovementsPreview({ data }: { data: any }) {
             ))}
           </tbody>
         </table>
-        {rows.length === 0 && <div className="p-6 text-center text-[var(--muted)]">V tomto období nejsou žádné výdeje.</div>}
-        {rows.length > 50 && <div className="p-3 text-center text-xs text-[var(--muted)]">Náhled prvních 50 z {rows.length}. Celé je v CSV.</div>}
+        {rows.length === 0 && <div className="p-6 text-center text-[var(--muted)]">{t("exporty.mov.empty")}</div>}
+        {rows.length > 50 && <div className="p-3 text-center text-xs text-[var(--muted)]">{t("exporty.mov.preview", { total: rows.length })}</div>}
       </div>
     </div>
   );
@@ -204,6 +236,7 @@ function MovementsPreview({ data }: { data: any }) {
 // ---------- Stock ----------
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function StockPreview({ data }: { data: any }) {
+  const t = useT();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows: any[] = data.rows ?? [];
   function dl() {
@@ -215,13 +248,19 @@ function StockPreview({ data }: { data: any }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <DownloadBtn onClick={dl}>Stáhnout CSV</DownloadBtn>
-        <span className="text-sm text-[var(--muted)]">k {data.as_of} · celková hodnota {formatCzk(data.total_value)}</span>
+        <DownloadBtn onClick={dl}>{t("exporty.stock.dl")}</DownloadBtn>
+        <span className="text-sm text-[var(--muted)]">{t("exporty.stock.summary", { date: data.as_of, value: formatCzk(data.total_value) })}</span>
       </div>
       <div className={cardCls}>
         <table className="w-full text-sm">
           <thead className="border-b border-[var(--border)] text-left text-[var(--muted)]">
-            <tr><th className={thCls}>Surovina</th><th className={thCls}>Kategorie</th><th className={thCls}>Množství</th><th className={thCls}>Ø cena</th><th className={thCls}>Hodnota</th></tr>
+            <tr>
+              <th className={thCls}>{t("exporty.stock.col.name")}</th>
+              <th className={thCls}>{t("exporty.stock.col.cat")}</th>
+              <th className={thCls}>Množství</th>
+              <th className={thCls}>Ø cena</th>
+              <th className={thCls}>Hodnota</th>
+            </tr>
           </thead>
           <tbody>
             {rows.map((r, i) => (
@@ -235,7 +274,7 @@ function StockPreview({ data }: { data: any }) {
             ))}
           </tbody>
         </table>
-        {rows.length === 0 && <div className="p-6 text-center text-[var(--muted)]">Sklad je prázdný.</div>}
+        {rows.length === 0 && <div className="p-6 text-center text-[var(--muted)]">{t("exporty.stock.empty")}</div>}
       </div>
     </div>
   );

@@ -1,19 +1,22 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useT } from "@/lib/i18n";
 
 const inputCls = "rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
-
-const ROLES = [
-  { value: "staff", label: "Personál" },
-  { value: "admin", label: "Admin" },
-  { value: "accountant", label: "Účetní" },
-];
-const roleLabel = (r: string) => ROLES.find((x) => x.value === r)?.label ?? r;
 
 interface Staff { id: string; email: string; name: string; role: string; created_at: string; }
 
 export default function PersonalPage() {
+  const t = useT();
+
+  const ROLES = [
+    { value: "staff", label: t("role.staff") },
+    { value: "admin", label: t("role.admin") },
+    { value: "accountant", label: t("role.accountant") },
+  ];
+  const roleLabel = (r: string) => ROLES.find((x) => x.value === r)?.label ?? r;
+
   const [rows, setRows] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -38,7 +41,7 @@ export default function PersonalPage() {
     });
     const d = await r.json();
     setSaving(false);
-    if (!r.ok) { alert(d.error ?? "Chyba"); return; }
+    if (!r.ok) { alert(d.error ?? t("common.error")); return; }
     setCreated({ email: d.email, temp_password: d.temp_password });
     setForm({ email: "", name: "", role: "staff" });
     setOpen(false);
@@ -52,9 +55,9 @@ export default function PersonalPage() {
     load();
   }
   async function remove(s: Staff) {
-    if (!confirm(`Smazat ${s.name || s.email}? Tím se zruší i přihlášení (nepůjde se přihlásit).`)) return;
+    if (!confirm(t("personal.deleteConfirm", { name: s.name || s.email }))) return;
     const r = await fetch(`/api/admin/staff/${s.id}`, { method: "DELETE" });
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? "Chyba"); return; }
+    if (!r.ok) { const e = await r.json(); alert(e.error ?? t("common.error")); return; }
     load();
   }
 
@@ -62,50 +65,70 @@ export default function PersonalPage() {
     <div>
       <div className="mb-5 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Personál</h1>
-          <p className="text-sm text-[var(--muted)]">Přístupy do adminu. {rows.length} účtů{loading ? " · načítám…" : ""}</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("personal.title")}</h1>
+          <p className="text-sm text-[var(--muted)]">
+            {t("personal.desc")} {t("personal.accounts", { count: rows.length })}
+            {loading ? " · " + t("common.loading") : ""}
+          </p>
         </div>
-        <button onClick={() => { setOpen(!open); setCreated(null); }} className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-neutral-200">+ Přidat personál</button>
+        <button
+          onClick={() => { setOpen(!open); setCreated(null); }}
+          className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-neutral-200"
+        >
+          {t("personal.add")}
+        </button>
       </div>
 
       {created && (
         <div className="mb-5 rounded-2xl border border-green-500/30 bg-green-500/5 p-5">
-          <h2 className="mb-1 font-medium text-green-400">Účet založen</h2>
-          <p className="text-sm text-[var(--muted)]">Pošli tyto údaje danému člověku. Po prvním přihlášení ať si heslo změní v profilu.</p>
+          <h2 className="mb-1 font-medium text-green-400">{t("personal.created.title")}</h2>
+          <p className="text-sm text-[var(--muted)]">{t("personal.created.desc")}</p>
           <div className="mt-3 space-y-1 text-sm">
-            <div>E-mail: <span className="font-medium">{created.email}</span></div>
+            <div>{t("personal.created.email")} <span className="font-medium">{created.email}</span></div>
             <div className="flex items-center gap-2">
-              Dočasné heslo: <code className="rounded bg-[var(--bg)] px-2 py-1 font-mono">{created.temp_password}</code>
-              <button onClick={() => navigator.clipboard?.writeText(created.temp_password)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-white">Kopírovat</button>
+              {t("personal.created.password")}
+              <code className="rounded bg-[var(--bg)] px-2 py-1 font-mono">{created.temp_password}</code>
+              <button
+                onClick={() => navigator.clipboard?.writeText(created.temp_password)}
+                className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-white"
+              >
+                {t("common.copy")}
+              </button>
             </div>
           </div>
-          <button onClick={() => setCreated(null)} className="mt-3 text-xs text-[var(--muted)] hover:text-white">Zavřít</button>
+          <button onClick={() => setCreated(null)} className="mt-3 text-xs text-[var(--muted)] hover:text-white">
+            {t("common.close")}
+          </button>
         </div>
       )}
 
       {open && (
         <div className="mb-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
-          <h2 className="mb-3 font-medium">Nový člen personálu</h2>
+          <h2 className="mb-3 font-medium">{t("personal.newTitle")}</h2>
           <div className="grid gap-3 sm:grid-cols-3">
             <div>
-              <label className="text-xs text-[var(--muted)]">Jméno *</label>
+              <label className="text-xs text-[var(--muted)]">{t("personal.labelName")}</label>
               <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls + " w-full"} />
             </div>
             <div>
-              <label className="text-xs text-[var(--muted)]">E-mail *</label>
+              <label className="text-xs text-[var(--muted)]">{t("personal.labelEmail")}</label>
               <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls + " w-full"} />
             </div>
             <div>
-              <label className="text-xs text-[var(--muted)]">Role</label>
+              <label className="text-xs text-[var(--muted)]">{t("personal.labelRole")}</label>
               <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className={inputCls + " w-full"}>
                 {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
               </select>
             </div>
           </div>
-          <p className="mt-2 text-xs text-[var(--muted)]">Systém vygeneruje dočasné heslo, které pak ukáže k předání. Účet je rovnou aktivní.</p>
+          <p className="mt-2 text-xs text-[var(--muted)]">{t("personal.hint")}</p>
           <div className="mt-3 flex gap-2">
-            <button onClick={submit} disabled={saving} className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-neutral-200 disabled:opacity-50">{saving ? "Zakládám…" : "Založit účet"}</button>
-            <button onClick={() => setOpen(false)} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm text-[var(--muted)] hover:text-white">Zrušit</button>
+            <button onClick={submit} disabled={saving} className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-neutral-200 disabled:opacity-50">
+              {saving ? t("personal.creating") : t("personal.createBtn")}
+            </button>
+            <button onClick={() => setOpen(false)} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm text-[var(--muted)] hover:text-white">
+              {t("common.cancel")}
+            </button>
           </div>
         </div>
       )}
@@ -113,7 +136,12 @@ export default function PersonalPage() {
       <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--card)]">
         <table className="w-full text-sm">
           <thead className="border-b border-[var(--border)] text-left text-[var(--muted)]">
-            <tr><th className="p-3 font-medium">Jméno</th><th className="p-3 font-medium">E-mail</th><th className="p-3 font-medium">Role</th><th className="p-3 font-medium">Akce</th></tr>
+            <tr>
+              <th className="p-3 font-medium">{t("personal.col.name")}</th>
+              <th className="p-3 font-medium">{t("personal.col.email")}</th>
+              <th className="p-3 font-medium">{t("personal.col.role")}</th>
+              <th className="p-3 font-medium">{t("personal.col.actions")}</th>
+            </tr>
           </thead>
           <tbody>
             {rows.map((s) => (
@@ -126,15 +154,19 @@ export default function PersonalPage() {
                   </select>
                 </td>
                 <td className="p-3">
-                  <button onClick={() => remove(s)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-red-400 hover:border-red-500/30">Smazat</button>
+                  <button onClick={() => remove(s)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-red-400 hover:border-red-500/30">
+                    {t("common.delete")}
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {rows.length === 0 && !loading && <div className="p-8 text-center text-[var(--muted)]">Zatím žádný personál.</div>}
+        {rows.length === 0 && !loading && (
+          <div className="p-8 text-center text-[var(--muted)]">{t("personal.empty")}</div>
+        )}
       </div>
-      <p className="mt-3 text-xs text-[var(--muted)]">Role: Personál = sklad a provoz, Admin = vše včetně reportů a personálu, Účetní = jen exporty. Smazání zruší i přihlášení (řeší to, že po smazání řádku v databázi šlo dál se přihlásit).</p>
+      <p className="mt-3 text-xs text-[var(--muted)]">{t("personal.rolesNote")}</p>
     </div>
   );
 }

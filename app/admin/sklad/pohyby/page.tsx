@@ -4,20 +4,21 @@ import { useEffect, useState, useCallback } from "react";
 import { formatCzk } from "@/lib/types";
 import { formatQty } from "@/lib/stock/units";
 import type { StockMovement, StockItem } from "@/lib/stock/types";
+import { useT } from "@/lib/i18n";
 
 const inputCls = "rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none";
 
-const TYPE_LABEL: Record<string, string> = {
-  receipt: "Příjem", consumption: "Spotřeba", write_off: "Odpis", adjustment: "Korekce", stocktake: "Inventura",
-};
-
 export default function PohybyPage() {
+  const t = useT();
+  const TYPE_LABEL: Record<string, string> = {
+    receipt: t("pohyby.type.receipt"), consumption: t("pohyby.type.consumption"),
+    write_off: t("pohyby.type.write_off"), adjustment: t("pohyby.type.adjustment"), stocktake: t("pohyby.type.stocktake"),
+  };
+
   const [moves, setMoves] = useState<StockMovement[]>([]);
   const [items, setItems] = useState<StockItem[]>([]);
   const [filter, setFilter] = useState("");
   const [loading, setLoading] = useState(true);
-
-  // ruční korekce
   const [adjItem, setAdjItem] = useState("");
   const [adjQty, setAdjQty] = useState("");
   const [adjReason, setAdjReason] = useState("");
@@ -26,8 +27,8 @@ export default function PohybyPage() {
   const load = useCallback(async (item?: string) => {
     const url = item ? `/api/sklad/movements?item=${item}` : "/api/sklad/movements";
     const [m, i] = await Promise.all([
-      fetch(url).then((r) => r.json()),
-      items.length ? Promise.resolve(items) : fetch("/api/sklad/items?all=1").then((r) => r.json()),
+      fetch(url).then(r => r.json()),
+      items.length ? Promise.resolve(items) : fetch("/api/sklad/items?all=1").then(r => r.json()),
     ]);
     if (Array.isArray(m)) setMoves(m);
     if (Array.isArray(i)) setItems(i);
@@ -44,34 +45,35 @@ export default function PohybyPage() {
       body: JSON.stringify({ stock_item_id: adjItem, qty_change: Number(adjQty), reason: adjReason || "korekce" }),
     });
     setSaving(false);
-    if (!r.ok) { const e = await r.json(); alert(e.error ?? "Chyba"); return; }
-    setAdjItem(""); setAdjQty(""); setAdjReason("");
-    load(filter);
+    if (!r.ok) { const e = await r.json(); alert(e.error ?? t("common.error")); return; }
+    setAdjItem(""); setAdjQty(""); setAdjReason(""); load(filter);
   }
 
   return (
     <div>
       <div className="mb-5 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-semibold">Kniha pohybů</h1>
-          <p className="text-sm text-[var(--muted)]">Každý příjem, výdej i korekce. Needituje se — oprava = nový pohyb.</p>
+          <h1 className="text-xl font-semibold">{t("pohyby.title")}</h1>
+          <p className="text-sm text-[var(--muted)]">{t("pohyby.desc")}</p>
         </div>
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} className={inputCls}>
-          <option value="">Všechny suroviny</option>
-          {items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
+        <select value={filter} onChange={e => setFilter(e.target.value)} className={inputCls}>
+          <option value="">{t("pohyby.selectItem")}</option>
+          {items.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
         </select>
       </div>
 
       <div className="mb-6 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
-        <div className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--muted)]">Ruční korekce stavu</div>
+        <div className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--muted)]">{t("pohyby.korTitle")}</div>
         <div className="flex flex-wrap items-end gap-2">
-          <select value={adjItem} onChange={(e) => setAdjItem(e.target.value)} className={inputCls}>
-            <option value="">— surovina —</option>
-            {items.map((i) => <option key={i.id} value={i.id}>{i.name} ({i.base_unit})</option>)}
+          <select value={adjItem} onChange={e => setAdjItem(e.target.value)} className={inputCls}>
+            <option value="">{t("pohyby.selectItem")}</option>
+            {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.base_unit})</option>)}
           </select>
-          <input type="number" placeholder="změna (+/− v zákl. jednotce)" value={adjQty} onChange={(e) => setAdjQty(e.target.value)} className={inputCls + " w-56"} />
-          <input placeholder="důvod" value={adjReason} onChange={(e) => setAdjReason(e.target.value)} className={inputCls} />
-          <button onClick={saveAdjustment} disabled={saving} className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-black hover:bg-neutral-200 disabled:opacity-50">{saving ? "…" : "Zapsat korekci"}</button>
+          <input type="number" placeholder={t("pohyby.labelQty")} value={adjQty} onChange={e => setAdjQty(e.target.value)} className={inputCls + " w-56"} />
+          <input placeholder={t("pohyby.labelReason")} value={adjReason} onChange={e => setAdjReason(e.target.value)} className={inputCls} />
+          <button onClick={saveAdjustment} disabled={saving} className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-black hover:bg-neutral-200 disabled:opacity-50">
+            {saving ? "…" : t("pohyby.save")}
+          </button>
         </div>
       </div>
 
@@ -79,13 +81,13 @@ export default function PohybyPage() {
         <table className="w-full text-sm">
           <thead className="border-b border-[var(--border)] text-left text-[var(--muted)]">
             <tr>
-              <th className="p-3 font-medium">Datum</th>
-              <th className="p-3 font-medium">Surovina</th>
-              <th className="p-3 font-medium">Typ</th>
-              <th className="p-3 font-medium">Změna</th>
-              <th className="p-3 font-medium">Cena/j.</th>
-              <th className="p-3 font-medium">Důvod</th>
-              <th className="p-3 font-medium">Kdo</th>
+              <th className="p-3 font-medium">{t("pohyby.col.date")}</th>
+              <th className="p-3 font-medium">{t("pohyby.col.item")}</th>
+              <th className="p-3 font-medium">{t("pohyby.col.type")}</th>
+              <th className="p-3 font-medium">{t("pohyby.col.qty")}</th>
+              <th className="p-3 font-medium">{t("pohyby.col.price")}</th>
+              <th className="p-3 font-medium">{t("pohyby.col.note")}</th>
+              <th className="p-3 font-medium">{t("common.email")}</th>
             </tr>
           </thead>
           <tbody>
@@ -106,7 +108,7 @@ export default function PohybyPage() {
             })}
           </tbody>
         </table>
-        {moves.length === 0 && !loading && <div className="p-8 text-center text-[var(--muted)]">Zatím žádné pohyby.</div>}
+        {moves.length === 0 && !loading && <div className="p-8 text-center text-[var(--muted)]">{t("pohyby.empty")}</div>}
       </div>
     </div>
   );
