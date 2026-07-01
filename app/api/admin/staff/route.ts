@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomBytes } from "crypto";
 import { supabaseAdmin } from "@/lib/db/supabase";
 import { requireRole } from "@/lib/auth/require-staff";
+import { sendInviteEmail } from "@/lib/notifications";
 
 const STAFF_ROLES = ["admin", "staff", "accountant"];
 
@@ -32,7 +32,7 @@ export async function GET() {
   return NextResponse.json(out);
 }
 
-// POST: založí personál — auth uživatel + profil s rolí. Vrátí dočasné heslo.
+// POST: pozve personál emailem — generuje Supabase invite link, pošle přes Resend.
 export async function POST(req: NextRequest) {
   if (!(await requireRole(["admin"]))) return NextResponse.json({ error: "Přístup zamítnut" }, { status: 403 });
   if (!supabaseAdmin) return NextResponse.json({ error: "DB nedostupná" }, { status: 503 });
@@ -41,21 +41,39 @@ export async function POST(req: NextRequest) {
   if (!email || !name) return NextResponse.json({ error: "Vyplň e-mail i jméno." }, { status: 400 });
   if (!STAFF_ROLES.includes(role)) return NextResponse.json({ error: "Neplatná role." }, { status: 400 });
 
-  const tempPassword = randomBytes(9).toString("base64url"); // ~12 znaků
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://food-factory-zeta.vercel.app";
 
-  const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+  // Vygeneruj Supabase invite link (vytvoří auth uživatele + vrátí action_link)
+  const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+    type: "invite",
     email,
-    password: tempPassword,
-    email_confirm: true, // může se hned přihlásit dočasným heslem
-    user_metadata: { full_name: name },
+    options: {
+      data: { full_name: name },
+      redirectTo: `${site}/admin/nove-heslo`,
+    },
   });
-  if (error || !created.user) {
-    return NextResponse.json({ error: error?.message ?? "Uživatele se nepodařilo založit." }, { status: 400 });
+  if (linkErr || !linkData?.user) {
+    return NextResponse.json({ error: linkErr?.message ?? "Nepodařilo se vygenerovat pozvánku." }, { status: 400 });
   }
 
+  // Přiřaď roli
   const { error: pErr } = await supabaseAdmin
-    .from("user_profiles").upsert({ id: created.user.id, role }, { onConflict: "id" });
+    .from("user_profiles").upsert({ id: linkData.user.id, role }, { onConflict: "id" });
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 });
 
-  return NextResponse.json({ id: created.user.id, email, name, role, temp_password: tempPassword }, { status: 201 });
+  // Pošli email přes Resend
+  await sendInviteEmail(email, name, linkData.properties.action_link);
+
+  return NextResponse.json({ id: linkData.user.id, email, name, role, invited: true }, { status: 201 });
+}
+
+// DELETE: smaže uživatele z auth i profilů
+export async function DELETE(req: NextRequest) {
+  if (!(await requireRole(["admin"]))) return NextResponse.json({ error: "Přístup zamítnut" }, { status: 403 });
+  if (!supabaseAdmin) return NextResponse.json({ error: "DB nedostupná" }, { status: 503 });
+  const { id } = await req.json();
+  if (!id) return NextResponse.json({ error: "Chybí id." }, { status: 400 });
+  await supabaseAdmin.from("user_profiles").delete().eq("id", id);
+  await supabaseAdmin.auth.admin.deleteUser(id);
+  return NextResponse.json({ ok: true });
 }

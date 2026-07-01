@@ -232,3 +232,46 @@ export async function sendExpiringEmail(
     }),
   }).catch(() => null);
 }
+
+// Pozvánka pro nový personál
+export async function sendInviteEmail(
+  toEmail: string,
+  toName: string,
+  inviteLink: string
+) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://food-factory-zeta.vercel.app";
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1a1a1a">
+      <h2 style="font-size:20px;margin-bottom:8px">👋 Vítej v Food Factory</h2>
+      <p style="color:#555;margin-bottom:4px">Ahoj ${escapeHtml(toName)},</p>
+      <p style="color:#555;margin-bottom:24px">
+        Byl/a jsi přidán/a do týmu Food Factory. Klikni na tlačítko níže,
+        nastav si heslo a dostaneš se přímo do administrace.
+      </p>
+      <a href="${inviteLink}"
+         style="display:inline-block;padding:12px 24px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600">
+        Nastavit heslo a přihlásit se →
+      </a>
+      <p style="margin-top:24px;font-size:13px;color:#888">
+        Odkaz je platný 24 hodin. Pokud tlačítko nefunguje, zkopíruj a vlož do prohlížeče:<br>
+        <span style="word-break:break-all;color:#555">${inviteLink}</span>
+      </p>
+      <hr style="margin:32px 0;border:none;border-top:1px solid #eee">
+      <p style="font-size:12px;color:#aaa">Food Factory — správa týmu · <a href="${site}/admin" style="color:#aaa">Přejít do adminu</a></p>
+    </div>`;
+
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: process.env.RESEND_FROM ?? "Food Factory <onboarding@resend.dev>",
+      to: [toEmail],
+      subject: "Pozvánka do Food Factory — nastav si heslo",
+      html,
+    }),
+  }).catch(() => null);
+}

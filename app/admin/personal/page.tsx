@@ -15,14 +15,13 @@ export default function PersonalPage() {
     { value: "admin", label: t("role.admin") },
     { value: "accountant", label: t("role.accountant") },
   ];
-  const roleLabel = (r: string) => ROLES.find((x) => x.value === r)?.label ?? r;
 
   const [rows, setRows] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ email: "", name: "", role: "staff" });
   const [saving, setSaving] = useState(false);
-  const [created, setCreated] = useState<{ email: string; temp_password: string } | null>(null);
+  const [invited, setInvited] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const r = await fetch("/api/admin/staff");
@@ -42,7 +41,7 @@ export default function PersonalPage() {
     const d = await r.json();
     setSaving(false);
     if (!r.ok) { alert(d.error ?? t("common.error")); return; }
-    setCreated({ email: d.email, temp_password: d.temp_password });
+    setInvited(d.email);
     setForm({ email: "", name: "", role: "staff" });
     setOpen(false);
     load();
@@ -54,6 +53,7 @@ export default function PersonalPage() {
     });
     load();
   }
+
   async function remove(s: Staff) {
     if (!confirm(t("personal.deleteConfirm", { name: s.name || s.email }))) return;
     const r = await fetch(`/api/admin/staff/${s.id}`, { method: "DELETE" });
@@ -72,31 +72,20 @@ export default function PersonalPage() {
           </p>
         </div>
         <button
-          onClick={() => { setOpen(!open); setCreated(null); }}
+          onClick={() => { setOpen(!open); setInvited(null); }}
           className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-neutral-200"
         >
           {t("personal.add")}
         </button>
       </div>
 
-      {created && (
+      {invited && (
         <div className="mb-5 rounded-2xl border border-green-500/30 bg-green-500/5 p-5">
           <h2 className="mb-1 font-medium text-green-400">{t("personal.created.title")}</h2>
-          <p className="text-sm text-[var(--muted)]">{t("personal.created.desc")}</p>
-          <div className="mt-3 space-y-1 text-sm">
-            <div>{t("personal.created.email")} <span className="font-medium">{created.email}</span></div>
-            <div className="flex items-center gap-2">
-              {t("personal.created.password")}
-              <code className="rounded bg-[var(--bg)] px-2 py-1 font-mono">{created.temp_password}</code>
-              <button
-                onClick={() => navigator.clipboard?.writeText(created.temp_password)}
-                className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-white"
-              >
-                {t("common.copy")}
-              </button>
-            </div>
-          </div>
-          <button onClick={() => setCreated(null)} className="mt-3 text-xs text-[var(--muted)] hover:text-white">
+          <p className="text-sm text-[var(--muted)]">
+            {t("personal.created.desc")} <span className="font-medium text-white">{invited}</span>
+          </p>
+          <button onClick={() => setInvited(null)} className="mt-3 text-xs text-[var(--muted)] hover:text-white">
             {t("common.close")}
           </button>
         </div>
