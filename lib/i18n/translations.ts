@@ -63,6 +63,15 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // --- Nav ---
     "nav.pnl": "P&L výkaz",
+    "nav.marketing": "Marketing",
+    "marketing.title": "Marketing agent",
+    "marketing.desc": "AI navrhuje slevy, push notifikace a happy hours na základě skladu a vytížení. Ty schvaluješ.",
+    "marketing.analyze": "Spustit analýzu",
+    "marketing.tab.pending": "Ke schválení",
+    "marketing.tab.history": "Historie",
+    "marketing.noPending": "Žádné návrhy čekající na schválení. Klikni na Spustit analýzu.",
+    "marketing.noHistory": "Zatím žádné provedené akce.",
+    "marketing.footnote": "Push notifikace jsou odesílány zákazníkům s aktivním push odběrem. Slevy se uloží jako dočasné price overrides.",
     "nav.signOut": "Odhlásit se",
 
     // --- Sklad sub-nav skupiny ---
@@ -549,6 +558,15 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // --- Nav ---
     "nav.pnl": "P&L 报表",
+    "nav.marketing": "营销",
+    "marketing.title": "营销助手",
+    "marketing.desc": "AI根据库存和订单情况提出折扣、推送通知和欢乐时光建议，由您审批执行。",
+    "marketing.analyze": "运行分析",
+    "marketing.tab.pending": "待审批",
+    "marketing.tab.history": "历史记录",
+    "marketing.noPending": "没有待审批的建议。点击运行分析。",
+    "marketing.noHistory": "暂无已执行的操作。",
+    "marketing.footnote": "推送通知将发送给已订阅推送的顾客。折扣将保存为临时价格覆盖。",
     "nav.signOut": "退出登录",
 
     // --- Sklad sub-nav skupiny ---
