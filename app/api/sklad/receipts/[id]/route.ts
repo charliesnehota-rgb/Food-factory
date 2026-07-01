@@ -53,6 +53,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         unit_price_net_czk: it.unit_price_net_czk,
         vat_rate: it.vat_rate ?? 12,
         note: it.note ?? null,
+        expiry_date: it.expiry_date ?? null,
       }));
       const { error: itErr } = await supabaseAdmin.from("goods_receipt_items").insert(rows);
       if (itErr) return NextResponse.json({ error: itErr.message }, { status: 500 });

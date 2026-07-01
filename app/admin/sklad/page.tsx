@@ -34,9 +34,21 @@ interface ShopItem {
   suggested_base: number;
 }
 
+interface ExpiringItem {
+  stock_item_id: string;
+  name: string;
+  base_unit: string;
+  current_qty: number;
+  avg_price_czk: number;
+  nearest_expiry: string;
+  days_until_expiry: number;
+}
+
 export default function SkladPrehledPage() {
   const [data, setData] = useState<Overview | null>(null);
   const [low, setLow] = useState<ShopItem[]>([]);
+  const [expiring, setExpiring] = useState<ExpiringItem[]>([]);
+  const [writingOff, setWritingOff] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
 
@@ -44,11 +56,30 @@ export default function SkladPrehledPage() {
     Promise.all([
       fetch(`/api/sklad/overview?days=${days}`).then((r) => r.json()),
       fetch("/api/sklad/shopping").then((r) => r.json()),
-    ]).then(([d, s]) => {
+      fetch("/api/sklad/expiring?days=7").then((r) => r.json()),
+    ]).then(([d, s, ex]) => {
       if (!d.error) setData(d);
       if (Array.isArray(s.items)) setLow(s.items);
+      if (Array.isArray(ex)) setExpiring(ex);
     }).finally(() => setLoading(false));
   }, [days]);
+
+  async function quickWriteOff(item: ExpiringItem) {
+    if (item.current_qty <= 0) return;
+    if (!confirm(`Odepsat celý stav „${item.name}" (${formatQty(item.current_qty, item.base_unit as BaseUnit)}) jako expiraci?`)) return;
+    setWritingOff(item.stock_item_id);
+    const r = await fetch("/api/sklad/writeoffs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stock_item_id: item.stock_item_id, qty: item.current_qty, reason: "expirace", note: `Expirace ${item.nearest_expiry}` }),
+    });
+    setWritingOff(null);
+    if (!r.ok) { const e = await r.json(); alert(e.error ?? "Odpis selhal"); return; }
+    const ex = await fetch("/api/sklad/expiring?days=7").then((x) => x.json());
+    if (Array.isArray(ex)) setExpiring(ex);
+    const ov = await fetch(`/api/sklad/overview?days=${days}`).then((x) => x.json());
+    if (!ov.error) setData(ov);
+  }
 
   const { me } = useMe();
   const isAdmin = me?.role === "admin";
@@ -72,12 +103,55 @@ export default function SkladPrehledPage() {
         )}
       </div>
 
-      {data && (low.length > 0 || data.negative_count > 0 || data.no_price_count > 0 || (data.products_total > data.products_with_recipe)) && (
+      {data && (low.length > 0 || expiring.length > 0 || data.negative_count > 0 || data.no_price_count > 0 || (data.products_total > data.products_with_recipe)) && (
         <div className="mb-6 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Co řešit</h2>
             {low.length > 0 && <Link href="/admin/sklad/nakup" className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-black hover:bg-neutral-200">Otevřít nákup →</Link>}
           </div>
+
+          {expiring.length > 0 && (
+            <div className="mb-4">
+              <div className="mb-1 text-sm text-[var(--muted)]">
+                Blíží se expirace ({expiring.length}) — doporučujeme odepsat:
+              </div>
+              <ul className="space-y-1 text-sm">
+                {expiring.map((it) => (
+                  <li key={it.stock_item_id} className="flex items-center justify-between gap-3 border-b border-[var(--border)] py-1 last:border-0">
+                    <span>
+                      <span className="font-medium">{it.name}</span>
+                      <span className="ml-2 text-[var(--muted)]">
+                        {it.days_until_expiry < 0
+                          ? <span className="text-red-400">expirováno {it.nearest_expiry}</span>
+                          : it.days_until_expiry === 0
+                            ? <span className="text-red-400">vyprší dnes ({it.nearest_expiry})</span>
+                            : <span className={it.days_until_expiry <= 3 ? "text-amber-400" : "text-[var(--muted)]"}>
+                                za {it.days_until_expiry} {it.days_until_expiry === 1 ? "den" : it.days_until_expiry <= 4 ? "dny" : "dní"} ({it.nearest_expiry})
+                              </span>
+                        }
+                      </span>
+                      {it.current_qty > 0 && (
+                        <span className="ml-2 text-xs text-[var(--muted)]">
+                          stav {formatQty(it.current_qty, it.base_unit as BaseUnit)}
+                        </span>
+                      )}
+                    </span>
+                    {it.current_qty > 0 ? (
+                      <button
+                        onClick={() => quickWriteOff(it)}
+                        disabled={writingOff === it.stock_item_id}
+                        className="shrink-0 rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:border-red-500/40 hover:text-red-400 disabled:opacity-40"
+                      >
+                        {writingOff === it.stock_item_id ? "…" : "Odepsat"}
+                      </button>
+                    ) : (
+                      <span className="shrink-0 text-xs text-[var(--muted)]">stav 0</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {low.length > 0 && (
             <div className="mb-3">

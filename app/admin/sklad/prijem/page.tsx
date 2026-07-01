@@ -13,9 +13,10 @@ interface DraftLine {
   qty: string;
   price: string;   // za displayUnit, bez DPH
   vat_rate: string;
+  expiry_date: string;  // YYYY-MM-DD nebo prázdný string
 }
 
-const emptyLine: DraftLine = { stock_item_id: "", displayUnit: "", qty: "", price: "", vat_rate: "12" };
+const emptyLine: DraftLine = { stock_item_id: "", displayUnit: "", qty: "", price: "", vat_rate: "12", expiry_date: "" };
 
 interface AiLine { name: string; qty: number; unit: string; unit_price: number; total: number; vat_rate?: number; }
 interface AiMatchedLine extends AiLine { matched_stock_item_id: string | null; matched_name: string | null; matched_base_unit: string | null; }
@@ -60,6 +61,7 @@ export default function PrijemPage() {
       qty: String(ai.qty || ""),
       price: String(ai.unit_price || ""),
       vat_rate: String(ai.vat_rate ?? 12),
+      expiry_date: "",
     };
   }
 
@@ -167,6 +169,7 @@ export default function PrijemPage() {
         qty: toBaseQty(Number(l.qty), du.factor),
         unit_price_net_czk: toBaseUnitPrice(lineNetDisplayPrice(l), du.factor),
         vat_rate: Number(l.vat_rate),
+        expiry_date: l.expiry_date || null,
       };
     });
   }
@@ -228,12 +231,12 @@ export default function PrijemPage() {
       received_at: today(),
       note: "",
     });
-    setLines(linesFromDetail(d));
+    setLines(linesFromDetail(d, true));
     setOpen(true);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function linesFromDetail(d: any): DraftLine[] {
+  function linesFromDetail(d: any, clearExpiry = false): DraftLine[] {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const dlines: DraftLine[] = (d.items ?? []).map((it: any) => {
       const base = it.stock_item?.base_unit ?? "g";
@@ -244,6 +247,7 @@ export default function PrijemPage() {
         qty: String(Math.round((Number(it.qty) / du.factor) * 1000) / 1000),
         price: String(Math.round(Number(it.unit_price_net_czk) * du.factor * 10000) / 10000),
         vat_rate: String(Number(it.vat_rate)),
+        expiry_date: clearExpiry ? "" : (it.expiry_date ?? ""),
       };
     });
     return dlines.length ? dlines : [{ ...emptyLine }];
@@ -315,14 +319,14 @@ export default function PrijemPage() {
           </div>
 
           <div className="mt-4 space-y-2">
-            <div className="hidden gap-2 text-xs text-[var(--muted)] sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_1fr_auto]">
-              <span>Surovina</span><span>Množství</span><span>Jednotka</span><span>{pricesGross ? "Cena/j. (s DPH)" : "Cena/j. (bez DPH)"}</span><span>DPH %</span><span></span>
+            <div className="hidden gap-2 text-xs text-[var(--muted)] sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_auto]">
+              <span>Surovina</span><span>Množství</span><span>Jednotka</span><span>{pricesGross ? "Cena/j. (s DPH)" : "Cena/j. (bez DPH)"}</span><span>DPH %</span><span>Spotřeba do</span><span></span>
             </div>
             {lines.map((l, idx) => {
               const it = itemById(l.stock_item_id);
               const units = it ? displayUnitsFor(it.base_unit) : [];
               return (
-                <div key={idx} className="grid gap-2 sm:grid-cols-[2fr_1fr_1fr_1fr_1fr_auto]">
+                <div key={idx} className="grid gap-2 sm:grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_auto]">
                   <select value={l.stock_item_id} onChange={(e) => onPickItem(idx, e.target.value)} className={inputCls}>
                     <option value="">— vyber surovinu —</option>
                     {items.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
@@ -333,6 +337,7 @@ export default function PrijemPage() {
                   </select>
                   <input type="number" placeholder="0" value={l.price} onChange={(e) => setLine(idx, { price: e.target.value })} className={inputCls} />
                   <input type="number" value={l.vat_rate} onChange={(e) => setLine(idx, { vat_rate: e.target.value })} className={inputCls} />
+                  <input type="date" value={l.expiry_date} onChange={(e) => setLine(idx, { expiry_date: e.target.value })} className={inputCls} title="Datum spotřeby / min. trvanlivosti (volitelné)" />
                   <button onClick={() => removeLine(idx)} className="rounded-lg border border-[var(--border)] px-2 text-xs text-[var(--muted)] hover:text-red-400" title="Odebrat řádek">✕</button>
                 </div>
               );
@@ -429,7 +434,7 @@ export default function PrijemPage() {
                           <p className="text-xs text-[var(--muted)]">Načítám položky…</p>
                         ) : (
                           <table className="w-full text-xs">
-                            <thead className="text-left text-[var(--muted)]"><tr><th className="p-1.5">Surovina</th><th className="p-1.5">Množství</th><th className="p-1.5">Cena/j.</th><th className="p-1.5">DPH</th><th className="p-1.5">Bez DPH</th></tr></thead>
+                            <thead className="text-left text-[var(--muted)]"><tr><th className="p-1.5">Surovina</th><th className="p-1.5">Množství</th><th className="p-1.5">Cena/j.</th><th className="p-1.5">DPH</th><th className="p-1.5">Bez DPH</th><th className="p-1.5">Spotřeba do</th></tr></thead>
                             <tbody>
                               {(detail[r.id] ?? []).map((li) => (
                                 <tr key={li.id}>
@@ -438,6 +443,7 @@ export default function PrijemPage() {
                                   <td className="p-1.5">{formatCzk(Number(li.unit_price_net_czk))}</td>
                                   <td className="p-1.5">{Number(li.vat_rate)} %</td>
                                   <td className="p-1.5">{formatCzk(Number(li.line_net_czk ?? 0))}</td>
+                                  <td className="p-1.5">{li.expiry_date ?? "—"}</td>
                                 </tr>
                               ))}
                             </tbody>

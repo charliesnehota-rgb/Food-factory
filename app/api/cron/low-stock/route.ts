@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/db/supabase";
-import { sendLowStockEmail } from "@/lib/notifications";
+import { sendLowStockEmail, sendExpiringEmail } from "@/lib/notifications";
 
 // Denně spouští Vercel Cron (viz vercel.json). Projde položky pod minimem
 // a pošle souhrn adminům. Chráněno CRON_SECRET (nebo hlavičkou Vercel cronu).
@@ -30,7 +30,42 @@ export async function GET(req: NextRequest) {
     low.push({ name: it.name, current: cur, min, unit: it.base_unit, suggested });
   }
 
-  if (low.length === 0) return NextResponse.json({ ok: true, low: 0, sent: false });
+  // Položky s blížící se expirací (do 3 dnů)
+  const today = new Date().toISOString().slice(0, 10);
+  const in3 = new Date(); in3.setDate(in3.getDate() + 3);
+  const in3Str = in3.toISOString().slice(0, 10);
+
+  const { data: expiryRows } = await supabaseAdmin
+    .from("goods_receipt_items")
+    .select(`
+      stock_item_id,
+      expiry_date,
+      stock_item:stock_items!stock_item_id(name, base_unit, current_qty, is_active),
+      receipt:goods_receipts!receipt_id(status)
+    `)
+    .not("expiry_date", "is", null)
+    .lte("expiry_date", in3Str)
+    .order("expiry_date", { ascending: true });
+
+  const expiryMap = new Map<string, { name: string; current_qty: number; base_unit: string; nearest_expiry: string; days_until_expiry: number }>();
+  for (const row of expiryRows ?? []) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const receipt: any = Array.isArray(row.receipt) ? row.receipt[0] : row.receipt;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const si: any = Array.isArray(row.stock_item) ? row.stock_item[0] : row.stock_item;
+    if (receipt?.status !== "posted" || !si?.is_active) continue;
+    if (!expiryMap.has(row.stock_item_id)) {
+      const ms = new Date(row.expiry_date as string).getTime() - new Date(today).getTime();
+      expiryMap.set(row.stock_item_id, {
+        name: si.name as string,
+        current_qty: Number(si.current_qty),
+        base_unit: si.base_unit as string,
+        nearest_expiry: row.expiry_date as string,
+        days_until_expiry: Math.ceil(ms / (1000 * 86400)),
+      });
+    }
+  }
+  const expiring = Array.from(expiryMap.values());
 
   // E-maily adminů
   const { data: admins } = await supabaseAdmin
@@ -43,8 +78,13 @@ export async function GET(req: NextRequest) {
     } catch { /* přeskoč */ }
   }
 
-  if (emails.length === 0) return NextResponse.json({ ok: true, low: low.length, sent: false, reason: "žádný admin e-mail" });
+  if (emails.length === 0) {
+    return NextResponse.json({ ok: true, low: low.length, expiring: expiring.length, sent: false, reason: "žádný admin e-mail" });
+  }
 
-  await sendLowStockEmail(emails, low);
-  return NextResponse.json({ ok: true, low: low.length, sent: true, recipients: emails.length });
+  let sent = 0;
+  if (low.length > 0) { await sendLowStockEmail(emails, low); sent++; }
+  if (expiring.length > 0) { await sendExpiringEmail(emails, expiring); sent++; }
+
+  return NextResponse.json({ ok: true, low: low.length, expiring: expiring.length, sent: sent > 0, emails_sent: sent });
 }

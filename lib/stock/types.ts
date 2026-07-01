@@ -49,6 +49,7 @@ export interface ReceiptItem {
   line_net_czk?: number;
   line_vat_czk?: number;
   note?: string | null;
+  expiry_date?: string | null;  // datum min. trvanlivosti / spotřeby (YYYY-MM-DD)
   // embedded
   stock_item?: { name: string; base_unit: BaseUnit } | null;
 }
