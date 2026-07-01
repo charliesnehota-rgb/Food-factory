@@ -11,6 +11,16 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.admin": "Admin",
     "nav.accountant": "Účetní",
     "nav.overview": "Přehled",
+
+    // --- Přehled (dashboard) ---
+    "overview.title": "Přehled",
+    "overview.ordersToday": "Objednávky dnes",
+    "overview.revenue": "Tržby (zaplaceno)",
+    "overview.activeOrders": "Aktivní objednávky",
+    "overview.productsOnMenu": "Produkty v nabídce",
+    "overview.concepts": "Koncepty",
+    "overview.items": "{{count}} položek",
+    "overview.active": "aktivní",
     "nav.orders": "Objednávky",
     "nav.products": "Produkty",
     "nav.warehouse": "Sklad",
@@ -451,6 +461,16 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.admin": "管理",
     "nav.accountant": "会计",
     "nav.overview": "概览",
+
+    // --- 概览 (dashboard) ---
+    "overview.title": "概览",
+    "overview.ordersToday": "今日订单",
+    "overview.revenue": "营业额（已支付）",
+    "overview.activeOrders": "活跃订单",
+    "overview.productsOnMenu": "在售产品",
+    "overview.concepts": "品牌概念",
+    "overview.items": "{{count}} 项",
+    "overview.active": "运营中",
     "nav.orders": "订单",
     "nav.products": "产品",
     "nav.warehouse": "仓库",
