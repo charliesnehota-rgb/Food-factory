@@ -27,6 +27,7 @@ export default function SkladPrehledPage() {
   const [data, setData] = useState<Overview | null>(null);
   const [low, setLow] = useState<ShopItem[]>([]);
   const [expiring, setExpiring] = useState<ExpiringItem[]>([]);
+  const [alerts, setAlerts] = useState<{ id: string; type: string; ref_id: string | null; message: string; created_at: string }[]>([]);
   const [writingOff, setWritingOff] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
@@ -36,12 +37,22 @@ export default function SkladPrehledPage() {
       fetch(`/api/sklad/overview?days=${days}`).then(r => r.json()),
       fetch("/api/sklad/shopping").then(r => r.json()),
       fetch("/api/sklad/expiring?days=7").then(r => r.json()),
-    ]).then(([d, s, ex]) => {
+      fetch("/api/admin/alerts").then(r => r.json()),
+    ]).then(([d, s, ex, al]) => {
       if (!d.error) setData(d);
       if (Array.isArray(s.items)) setLow(s.items);
       if (Array.isArray(ex)) setExpiring(ex);
+      if (Array.isArray(al)) setAlerts(al);
     }).finally(() => setLoading(false));
   }, [days]);
+
+  async function resolveAlert(id: string) {
+    await fetch("/api/admin/alerts", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    setAlerts(a => a.filter(x => x.id !== id));
+  }
 
   async function quickWriteOff(item: ExpiringItem) {
     if (item.current_qty <= 0) return;
@@ -90,12 +101,30 @@ export default function SkladPrehledPage() {
         )}
       </div>
 
-      {data && (low.length > 0 || expiring.length > 0 || data.negative_count > 0 || data.no_price_count > 0 || data.products_total > data.products_with_recipe) && (
+      {data && (alerts.length > 0 || low.length > 0 || expiring.length > 0 || data.negative_count > 0 || data.no_price_count > 0 || data.products_total > data.products_with_recipe) && (
         <div className="mb-6 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">{t("sklad.todo.title")}</h2>
             {low.length > 0 && <Link href="/admin/sklad/nakup" className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-black hover:bg-neutral-200">{t("sklad.todo.openPurchase")}</Link>}
           </div>
+
+          {alerts.length > 0 && (
+            <div className="mb-4 space-y-1.5">
+              {alerts.map(a => (
+                <div key={a.id} className="flex items-start gap-2 rounded-lg border border-red-500/25 bg-red-500/5 px-3 py-2 text-sm">
+                  <span className="text-red-400 shrink-0">⚠</span>
+                  <div className="min-w-0 flex-1">
+                    <span className="text-red-300">{a.message}</span>
+                    {a.ref_id && <span className="ml-1.5 font-mono text-xs text-[var(--muted)]">{a.ref_id}</span>}
+                  </div>
+                  <button onClick={() => resolveAlert(a.id)}
+                    className="shrink-0 text-xs text-[var(--muted)] hover:text-white border border-[var(--border)] rounded-md px-2 py-0.5">
+                    {t("sklad.alert.resolve")}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           {expiring.length > 0 && (
             <div className="mb-4">

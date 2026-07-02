@@ -45,9 +45,13 @@ function AdminInner({ children }: { children: ReactNode }) {
 
   if (isLogin) return <>{children}</>;
 
+  // KDS běží fullscreen (tablet v kuchyni) — bez sidebaru a bottom navu
+  if (pathname.startsWith("/admin/kds")) return <>{children}</>;
+
   const allLinks = [
     { href: "/admin",            label: t("nav.overview"),   icon: "overview"  },
     { href: "/admin/objednavky", label: t("nav.orders"),     icon: "orders"    },
+    { href: "/admin/kds",        label: t("nav.kds"),        icon: "orders"    },
     { href: "/admin/produkty",   label: t("nav.products"),   icon: "more"      },
     { href: "/admin/sklad",      label: t("nav.warehouse"),  icon: "warehouse" },
     { href: "/admin/pnl",        label: t("nav.pnl"),        icon: "pnl"       },

@@ -209,7 +209,7 @@ export default function RecepturyPage() {
               {items.map((i) => <option key={i.id} value={i.id}>{i.name} ({i.base_unit})</option>)}
             </select>
             <span className="flex items-center gap-1">
-              <input type="number" placeholder="množství" value={newQty} onChange={(e) => setNewQty(e.target.value)} className={inputCls + " w-28"} />
+              <input type="number" placeholder={t("common.qtyPlaceholder")} value={newQty} onChange={(e) => setNewQty(e.target.value)} className={inputCls + " w-28"} />
               <span className="text-sm text-[var(--muted)]">{newItemObj ? baseUnitLabel(newItemObj.base_unit) : ""}</span>
             </span>
             <button onClick={addLine} disabled={saving} className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-black hover:bg-neutral-200 disabled:opacity-50">

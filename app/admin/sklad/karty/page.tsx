@@ -122,13 +122,13 @@ export default function KartyPage() {
           <p className="text-sm text-[var(--muted)]">{visible.length} {loading ? "…" : ""}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <input placeholder="hledat…" value={search} onChange={(e) => setSearch(e.target.value)} className="rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none" />
+          <input placeholder={t("common.searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} className="rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm focus:border-neutral-500 focus:outline-none" />
           <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm">
-            <option value="">Všechny kategorie</option>
+            <option value="">{t("common.allCategories")}</option>
             {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <label className="flex items-center gap-2 text-xs text-[var(--muted)]">
-            <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} /> i neaktivní
+            <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} /> {t("common.inclInactive")}
           </label>
           <button onClick={startNew} className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-neutral-200">{t("karty.add")}</button>
         </div>

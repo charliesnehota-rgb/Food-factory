@@ -25,7 +25,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         } else if (status === "cancelled") {
           await reverseForOrder(supabaseAdmin, id, by);
         }
-      } catch { /* sklad je best-effort, stav objednávky se mění tak jako tak */ }
+      } catch (e) {
+        // Sklad je best-effort — stav objednávky se změní tak jako tak,
+        // ale selhání zalogujeme, aby se sklad tiše nerozjel od reality.
+        try {
+          await supabaseAdmin.from("system_alerts").insert({
+            type: status === "cancelled" ? "reversal_failed" : "consumption_failed",
+            ref_id: id,
+            message: `Odpis skladu selhal při změně stavu na "${status}": ${String(e).slice(0, 300)}`,
+          });
+        } catch { /* alert log je poslední záchrana — když selže i ten, nic víc nezmůžeme */ }
+      }
     }
 
     // Notifikace — await, jinak serverless funkci zmrazí dřív než se e-mail odešle
