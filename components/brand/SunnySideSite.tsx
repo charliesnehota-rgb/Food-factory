@@ -64,8 +64,6 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
   const { count, openCart } = useCart();
   const [detail, setDetail] = useState<MenuItem | null>(null);
   const [loggedIn, setLoggedIn] = useState(false);
-  const [accOpen, setAccOpen] = useState(false);
-  const [accMode, setAccMode] = useState<"login" | "reg">("login");
   const bulbsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -87,8 +85,6 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
       box.appendChild(b);
     }
   }, []);
-
-  const closeAll = () => setAccOpen(false);
 
   // Merge DB menu + static fallback.
   // U DB položek neseme celý MenuItem (kvůli detailu s customizacemi);
@@ -202,40 +198,6 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
         .ss-foot-col p,.ss-foot-col a { display:block;color:#d8cdb6;font-size:14px;line-height:1.9;text-decoration:none }
         .ss-foot-col a:hover { color:var(--cream) }
         .ss-copy { margin-top:34px;padding-top:18px;border-top:1px solid #3a2c1f;color:#9c8e76;font-size:13px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;max-width:1080px;margin-left:auto;margin-right:auto;padding-left:24px;padding-right:24px }
-        .ss-backdrop { position:fixed;inset:0;background:rgba(35,26,18,.55);z-index:80;opacity:0;visibility:hidden;transition:.25s }
-        .ss-backdrop.open { opacity:1;visibility:visible }
-        .ss-cart { position:fixed;top:0;right:0;height:100%;width:min(400px,92vw);background:var(--cream);z-index:90;border-left:5px solid var(--ink);transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-12px 0 30px rgba(0,0,0,.25) }
-        .ss-cart.open { transform:translateX(0) }
-        .ss-cart-head { background:var(--brick);color:var(--paper);padding:22px 24px;border-bottom:4px solid var(--ink);display:flex;align-items:center;justify-content:space-between }
-        .ss-cart-head h3 { font-family:"Anton",Impact,sans-serif;text-transform:uppercase;font-size:24px }
-        .ss-x { background:none;border:none;color:inherit;font-size:24px;cursor:pointer;line-height:1 }
-        .ss-cart-body { flex:1;overflow-y:auto;padding:18px 24px }
-        .ss-empty { color:var(--ink-soft);text-align:center;margin-top:40px;font-size:15px }
-        .ss-ci { padding:14px 0;border-bottom:1px solid rgba(35,26,18,.12) }
-        .ss-ci-main { display:flex;justify-content:space-between;gap:10px }
-        .ss-ci-n { font-weight:600 }
-        .ss-ci-p { font-family:"DM Mono",monospace;color:var(--brick) }
-        .ss-ci-q { display:flex;align-items:center;gap:10px;margin-top:8px }
-        .ss-ci-q button { width:26px;height:26px;border-radius:50%;border:2px solid var(--ink);background:var(--paper);cursor:pointer;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-size:15px }
-        .ss-ci-q button:hover { background:var(--amber) }
-        .ss-cart-foot { border-top:4px solid var(--ink);padding:20px 24px;background:var(--paper) }
-        .ss-cart-total { display:flex;justify-content:space-between;font-size:19px;margin-bottom:14px }
-        .ss-cart-total b { font-family:"Anton",Impact,sans-serif;font-weight:400 }
-        .ss-checkout { width:100%;background:var(--ink);color:var(--paper);border:3px solid var(--ink);border-radius:12px;padding:15px;font-weight:700;font-size:17px;cursor:pointer;box-shadow:4px 4px 0 var(--brick-deep) }
-        .ss-checkout:disabled { opacity:.4;cursor:not-allowed;box-shadow:none }
-        .ss-ff-note { text-align:center;font-size:12px;color:var(--ink-soft);margin-top:10px }
-        .ss-modal { position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;visibility:hidden;transition:.25s }
-        .ss-modal.open { opacity:1;visibility:visible }
-        .ss-modal-card { background:var(--cream);border:5px solid var(--ink);border-radius:18px;width:min(400px,100%);box-shadow:10px 12px 0 rgba(35,26,18,.3);overflow:hidden }
-        .ss-modal-head { background:var(--teal);color:var(--paper);padding:22px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:4px solid var(--ink) }
-        .ss-modal-head h3 { font-family:"Anton",Impact,sans-serif;text-transform:uppercase;font-size:22px }
-        .ss-modal-body { padding:24px }
-        .ss-tabs { display:flex;gap:8px;margin-bottom:18px }
-        .ss-tab { flex:1;padding:10px;border:3px solid var(--ink);border-radius:10px;background:var(--paper);cursor:pointer;font-weight:700 }
-        .ss-tab.active { background:var(--amber) }
-        .ss-field { margin-bottom:14px }
-        .ss-field label { display:block;font-size:13px;font-weight:600;margin-bottom:5px }
-        .ss-field input { width:100%;padding:12px;border:3px solid var(--ink);border-radius:10px;background:var(--paper);font-family:inherit;font-size:15px }
         @media(max-width:860px){
           .ss-nav a { display:none }
           .ss-hero .inner { grid-template-columns:1fr;text-align:center }
@@ -264,7 +226,7 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
             <a href="#menu">Jídelní lístek</a>
             <a href="#otevreno">Otevřeno</a>
             <a href="#doby">Denní doby</a>
-            <button className="ss-icon-btn" onClick={() => setAccOpen(true)}>Účet</button>
+            <Link href={loggedIn ? "/ucet/profil" : "/ucet/prihlaseni?next=/sunny-side"} className="ss-icon-btn">{loggedIn ? "Účet" : "Přihlásit"}</Link>
             <button className="ss-icon-btn ss-cart-btn" onClick={openCart}>
               Košík {count > 0 && <span style={{ background: "var(--amber)", color: "var(--ink)", borderRadius: 999, minWidth: 20, height: 20, padding: "0 5px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "2px solid var(--ink)" }}>{count}</span>}
             </button>
@@ -397,29 +359,6 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
       </footer>
 
       {/* BACKDROP */}
-      <div className={`ss-backdrop${accOpen ? " open" : ""}`} onClick={closeAll} />
-
-      {/* ACCOUNT MODAL */}
-      <div className={`ss-modal${accOpen ? " open" : ""}`}>
-        <div className="ss-modal-card">
-          <div className="ss-modal-head">
-            <h3>{accMode === "login" ? "Přihlásit se" : "Vytvořit účet"}</h3>
-            <button className="ss-x" onClick={() => setAccOpen(false)}>✕</button>
-          </div>
-          <div className="ss-modal-body">
-            <div className="ss-tabs">
-              <button className={`ss-tab${accMode === "login" ? " active" : ""}`} onClick={() => setAccMode("login")}>Přihlásit</button>
-              <button className={`ss-tab${accMode === "reg" ? " active" : ""}`} onClick={() => setAccMode("reg")}>Registrace</button>
-            </div>
-            <div className="ss-field"><label>E-mail</label><input type="email" placeholder="jmeno@email.cz" /></div>
-            {accMode === "reg" && <div className="ss-field"><label>Jméno</label><input type="text" placeholder="Tvoje jméno" /></div>}
-            <div className="ss-field"><label>Heslo</label><input type="password" placeholder="••••••••" /></div>
-            <button className="ss-checkout" onClick={() => setAccOpen(false)}>Pokračovat</button>
-            <div className="ss-ff-note">Jeden účet Food Factory pro všechny provozy</div>
-          </div>
-        </div>
-      </div>
-
       {detail && (
         <ProductDetailModal
           item={detail}
