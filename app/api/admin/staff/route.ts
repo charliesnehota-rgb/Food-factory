@@ -13,21 +13,20 @@ export async function GET() {
   const { data: profiles } = await supabaseAdmin
     .from("user_profiles").select("id, role, created_at").in("role", STAFF_ROLES);
 
-  const out = [];
-  for (const p of profiles ?? []) {
-    try {
-      const { data } = await supabaseAdmin.auth.admin.getUserById(p.id);
-      out.push({
-        id: p.id,
-        role: p.role,
-        email: data.user?.email ?? "—",
-        name: (data.user?.user_metadata?.full_name as string) ?? "",
-        created_at: p.created_at,
-      });
-    } catch {
-      out.push({ id: p.id, role: p.role, email: "—", name: "", created_at: p.created_at });
-    }
-  }
+  // Jeden listUsers dotaz místo N × getUserById
+  const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+  const userMap = new Map((usersData?.users ?? []).map(u => [u.id, u]));
+
+  const out = (profiles ?? []).map(p => {
+    const u = userMap.get(p.id);
+    return {
+      id: p.id,
+      role: p.role,
+      email: u?.email ?? "—",
+      name: (u?.user_metadata?.full_name as string) ?? "",
+      created_at: p.created_at,
+    };
+  });
   out.sort((a, b) => (a.name || a.email).localeCompare(b.name || b.email, "cs"));
   return NextResponse.json(out);
 }

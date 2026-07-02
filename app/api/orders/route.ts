@@ -54,7 +54,44 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Zadej e-mail pro potvrzení objednávky." }, { status: 400 });
     }
 
-    const subtotal = items.reduce((s: number, i: { unitPriceCzk: number; qty: number }) => s + i.unitPriceCzk * i.qty, 0);
+    // ── SERVER-SIDE CENY ──
+    // Nikdy nevěř cenám z klienta. Načti aktuální ceny z DB + aplikuj aktivní price_overrides.
+    const productIds = items
+      .map((i: { productId?: string }) => i.productId)
+      .filter(Boolean) as string[];
+
+    if (productIds.length === 0) {
+      return NextResponse.json({ error: "Položky bez productId." }, { status: 400 });
+    }
+
+    const nowIso = new Date().toISOString();
+    const [prodRes, ovrRes] = await Promise.all([
+      supabaseAdmin.from("products")
+        .select("id, name, price_czk, available, concept_slug")
+        .in("id", productIds),
+      supabaseAdmin.from("price_overrides")
+        .select("product_id, override_czk")
+        .in("product_id", productIds)
+        .lte("valid_from", nowIso)
+        .gte("valid_until", nowIso),
+    ]);
+
+    const productMap = new Map((prodRes.data ?? []).map(p => [p.id, p]));
+    const overrideMap = new Map((ovrRes.data ?? []).map(o => [o.product_id, Number(o.override_czk)]));
+
+    // Validace: všechny položky existují, jsou dostupné a patří ke konceptu
+    const priced: { productId: string; name: string; qty: number; unitPriceCzk: number; note?: string }[] = [];
+    for (const i of items as { productId: string; qty: number; note?: string }[]) {
+      const p = productMap.get(i.productId);
+      if (!p) return NextResponse.json({ error: `Produkt ${i.productId} neexistuje.` }, { status: 400 });
+      if (!p.available) return NextResponse.json({ error: `Produkt „${p.name}" není dostupný.` }, { status: 400 });
+      if (p.concept_slug !== conceptSlug) return NextResponse.json({ error: `Produkt „${p.name}" nepatří do tohoto konceptu.` }, { status: 400 });
+      const qty = Math.max(1, Math.min(50, Math.round(Number(i.qty) || 1)));
+      const unit = overrideMap.get(i.productId) ?? Number(p.price_czk);
+      priced.push({ productId: i.productId, name: p.name, qty, unitPriceCzk: unit, note: i.note });
+    }
+
+    const subtotal = priced.reduce((s, i) => s + i.unitPriceCzk * i.qty, 0);
     const deliveryFee = fulfilment === "delivery" ? 59 : 0;
 
     const { data: order, error } = await supabaseAdmin
@@ -83,8 +120,8 @@ export async function POST(req: NextRequest) {
     }
 
     await supabaseAdmin.from("order_items").insert(
-      items.map((i: { productId: string; name: string; qty: number; unitPriceCzk: number; note?: string }) => ({
-        order_id: order.id, product_id: i.productId || null,
+      priced.map((i) => ({
+        order_id: order.id, product_id: i.productId,
         name: i.name, qty: i.qty, unit_price_czk: i.unitPriceCzk, note: i.note,
       }))
     );

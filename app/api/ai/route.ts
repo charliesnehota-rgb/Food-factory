@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/db/supabase";
+import { requireRole } from "@/lib/auth/require-staff";
 
 export async function POST(req: NextRequest) {
+  // Všechny akce mění data nebo volají placené AI — jen pro adminy.
+  if (!(await requireRole(["admin"]))) {
+    return NextResponse.json({ error: "Přístup zamítnut" }, { status: 403 });
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   const { action, ...payload } = await req.json();
 

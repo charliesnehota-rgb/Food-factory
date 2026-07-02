@@ -14,7 +14,32 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await q;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data ?? []);
+
+  // Aplikuj aktivní price_overrides (slevy/přirážky z marketing agenta)
+  const products = data ?? [];
+  if (products.length > 0) {
+    const nowIso = new Date().toISOString();
+    const { data: overrides } = await supabaseAdmin
+      .from("price_overrides")
+      .select("product_id, override_czk, reason")
+      .in("product_id", products.map(p => p.id))
+      .lte("valid_from", nowIso)
+      .gte("valid_until", nowIso);
+
+    if (overrides && overrides.length > 0) {
+      const ovrMap = new Map(overrides.map(o => [o.product_id, o]));
+      for (const p of products) {
+        const ovr = ovrMap.get(p.id);
+        if (ovr) {
+          p.original_price_czk = p.price_czk;   // původní cena (pro přeškrtnutí v UI)
+          p.price_czk = Number(ovr.override_czk);
+          p.price_override_reason = ovr.reason; // např. "Happy hour 14–17"
+        }
+      }
+    }
+  }
+
+  return NextResponse.json(products);
 }
 
 // POST — jen staff/admin (a AI přes service_role)
