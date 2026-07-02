@@ -94,23 +94,31 @@ export async function POST(req: NextRequest) {
     const subtotal = priced.reduce((s, i) => s + i.unitPriceCzk * i.qty, 0);
     const deliveryFee = fulfilment === "delivery" ? 59 : 0;
 
-    const { data: order, error } = await supabaseAdmin
-      .from("orders")
-      .insert({
-        id: makeOrderId(conceptSlug),
-        user_id: user?.id ?? null,
-        concept_slug: conceptSlug, channel, fulfilment,
-        customer_name: customer.name, customer_phone: customer.phone,
-        customer_address: customer.address,
-        subtotal_czk: subtotal, delivery_fee_czk: deliveryFee,
-        total_czk: subtotal + deliveryFee,
-        payment_status: "pending", note,
-      })
-      .select()
-      .single();
+    // Insert s retry na kolizi ID (unique violation 23505)
+    let order = null;
+    let lastError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { data, error } = await supabaseAdmin
+        .from("orders")
+        .insert({
+          id: makeOrderId(conceptSlug),
+          user_id: user?.id ?? null,
+          concept_slug: conceptSlug, channel, fulfilment,
+          customer_name: customer.name, customer_phone: customer.phone,
+          customer_address: customer.address,
+          subtotal_czk: subtotal, delivery_fee_czk: deliveryFee,
+          total_czk: subtotal + deliveryFee,
+          payment_status: "pending", note,
+        })
+        .select()
+        .single();
+      if (data) { order = data; break; }
+      lastError = error;
+      if (error?.code !== "23505") break; // jiná chyba než duplicitní ID — nezkoušej znovu
+    }
 
-    if (error || !order) {
-      return NextResponse.json({ error: error?.message ?? "Insert failed" }, { status: 500 });
+    if (!order) {
+      return NextResponse.json({ error: lastError?.message ?? "Insert failed" }, { status: 500 });
     }
 
     // E-mail hosta ulož zvlášť (best-effort — funguje i než přibude sloupec)

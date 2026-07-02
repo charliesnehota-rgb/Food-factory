@@ -29,11 +29,13 @@ export async function POST(req: NextRequest) {
     const intentId = obj.payment_intent ?? obj.id;
 
     if (orderId && supabaseAdmin) {
+      // Idempotence: aktualizuj jen dosud nezaplacenou objednávku.
+      // Stripe retry webhoooku jinak vrátí "preparing" zpět na "accepted".
       await supabaseAdmin.from("orders").update({
         payment_status: "paid",
         stripe_intent_id: intentId,
         status: "accepted",
-      }).eq("id", orderId);
+      }).eq("id", orderId).neq("payment_status", "paid");
     }
   }
 

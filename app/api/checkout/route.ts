@@ -20,6 +20,11 @@ export async function POST(req: NextRequest) {
       .from("orders").select("*, order_items(*)").eq("id", orderId).single();
     if (error || !order) return NextResponse.json({ error: "Objednávka nenalezena" }, { status: 404 });
 
+    // Už zaplacená objednávka se nesmí platit znovu (dvojklik, refresh)
+    if (order.payment_status === "paid") {
+      return NextResponse.json({ paid: true, redirect: `/objednavka/${orderId}?paid=1` });
+    }
+
     const totalAmount = Math.round(Number(order.total_czk) * 100);
     const origin = req.headers.get("origin") ?? "https://food-factory-zeta.vercel.app";
 
