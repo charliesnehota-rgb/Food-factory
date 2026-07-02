@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useCart } from "@/lib/cart";
+import { useCart, lineUnitPrice } from "@/lib/cart";
 import { useBrand } from "@/lib/brand-context";
 import { formatCzk } from "@/lib/types";
 import { BrandLogo } from "@/components/brand/BrandLogo";
@@ -73,7 +73,12 @@ export default function CheckoutPage() {
           conceptSlug: primaryConcept, channel: "web", fulfilment,
           customer: { name: name.trim(), email: email.trim(), phone: phone.trim(), address: address.trim() },
           note: note.trim(),
-          items: items.map(i => ({ productId: i.product.id, name: i.product.name, qty: i.qty, unitPriceCzk: i.product.priceCzk })),
+          items: items.map(i => ({
+            productId: i.product.id,
+            qty: i.qty,
+            note: i.note,
+            customizations: i.customizations.map(c => ({ id: c.id })),
+          })),
         }),
       });
       const data = await res.json();
@@ -238,9 +243,19 @@ export default function CheckoutPage() {
             )}
             <h2 className="font-medium" style={{ color: ink }}>Souhrn objednávky</h2>
             {items.map(item => (
-              <div key={item.product.id} className="flex justify-between text-sm">
-                <span style={{ color: muted }}>{item.qty}× {item.product.name}</span>
-                <span style={{ color: ink }}>{formatCzk(item.product.priceCzk * item.qty)}</span>
+              <div key={item.lineKey} className="flex justify-between gap-3 text-sm">
+                <div className="min-w-0">
+                  <span style={{ color: muted }}>{item.qty}× {item.product.name}</span>
+                  {item.customizations.length > 0 && (
+                    <div className="text-xs mt-0.5" style={{ color: muted, opacity: 0.85 }}>
+                      {item.customizations.map(c => `+ ${c.name}`).join(", ")}
+                    </div>
+                  )}
+                  {item.note && (
+                    <div className="text-xs mt-0.5 italic" style={{ color: muted, opacity: 0.85 }}>„{item.note}"</div>
+                  )}
+                </div>
+                <span className="shrink-0" style={{ color: ink }}>{formatCzk(lineUnitPrice(item) * item.qty)}</span>
               </div>
             ))}
             <div className="pt-3 space-y-1" style={{ borderTop: `1px solid ${line}` }}>

@@ -7,6 +7,7 @@ import { createSupabaseBrowser } from "@/lib/auth/client";
 import { formatCzk } from "@/lib/types";
 import type { MenuItem } from "@/lib/types";
 import type { BrandTheme } from "@/lib/brand/registry";
+import { ProductDetailModal } from "@/components/brand/ProductDetailModal";
 
 const SECTIONS = [
   { id: "uvod", label: "Úvod" },
@@ -17,7 +18,8 @@ const SECTIONS = [
 ];
 
 export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuItem[] }) {
-  const { addItem, count, openCart } = useCart();
+  const { count, openCart } = useCart();
+  const [detail, setDetail] = useState<MenuItem | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("uvod");
   const [loggedIn, setLoggedIn] = useState(false);
@@ -182,7 +184,7 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
                         style={{ background: b.pop, color: b.ink }}>{formatCzk(item.priceCzk)}</span>
                     </div>
                     <p className="mt-2 text-sm min-h-[40px]" style={{ color: b.muted }}>{item.description}</p>
-                    <button onClick={() => addItem(item)} disabled={!item.available}
+                    <button onClick={() => setDetail(item)} disabled={!item.available}
                       className="mt-4 w-full rounded-full py-2.5 text-sm font-bold transition group-hover:scale-105 disabled:opacity-40"
                       style={{ background: b.accent, color: b.accentInk }}>
                       {item.available ? "Přidat do košíku" : "Vyprodáno"}
@@ -290,6 +292,19 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
           <a href="/" className="text-sm" style={{ color: b.accentInk, opacity: 0.7 }}>Food Factory</a>
         </div>
       </footer>
+
+      {detail && (
+        <ProductDetailModal
+          item={detail}
+          onClose={() => setDetail(null)}
+          theme={{
+            bg: b.bg, surface: b.surface, ink: b.ink, muted: b.muted,
+            line: b.line, accent: b.accent, accentInk: b.accentInk,
+            radius: 24, border: `2px solid ${b.line}`,
+            displayFont: b.displayFont,
+          }}
+        />
+      )}
     </div>
   );
 }

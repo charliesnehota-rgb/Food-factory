@@ -7,6 +7,7 @@ import { createSupabaseBrowser } from "@/lib/auth/client";
 import { formatCzk } from "@/lib/types";
 import type { MenuItem } from "@/lib/types";
 import type { BrandTheme } from "@/lib/brand/registry";
+import { ProductDetailModal } from "@/components/brand/ProductDetailModal";
 
 const SECTIONS = [
   { id: "uvod", label: "Úvod" },
@@ -35,7 +36,8 @@ const GALLERY = [
 const TICKER = "SMASHED DAILY ✶ NO FREEZER ✶ LOCAL BEEF ✶ HAND-BUILT ✶ ";
 
 export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuItem[] }) {
-  const { addItem, count, openCart } = useCart();
+  const { count, openCart } = useCart();
+  const [detail, setDetail] = useState<MenuItem | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("uvod");
   const [loggedIn, setLoggedIn] = useState(false);
@@ -295,7 +297,7 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
                       {item.description && <p className="mt-1 text-sm" style={{ color: MUTED }}>{item.description}</p>}
                     </div>
                     <span className="sm-display text-xl font-bold tabular-nums" style={{ color: INK }}>{formatCzk(item.priceCzk)}</span>
-                    <button onClick={() => addItem(item)} disabled={!item.available}
+                    <button onClick={() => setDetail(item)} disabled={!item.available}
                       className="sm-add shrink-0 w-9 h-9 grid place-items-center text-lg font-bold disabled:opacity-30"
                       style={{ background: ACC, color: AINK, borderRadius: 2 }}>
                       +
@@ -442,6 +444,19 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
           <span>© {new Date().getFullYear()} L.T. Smash · <a href="/" className="transition hover:underline underline-offset-2" style={{ color: "inherit" }}>Powered by Food Factory</a></span>
         </div>
       </footer>
+
+      {detail && (
+        <ProductDetailModal
+          item={detail}
+          onClose={() => setDetail(null)}
+          theme={{
+            bg: BG, surface: SURF, ink: INK, muted: MUTED,
+            line: LINE, accent: ACC, accentInk: AINK,
+            radius: 4,
+            displayFont: b.displayFont,
+          }}
+        />
+      )}
     </div>
   );
 }

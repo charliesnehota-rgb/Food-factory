@@ -5,7 +5,7 @@ import type { Order, OrderStatus } from "@/lib/types";
 
 export async function fetchOrders(conceptSlug?: string): Promise<Order[]> {
   if (!supabaseAdmin) return conceptSlug ? mockOrders.filter(o => o.conceptSlug === conceptSlug) : mockOrders;
-  let q = supabaseAdmin.from("orders").select("*, order_items(*)").order("created_at", { ascending: false }).limit(200);
+  let q = supabaseAdmin.from("orders").select("*, order_items(*, order_item_customizations(*))").order("created_at", { ascending: false }).limit(200);
   if (conceptSlug) q = q.eq("concept_slug", conceptSlug);
   const { data, error } = await q;
   if (error || !data) return [];
@@ -23,9 +23,12 @@ function dbOrderToModel(row: any): Order {
   return {
     id: row.id, conceptSlug: row.concept_slug, channel: row.channel,
     fulfilment: row.fulfilment, status: row.status,
-    items: (row.order_items ?? []).map((i: { product_id: string | null; name: string; qty: number; unit_price_czk: number; note: string | null }) => ({
+    items: (row.order_items ?? []).map((i: { product_id: string | null; name: string; qty: number; unit_price_czk: number; note: string | null; order_item_customizations?: { name: string; unit_price_czk: number; qty: number }[] }) => ({
       productId: i.product_id ?? "", name: i.name, qty: i.qty,
       unitPriceCzk: Number(i.unit_price_czk), note: i.note ?? undefined,
+      customizations: (i.order_item_customizations ?? []).map(c => ({
+        name: c.name, unitPriceCzk: Number(c.unit_price_czk), qty: c.qty,
+      })),
     })),
     totalCzk: Number(row.total_czk),
     customer: { name: row.customer_name, phone: row.customer_phone ?? undefined, address: row.customer_address ?? undefined },

@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Fragment, useState, useEffect, useCallback } from "react";
 import { formatCzk } from "@/lib/types";
 import { useT } from "@/lib/i18n";
 
 interface Product {
   id: string; concept_slug: string; name: string; description: string;
   price_czk: number; category: string; tags: string[]; available: boolean; sort_order: number;
+}
+
+interface Customization {
+  id: string; product_id: string; name: string;
+  price_czk: number; available: boolean; sort_order: number;
 }
 
 const CONCEPTS = [
@@ -25,6 +30,62 @@ export default function ProductsPage() {
   const [showNew, setShowNew] = useState(false);
   const [newData, setNewData] = useState<Partial<Product>>({ concept_slug: "dumply", available: true, sort_order: 99 });
   const [saving, setSaving] = useState(false);
+
+  // ── Customizace (přídavky per produkt) ──
+  const [custOpen, setCustOpen] = useState<string | null>(null);         // rozbalený produkt
+  const [custs, setCusts] = useState<Record<string, Customization[]>>({});
+  const [custLoading, setCustLoading] = useState(false);
+  const [custNew, setCustNew] = useState({ name: "", price_czk: "", available: true });
+  const [custSaving, setCustSaving] = useState(false);
+
+  const loadCusts = useCallback(async (productId: string) => {
+    setCustLoading(true);
+    const res = await fetch(`/api/products/${productId}/customizations?all=1`);
+    const data = await res.json();
+    setCusts(prev => ({ ...prev, [productId]: Array.isArray(data) ? data : [] }));
+    setCustLoading(false);
+  }, []);
+
+  function toggleCustSection(productId: string) {
+    if (custOpen === productId) { setCustOpen(null); return; }
+    setCustOpen(productId);
+    setCustNew({ name: "", price_czk: "", available: true });
+    if (!custs[productId]) loadCusts(productId);
+  }
+
+  async function createCust(productId: string) {
+    if (!custNew.name.trim()) return;
+    setCustSaving(true);
+    await fetch(`/api/products/${productId}/customizations`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: custNew.name.trim(),
+        price_czk: Number(custNew.price_czk) || 0,
+        available: custNew.available,
+        sort_order: (custs[productId]?.length ?? 0) + 1,
+      }),
+    });
+    setCustNew({ name: "", price_czk: "", available: true });
+    setCustSaving(false);
+    loadCusts(productId);
+  }
+
+  async function toggleCustAvail(c: Customization) {
+    setCusts(prev => ({
+      ...prev,
+      [c.product_id]: (prev[c.product_id] ?? []).map(x => x.id === c.id ? { ...x, available: !x.available } : x),
+    }));
+    await fetch(`/api/customizations/${c.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ available: !c.available }),
+    });
+  }
+
+  async function deleteCust(c: Customization) {
+    if (!confirm(t("customizations.deleteConfirm"))) return;
+    await fetch(`/api/customizations/${c.id}`, { method: "DELETE" });
+    loadCusts(c.product_id);
+  }
 
   const load = useCallback(async () => {
     const res = await fetch("/api/products?all=1");
@@ -140,8 +201,11 @@ export default function ProductsPage() {
             {filtered.map(p => {
               const concept = CONCEPTS.find(c => c.slug === p.concept_slug);
               const isEditing = editing === p.id;
+              const isCustOpen = custOpen === p.id;
+              const pCusts = custs[p.id] ?? [];
               return (
-                <tr key={p.id} className="border-b border-[var(--border)] last:border-0">
+                <Fragment key={p.id}>
+                <tr className="border-b border-[var(--border)] last:border-0">
                   <td className="p-3">
                     {isEditing ? (
                       <div className="space-y-1">
@@ -178,13 +242,95 @@ export default function ProductsPage() {
                         <button onClick={() => setEditing(null)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)]">✕</button>
                       </div>
                     ) : (
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 flex-wrap">
+                        <button onClick={() => toggleCustSection(p.id)}
+                          className={"rounded-lg border px-2.5 py-1 text-xs transition " + (isCustOpen ? "border-neutral-400 text-white bg-neutral-800" : "border-[var(--border)] text-[var(--muted)] hover:text-white hover:border-neutral-600")}>
+                          {t("customizations.button")}{pCusts.length > 0 ? ` (${pCusts.length})` : ""}
+                        </button>
                         <button onClick={() => startEdit(p)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-white hover:border-neutral-600">{t("common.edit")}</button>
                         <button onClick={() => deleteProduct(p.id)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-red-400 hover:border-red-500/30">{t("common.delete")}</button>
                       </div>
                     )}
                   </td>
                 </tr>
+
+                {/* ── Customizace produktu (rozbalovací sekce) ── */}
+                {isCustOpen && (
+                  <tr className="border-b border-[var(--border)] last:border-0">
+                    <td colSpan={6} className="p-0">
+                      <div className="bg-[var(--bg)] px-4 py-4 sm:px-6">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-sm font-medium">{t("customizations.title")} · <span className="text-[var(--muted)]">{p.name}</span></h3>
+                        </div>
+
+                        {custLoading && pCusts.length === 0 ? (
+                          <p className="text-sm text-[var(--muted)]">{t("common.loading")}</p>
+                        ) : pCusts.length === 0 ? (
+                          <p className="text-sm text-[var(--muted)] mb-3">{t("customizations.empty")}</p>
+                        ) : (
+                          <div className="overflow-x-auto mb-3 rounded-xl border border-[var(--border)]">
+                            <table className="w-full text-sm">
+                              <thead className="border-b border-[var(--border)] text-left text-[var(--muted)]">
+                                <tr>
+                                  <th className="p-2.5 font-medium">{t("customizations.col.name")}</th>
+                                  <th className="p-2.5 font-medium">{t("customizations.col.price")}</th>
+                                  <th className="p-2.5 font-medium">{t("products.col.available")}</th>
+                                  <th className="p-2.5 font-medium">{t("common.actions")}</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {pCusts.map(c => (
+                                  <tr key={c.id} className="border-b border-[var(--border)] last:border-0">
+                                    <td className="p-2.5">{c.name}</td>
+                                    <td className="p-2.5">+{formatCzk(c.price_czk)}</td>
+                                    <td className="p-2.5">
+                                      <button onClick={() => toggleCustAvail(c)}
+                                        className={"rounded-full px-2.5 py-0.5 text-xs font-medium " + (c.available ? "bg-green-500/15 text-green-400" : "bg-neutral-800 text-[var(--muted)]")}>
+                                        {c.available ? t("products.available.yes") : t("products.available.no")}
+                                      </button>
+                                    </td>
+                                    <td className="p-2.5">
+                                      <button onClick={() => deleteCust(c)}
+                                        className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:text-red-400 hover:border-red-500/30">
+                                        {t("common.delete")}
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        {/* Nová customizace */}
+                        <div className="flex flex-wrap items-end gap-2">
+                          <div className="flex-1 min-w-[150px]">
+                            <label className="text-xs text-[var(--muted)]">{t("customizations.labelName")}</label>
+                            <input value={custNew.name} onChange={e => setCustNew({ ...custNew, name: e.target.value })}
+                              placeholder={t("customizations.namePlaceholder")} className={inputCls} />
+                          </div>
+                          <div className="w-28">
+                            <label className="text-xs text-[var(--muted)]">{t("customizations.labelPrice")}</label>
+                            <input type="number" min={0} value={custNew.price_czk}
+                              onChange={e => setCustNew({ ...custNew, price_czk: e.target.value })}
+                              placeholder="0" className={inputCls} />
+                          </div>
+                          <label className="flex items-center gap-2 text-sm pb-1.5 cursor-pointer select-none">
+                            <input type="checkbox" checked={custNew.available}
+                              onChange={e => setCustNew({ ...custNew, available: e.target.checked })}
+                              className="h-4 w-4 accent-white" />
+                            {t("products.labelAvailable")}
+                          </label>
+                          <button onClick={() => createCust(p.id)} disabled={custSaving || !custNew.name.trim()}
+                            className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-black hover:bg-neutral-200 disabled:opacity-50 transition">
+                            {custSaving ? t("common.saving") : t("customizations.add")}
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               );
             })}
           </tbody>

@@ -14,6 +14,16 @@ export interface MenuItem {
   available: boolean;
 }
 
+// Přídavek k produktu (slanina, sýr…) — tabulka product_customizations
+export interface ProductCustomization {
+  id: string;
+  productId: string;
+  name: string;
+  priceCzk: number;
+  available: boolean;
+  sortOrder: number;
+}
+
 export interface Concept {
   slug: string;
   name: string;
@@ -37,12 +47,19 @@ export type OrderStatus =
 export type OrderChannel = "web" | "wolt" | "foodora" | "pos";
 export type FulfilmentType = "delivery" | "pickup" | "dine_in";
 
+export interface OrderItemCustomization {
+  name: string;
+  unitPriceCzk: number;
+  qty: number;
+}
+
 export interface OrderItem {
   productId: string;
   name: string;
   qty: number;
   unitPriceCzk: number;
   note?: string;
+  customizations?: OrderItemCustomization[];
 }
 
 export interface Order {

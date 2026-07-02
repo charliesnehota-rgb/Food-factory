@@ -174,6 +174,18 @@ export const translations: Record<Lang, Record<string, string>> = {
     "products.labelConcept": "Koncept",
     "products.labelAvailable": "Dostupný",
 
+    // --- Customizace produktů ---
+    "customizations.button": "Customizace",
+    "customizations.title": "Customizace",
+    "customizations.empty": "Zatím žádné customizace. Přidej první přídavek níže.",
+    "customizations.add": "+ Přidat customizaci",
+    "customizations.col.name": "Název",
+    "customizations.col.price": "Cena",
+    "customizations.labelName": "Název *",
+    "customizations.labelPrice": "Cena (Kč)",
+    "customizations.namePlaceholder": "např. Slanina",
+    "customizations.deleteConfirm": "Opravdu smazat tuto customizaci?",
+
     // --- Nové heslo ---
     "newPassword.title": "Nové heslo",
     "newPassword.label.new": "Nové heslo",
@@ -686,6 +698,18 @@ export const translations: Record<Lang, Record<string, string>> = {
     "products.labelVat": "税率（%）",
     "products.labelConcept": "品牌",
     "products.labelAvailable": "上架",
+
+    // --- Customizace produktů ---
+    "customizations.button": "加料选项",
+    "customizations.title": "加料选项",
+    "customizations.empty": "暂无加料选项。请在下方添加第一个。",
+    "customizations.add": "+ 新增加料",
+    "customizations.col.name": "名称",
+    "customizations.col.price": "价格",
+    "customizations.labelName": "名称 *",
+    "customizations.labelPrice": "价格（CZK）",
+    "customizations.namePlaceholder": "例如：培根",
+    "customizations.deleteConfirm": "确定删除此加料选项？",
 
     // --- Nové heslo ---
     "newPassword.title": "修改密码",

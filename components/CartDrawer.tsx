@@ -1,5 +1,5 @@
 "use client";
-import { useCart } from "@/lib/cart";
+import { useCart, lineUnitPrice } from "@/lib/cart";
 import { useBrand } from "@/lib/brand-context";
 import { formatCzk } from "@/lib/types";
 import { BrandLogo } from "@/components/brand/BrandLogo";
@@ -54,23 +54,34 @@ export function CartDrawer() {
             </div>
           ) : (
             items.map(item => (
-              <div key={item.product.id} className="flex items-start gap-3 rounded-2xl p-3"
+              <div key={item.lineKey} className="flex items-start gap-3 rounded-2xl p-3"
                 style={{ background: surface, border: `1px solid ${line}` }}>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate" style={{ color: ink }}>{item.product.name}</p>
-                  <p className="text-xs mt-0.5" style={{ color: muted }}>{formatCzk(item.product.priceCzk)} / ks</p>
+                  <p className="font-medium text-sm" style={{ color: ink }}>{item.product.name}</p>
+                  {item.customizations.length > 0 && (
+                    <p className="text-xs mt-0.5" style={{ color: muted }}>
+                      {item.customizations.map(c => `+ ${c.name}`).join(", ")}
+                    </p>
+                  )}
+                  {item.note && (
+                    <p className="text-xs mt-0.5 italic" style={{ color: muted }}>„{item.note}"</p>
+                  )}
+                  <p className="text-xs mt-0.5" style={{ color: muted }}>{formatCzk(lineUnitPrice(item))} / ks</p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button onClick={() => updateQty(item.product.id, item.qty - 1)}
-                    className="w-7 h-7 rounded-lg border flex items-center justify-center text-sm transition"
-                    style={{ background: bg, borderColor: line, color: ink }}>−</button>
-                  <span className="w-5 text-center text-sm font-medium" style={{ color: ink }}>{item.qty}</span>
-                  <button onClick={() => updateQty(item.product.id, item.qty + 1)}
-                    className="w-7 h-7 rounded-lg border flex items-center justify-center text-sm transition"
-                    style={{ background: bg, borderColor: line, color: ink }}>+</button>
-                  <button onClick={() => removeItem(item.product.id)}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-xs ml-1 transition"
-                    style={{ color: muted }}>✕</button>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <span className="text-sm font-semibold" style={{ color: ink }}>{formatCzk(lineUnitPrice(item) * item.qty)}</span>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => updateQty(item.lineKey, item.qty - 1)}
+                      className="w-7 h-7 rounded-lg border flex items-center justify-center text-sm transition"
+                      style={{ background: bg, borderColor: line, color: ink }}>−</button>
+                    <span className="w-5 text-center text-sm font-medium" style={{ color: ink }}>{item.qty}</span>
+                    <button onClick={() => updateQty(item.lineKey, item.qty + 1)}
+                      className="w-7 h-7 rounded-lg border flex items-center justify-center text-sm transition"
+                      style={{ background: bg, borderColor: line, color: ink }}>+</button>
+                    <button onClick={() => removeItem(item.lineKey)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-xs ml-1 transition"
+                      style={{ color: muted }}>✕</button>
+                  </div>
                 </div>
               </div>
             ))

@@ -64,8 +64,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Položky bez productId." }, { status: 400 });
     }
 
+    // Customizace: ceny také jen z DB (klientovi nevěříme ani u přídavků)
+    const custIds = [...new Set(
+      items.flatMap((i: { customizations?: { id?: string }[] }) =>
+        (i.customizations ?? []).map(c => c.id).filter(Boolean)) as string[]
+    )];
+
     const nowIso = new Date().toISOString();
-    const [prodRes, ovrRes] = await Promise.all([
+    const [prodRes, ovrRes, custRes] = await Promise.all([
       supabaseAdmin.from("products")
         .select("id, name, price_czk, available, concept_slug")
         .in("id", productIds),
@@ -74,21 +80,46 @@ export async function POST(req: NextRequest) {
         .in("product_id", productIds)
         .lte("valid_from", nowIso)
         .gte("valid_until", nowIso),
+      custIds.length > 0
+        ? supabaseAdmin.from("product_customizations")
+            .select("id, product_id, name, price_czk, available")
+            .in("id", custIds)
+        : Promise.resolve({ data: [] as { id: string; product_id: string; name: string; price_czk: number; available: boolean }[] }),
     ]);
 
     const productMap = new Map((prodRes.data ?? []).map(p => [p.id, p]));
     const overrideMap = new Map((ovrRes.data ?? []).map(o => [o.product_id, Number(o.override_czk)]));
+    const custMap = new Map((custRes.data ?? []).map(c => [c.id, c]));
 
     // Validace: všechny položky existují, jsou dostupné a patří ke konceptu
-    const priced: { productId: string; name: string; qty: number; unitPriceCzk: number; note?: string }[] = [];
-    for (const i of items as { productId: string; qty: number; note?: string }[]) {
+    type PricedCust = { customizationId: string; name: string; unitPriceCzk: number; qty: number };
+    const priced: { productId: string; name: string; qty: number; unitPriceCzk: number; note?: string; customizations: PricedCust[] }[] = [];
+    for (const i of items as { productId: string; qty: number; note?: string; customizations?: { id: string }[] }[]) {
       const p = productMap.get(i.productId);
       if (!p) return NextResponse.json({ error: `Produkt ${i.productId} neexistuje.` }, { status: 400 });
       if (!p.available) return NextResponse.json({ error: `Produkt „${p.name}" není dostupný.` }, { status: 400 });
       if (p.concept_slug !== conceptSlug) return NextResponse.json({ error: `Produkt „${p.name}" nepatří do tohoto konceptu.` }, { status: 400 });
       const qty = Math.max(1, Math.min(50, Math.round(Number(i.qty) || 1)));
-      const unit = overrideMap.get(i.productId) ?? Number(p.price_czk);
-      priced.push({ productId: i.productId, name: p.name, qty, unitPriceCzk: unit, note: i.note });
+
+      // Validace + ocenění přídavků (musí patřit k produktu a být dostupné)
+      const lineCusts: PricedCust[] = [];
+      for (const c of i.customizations ?? []) {
+        const dbCust = custMap.get(c.id);
+        if (!dbCust) return NextResponse.json({ error: `Přídavek ${c.id} neexistuje.` }, { status: 400 });
+        if (dbCust.product_id !== i.productId) return NextResponse.json({ error: `Přídavek „${dbCust.name}" nepatří k produktu „${p.name}".` }, { status: 400 });
+        if (!dbCust.available) return NextResponse.json({ error: `Přídavek „${dbCust.name}" není dostupný.` }, { status: 400 });
+        lineCusts.push({ customizationId: dbCust.id, name: dbCust.name, unitPriceCzk: Number(dbCust.price_czk), qty: 1 });
+      }
+
+      const base = overrideMap.get(i.productId) ?? Number(p.price_czk);
+      const unit = base + lineCusts.reduce((s, c) => s + c.unitPriceCzk * c.qty, 0);
+
+      // Poznámka pro kuchyň: přídavky + poznámka zákazníka v jednom textu,
+      // aby je KDS, admin i order tracker zobrazily beze změny kódu.
+      const custText = lineCusts.map(c => `+ ${c.name}`).join(", ");
+      const noteText = [custText, i.note?.trim()].filter(Boolean).join(" · ") || undefined;
+
+      priced.push({ productId: i.productId, name: p.name, qty, unitPriceCzk: unit, note: noteText, customizations: lineCusts });
     }
 
     const subtotal = priced.reduce((s, i) => s + i.unitPriceCzk * i.qty, 0);
@@ -127,12 +158,29 @@ export async function POST(req: NextRequest) {
       catch { /* sloupec customer_email zatím nemusí existovat */ }
     }
 
-    await supabaseAdmin.from("order_items").insert(
+    const { data: insertedItems } = await supabaseAdmin.from("order_items").insert(
       priced.map((i) => ({
         order_id: order.id, product_id: i.productId,
         name: i.name, qty: i.qty, unit_price_czk: i.unitPriceCzk, note: i.note,
       }))
-    );
+    ).select("id");
+
+    // Ulož vybrané přídavky ke každé položce (strukturovaně pro reporting/P&L)
+    if (insertedItems && insertedItems.length === priced.length) {
+      const custRows = priced.flatMap((i, idx) =>
+        i.customizations.map(c => ({
+          order_item_id: insertedItems[idx].id,
+          customization_id: c.customizationId,
+          name: c.name,
+          unit_price_czk: c.unitPriceCzk,
+          qty: c.qty,
+        }))
+      );
+      if (custRows.length > 0) {
+        try { await supabaseAdmin.from("order_item_customizations").insert(custRows); }
+        catch { /* best-effort — poznámka v order_items nese info i tak */ }
+      }
+    }
 
     // Potvrzení o přijetí objednávky — await, jinak serverless funkci zmrazí dřív než se odešle
     if (customerEmail) {

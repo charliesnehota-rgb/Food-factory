@@ -3,9 +3,9 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart";
 import { createSupabaseBrowser } from "@/lib/auth/client";
-import { formatCzk } from "@/lib/types";
 import type { MenuItem } from "@/lib/types";
 import type { BrandTheme } from "@/lib/brand/registry";
+import { ProductDetailModal } from "@/components/brand/ProductDetailModal";
 
 // Sdílená base64 WebP ikona (šálek + croissant)
 const LOGO_SRC =
@@ -61,10 +61,9 @@ function Spark({ size = "1em", color = "currentColor" }: { size?: string; color?
 }
 
 export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: MenuItem[] }) {
-  const { addItem, count, openCart } = useCart();
+  const { count, openCart } = useCart();
+  const [detail, setDetail] = useState<MenuItem | null>(null);
   const [loggedIn, setLoggedIn] = useState(false);
-  const [cartLocal, setCartLocal] = useState<{ n: string; p: number; q: number }[]>([]);
-  const [cartOpen, setCartOpen] = useState(false);
   const [accOpen, setAccOpen] = useState(false);
   const [accMode, setAccMode] = useState<"login" | "reg">("login");
   const bulbsRef = useRef<HTMLDivElement>(null);
@@ -89,39 +88,23 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
     }
   }, []);
 
-  const totalCount = cartLocal.reduce((a, b) => a + b.q, 0);
-  const totalSum = cartLocal.reduce((a, b) => a + b.p * b.q, 0);
+  const closeAll = () => setAccOpen(false);
 
-  function addLocal(n: string, p: number) {
-    setCartLocal(prev => {
-      const e = prev.find(x => x.n === n);
-      if (e) return prev.map(x => x.n === n ? { ...x, q: x.q + 1 } : x);
-      return [...prev, { n, p, q: 1 }];
-    });
-    setCartOpen(true);
-  }
-
-  function changeQty(n: string, delta: number) {
-    setCartLocal(prev => {
-      const next = prev.map(x => x.n === n ? { ...x, q: x.q + delta } : x).filter(x => x.q > 0);
-      return next;
-    });
-  }
-
-  const closeAll = () => { setCartOpen(false); setAccOpen(false); };
-
-  // Merge DB menu + static fallback
-  const displayGroups = (() => {
+  // Merge DB menu + static fallback.
+  // U DB položek neseme celý MenuItem (kvůli detailu s customizacemi);
+  // statický fallback je jen k zobrazení — bez objednávání (nemá DB id).
+  type DisplayItem = { n: string; d: string; p: number; item: MenuItem | null };
+  const displayGroups: { cat: string; items: DisplayItem[] }[] = (() => {
     if (menu && menu.length > 0) {
-      const map = new Map<string, { n: string; d: string; p: number }[]>();
+      const map = new Map<string, DisplayItem[]>();
       for (const it of menu) {
         const g = map.get(it.category) ?? [];
-        g.push({ n: it.name, d: it.description ?? "", p: it.priceCzk });
+        g.push({ n: it.name, d: it.description ?? "", p: it.priceCzk, item: it });
         map.set(it.category, g);
       }
       return Array.from(map.entries()).map(([cat, items]) => ({ cat, items }));
     }
-    return MENU_ITEMS_STATIC;
+    return MENU_ITEMS_STATIC.map(g => ({ cat: g.cat, items: g.items.map(i => ({ ...i, item: null })) }));
   })();
 
   return (
@@ -282,8 +265,8 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
             <a href="#otevreno">Otevřeno</a>
             <a href="#doby">Denní doby</a>
             <button className="ss-icon-btn" onClick={() => setAccOpen(true)}>Účet</button>
-            <button className="ss-icon-btn ss-cart-btn" onClick={() => setCartOpen(true)}>
-              Košík {totalCount > 0 && <span style={{ background: "var(--amber)", color: "var(--ink)", borderRadius: 999, minWidth: 20, height: 20, padding: "0 5px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "2px solid var(--ink)" }}>{totalCount}</span>}
+            <button className="ss-icon-btn ss-cart-btn" onClick={openCart}>
+              Košík {count > 0 && <span style={{ background: "var(--amber)", color: "var(--ink)", borderRadius: 999, minWidth: 20, height: 20, padding: "0 5px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "2px solid var(--ink)" }}>{count}</span>}
             </button>
           </nav>
         </div>
@@ -297,7 +280,7 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
             <h1 className="ss-h1">Snídaně<br /><span className="y">kdykoliv.</span></h1>
             <p className="ss-lede">Vajíčka, lívance, toasty a poctivá káva. Od první kávy ráno až do večerního brunche.</p>
             <div className="ss-hero-cta">
-              <button className="ss-btn-amber" onClick={() => setCartOpen(true)}>Objednat snídani</button>
+              <a className="ss-btn-amber" href="#menu">Objednat snídani</a>
               <a className="ss-btn-ghost" href="#menu">Mrknout na lístek</a>
             </div>
           </div>
@@ -334,7 +317,9 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
                         <span className="ss-nm">{it.n}</span>
                         <span className="ss-ds" />
                         <span className="ss-pr">{it.p} Kč</span>
-                        <button className="ss-add" onClick={() => addLocal(it.n, it.p)}>+</button>
+                        {it.item && (
+                          <button className="ss-add" aria-label={`Vybrat ${it.n}`} onClick={() => setDetail(it.item)}>+</button>
+                        )}
                       </div>
                       {it.d && <span className="ss-desc">{it.d}</span>}
                     </div>
@@ -387,7 +372,7 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
         <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 24px" }}>
           <h2>Není hlad po ránu?</h2>
           <p>Nevadí — jsme tady pro vás celý den. Stav se, nebo si nech snídani dovézt až ke dveřím.</p>
-          <button className="ss-btn-dark" onClick={() => setCartOpen(true)}>Objednat online <Spark size="20px" color="var(--paper)" /></button>
+          <a className="ss-btn-dark" href="#menu" style={{ textDecoration: "none" }}>Objednat online <Spark size="20px" color="var(--paper)" /></a>
         </div>
       </section>
 
@@ -412,39 +397,7 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
       </footer>
 
       {/* BACKDROP */}
-      <div className={`ss-backdrop${cartOpen || accOpen ? " open" : ""}`} onClick={closeAll} />
-
-      {/* CART DRAWER */}
-      <aside className={`ss-cart${cartOpen ? " open" : ""}`}>
-        <div className="ss-cart-head">
-          <h3>Tvůj košík</h3>
-          <button className="ss-x" onClick={() => setCartOpen(false)}>✕</button>
-        </div>
-        <div className="ss-cart-body">
-          {cartLocal.length === 0
-            ? <p className="ss-empty">Košík je zatím prázdný.<br />Mrkni na lístek a přidej si snídani. 🍳</p>
-            : cartLocal.map((it, i) => (
-              <div className="ss-ci" key={i}>
-                <div className="ss-ci-main">
-                  <span className="ss-ci-n">{it.n}</span>
-                  <span className="ss-ci-p">{it.p} Kč</span>
-                </div>
-                <div className="ss-ci-q">
-                  <button onClick={() => changeQty(it.n, -1)}>−</button>
-                  <span>{it.q}</span>
-                  <button onClick={() => changeQty(it.n, 1)}>+</button>
-                  <button style={{ marginLeft: "auto", border: "2px solid var(--ink)", background: "transparent", color: "var(--brick)" }} onClick={() => setCartLocal(prev => prev.filter(x => x.n !== it.n))}>✕</button>
-                </div>
-              </div>
-            ))
-          }
-        </div>
-        <div className="ss-cart-foot">
-          <div className="ss-cart-total"><span>Celkem</span><b>{totalSum} Kč</b></div>
-          <button className="ss-checkout" disabled={cartLocal.length === 0}>K objednávce</button>
-          <div className="ss-ff-note">Platba a doručení přes Food Factory</div>
-        </div>
-      </aside>
+      <div className={`ss-backdrop${accOpen ? " open" : ""}`} onClick={closeAll} />
 
       {/* ACCOUNT MODAL */}
       <div className={`ss-modal${accOpen ? " open" : ""}`}>
@@ -466,6 +419,19 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
           </div>
         </div>
       </div>
+
+      {detail && (
+        <ProductDetailModal
+          item={detail}
+          onClose={() => setDetail(null)}
+          theme={{
+            bg: "#F2E7CF", surface: "#F7EFDC", ink: "#231A12", muted: "#5a4a38",
+            line: "#231A12", accent: "#BB4A2E", accentInk: "#F7EFDC",
+            radius: 18, border: "4px solid #231A12",
+            displayFont: '"Anton", Impact, sans-serif',
+          }}
+        />
+      )}
     </div>
   );
 }

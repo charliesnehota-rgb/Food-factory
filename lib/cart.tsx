@@ -2,9 +2,19 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import type { MenuItem } from "@/lib/types";
 
+// Vybraný přídavek v košíku (snapshot názvu a ceny v okamžiku přidání)
+export interface CartCustomization {
+  id: string;
+  name: string;
+  priceCzk: number;
+}
+
 export interface CartItem {
+  /** Unikátní klíč řádku: produkt + kombinace přídavků + poznámka */
+  lineKey: string;
   product: MenuItem;
   qty: number;
+  customizations: CartCustomization[];
   note?: string;
 }
 
@@ -14,9 +24,9 @@ interface CartCtx {
   total: number;
   count: number;
   activeSlug: string | null;
-  addItem: (product: MenuItem, qty?: number) => void;
-  removeItem: (productId: string) => void;
-  updateQty: (productId: string, qty: number) => void;
+  addItem: (product: MenuItem, qty?: number, customizations?: CartCustomization[], note?: string) => void;
+  removeItem: (lineKey: string) => void;
+  updateQty: (lineKey: string, qty: number) => void;
   clearCart: () => void;
   setScope: (slug: string | null) => void;
   openCart: () => void;
@@ -24,12 +34,22 @@ interface CartCtx {
 }
 
 const Ctx = createContext<CartCtx | null>(null);
-const STORAGE_KEY = "ff-carts-v1";
+const STORAGE_KEY = "ff-carts-v2"; // v2: položky mají lineKey + customizations
 const ACTIVE_KEY = "ff-cart-active-v1";
 
 // Košíky jsou oddělené per značka (slug). Položky z jedné restaurace
 // se nikdy nemíchají s jinou — každá značka má vlastní izolovaný košík.
 type CartMap = Record<string, CartItem[]>;
+
+/** Jednotková cena řádku = základ + suma přídavků */
+export function lineUnitPrice(item: CartItem): number {
+  return item.product.priceCzk + item.customizations.reduce((s, c) => s + c.priceCzk, 0);
+}
+
+function makeLineKey(productId: string, customizations: CartCustomization[], note?: string): string {
+  const custPart = customizations.map(c => c.id).sort().join(",");
+  return `${productId}|${custPart}|${note ?? ""}`;
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [carts, setCarts] = useState<CartMap>({});
@@ -41,7 +61,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setCarts(JSON.parse(raw));
+      if (raw) {
+        const parsed = JSON.parse(raw) as CartMap;
+        // Sanitizace starých/poškozených záznamů
+        for (const slug of Object.keys(parsed)) {
+          parsed[slug] = (parsed[slug] ?? []).filter(i => i?.product?.id).map(i => ({
+            ...i,
+            customizations: i.customizations ?? [],
+            lineKey: i.lineKey ?? makeLineKey(i.product.id, i.customizations ?? [], i.note),
+          }));
+        }
+        setCarts(parsed);
+      }
       const act = localStorage.getItem(ACTIVE_KEY);
       if (act) setActiveSlug(act);
     } catch { /* ignore */ }
@@ -74,36 +105,38 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (effectiveSlug && effectiveSlug !== activeSlug) setActiveSlug(effectiveSlug);
   }, [effectiveSlug, activeSlug]);
 
-  const addItem = useCallback((product: MenuItem, qty = 1) => {
+  const addItem = useCallback((product: MenuItem, qty = 1, customizations: CartCustomization[] = [], note?: string) => {
     // Položka vždy patří do košíku své vlastní značky
     const slug = product.conceptSlug;
+    const cleanNote = note?.trim() || undefined;
+    const lineKey = makeLineKey(product.id, customizations, cleanNote);
     setActiveSlug(slug);
     setCarts(prev => {
       const bucket = prev[slug] ?? [];
-      const existing = bucket.find(i => i.product.id === product.id);
+      const existing = bucket.find(i => i.lineKey === lineKey);
       const nextBucket = existing
-        ? bucket.map(i => i.product.id === product.id ? { ...i, qty: i.qty + qty } : i)
-        : [...bucket, { product, qty }];
+        ? bucket.map(i => i.lineKey === lineKey ? { ...i, qty: i.qty + qty } : i)
+        : [...bucket, { lineKey, product, qty, customizations, note: cleanNote }];
       return { ...prev, [slug]: nextBucket };
     });
     setIsOpen(true);
   }, []);
 
-  const removeItem = useCallback((id: string) => {
+  const removeItem = useCallback((lineKey: string) => {
     setCarts(prev => {
       if (!activeSlug) return prev;
-      const bucket = (prev[activeSlug] ?? []).filter(i => i.product.id !== id);
+      const bucket = (prev[activeSlug] ?? []).filter(i => i.lineKey !== lineKey);
       return { ...prev, [activeSlug]: bucket };
     });
   }, [activeSlug]);
 
-  const updateQty = useCallback((id: string, qty: number) => {
+  const updateQty = useCallback((lineKey: string, qty: number) => {
     setCarts(prev => {
       if (!activeSlug) return prev;
       let bucket = prev[activeSlug] ?? [];
       bucket = qty <= 0
-        ? bucket.filter(i => i.product.id !== id)
-        : bucket.map(i => i.product.id === id ? { ...i, qty } : i);
+        ? bucket.filter(i => i.lineKey !== lineKey)
+        : bucket.map(i => i.lineKey === lineKey ? { ...i, qty } : i);
       return { ...prev, [activeSlug]: bucket };
     });
   }, [activeSlug]);
@@ -117,7 +150,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const setScope = useCallback((slug: string | null) => setActiveSlug(slug), []);
 
-  const total = items.reduce((s, i) => s + i.product.priceCzk * i.qty, 0);
+  const total = items.reduce((s, i) => s + lineUnitPrice(i) * i.qty, 0);
   const count = items.reduce((s, i) => s + i.qty, 0);
 
   return (
