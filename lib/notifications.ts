@@ -275,3 +275,47 @@ export async function sendInviteEmail(
     }),
   }).catch(() => null);
 }
+
+// Potvrzení registrace zákazníka (posíláme sami přes Resend — Supabase mailer je nespolehlivý)
+export async function sendSignupConfirmationEmail(
+  toEmail: string,
+  toName: string,
+  confirmLink: string
+) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return { ok: false, error: "RESEND_API_KEY chybí" };
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1a1a1a">
+      <h2 style="font-size:20px;margin-bottom:8px">🍴 Vítej ve Food Factory</h2>
+      <p style="color:#555;margin-bottom:4px">Ahoj ${escapeHtml(toName)},</p>
+      <p style="color:#555;margin-bottom:24px">
+        Díky za registraci! Zbývá poslední krok — potvrď svůj e-mail kliknutím na tlačítko:
+      </p>
+      <a href="${confirmLink}"
+         style="display:inline-block;padding:12px 24px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600">
+        Potvrdit e-mail a dokončit registraci →
+      </a>
+      <p style="margin-top:24px;font-size:13px;color:#888">
+        Odkaz je platný 24 hodin. Pokud tlačítko nefunguje, zkopíruj a vlož do prohlížeče:<br>
+        <span style="word-break:break-all;color:#555">${confirmLink}</span>
+      </p>
+      <p style="margin-top:16px;font-size:13px;color:#888">
+        Pokud sis účet nezakládal/a ty, tento e-mail ignoruj.
+      </p>
+    </div>`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: process.env.RESEND_FROM ?? "Food Factory <onboarding@resend.dev>",
+      to: [toEmail],
+      subject: "Potvrď svůj e-mail — Food Factory",
+      html,
+    }),
+  }).catch(() => null);
+
+  if (!res || !res.ok) return { ok: false, error: "Odeslání selhalo" };
+  return { ok: true };
+}

@@ -30,6 +30,11 @@ function LoginForm() {
         <div className="text-3xl mb-2">🍴</div>
         <h1 className="text-xl font-semibold">Přihlášení</h1>
       </div>
+      {params.get("confirmed") === "1" && (
+        <div className="mb-5 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-300">
+          ✓ E-mail potvrzen! Přihlas se a můžeš objednávat.
+        </div>
+      )}
       <div className="space-y-4">
         <div>
           <label className="mb-1 block text-sm font-medium">E-mail</label>
