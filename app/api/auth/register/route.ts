@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/db/supabase";
 import { sendSignupConfirmationEmail } from "@/lib/notifications";
+import { brands } from "@/lib/brand/registry";
 
 // POST /api/auth/register
 // Registrace zákazníka server-side: generateLink(signup) + potvrzovací e-mail přes Resend.
@@ -8,7 +9,7 @@ import { sendSignupConfirmationEmail } from "@/lib/notifications";
 export async function POST(req: NextRequest) {
   if (!supabaseAdmin) return NextResponse.json({ error: "DB nedostupná" }, { status: 503 });
 
-  const { email, password, name, resend } = await req.json();
+  const { email, password, name, resend, brand } = await req.json();
 
   const cleanEmail = String(email ?? "").trim().toLowerCase();
   const cleanName = String(name ?? "").trim();
@@ -18,7 +19,12 @@ export async function POST(req: NextRequest) {
   }
 
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://food-factory-zeta.vercel.app";
-  const redirectTo = `${site}/ucet/prihlaseni?confirmed=1`;
+  // Registrace z brandového webu → potvrzovací odkaz vrátí zákazníka na
+  // přihlášení dané značky. Slug validujeme proti registru (žádný open redirect).
+  const brandSlug = typeof brand === "string" && brand in brands ? brand : null;
+  const redirectTo = brandSlug
+    ? `${site}/${brandSlug}/ucet/prihlaseni?confirmed=1`
+    : `${site}/ucet/prihlaseni?confirmed=1`;
 
   // ── Znovuodeslání potvrzovacího e-mailu ──
   if (resend) {

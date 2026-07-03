@@ -25,7 +25,7 @@ export function BrandNav({ brand }: { brand: BrandTheme }) {
         <nav className="flex items-center gap-2 text-sm">
           <a href="#menu" className="rounded-lg px-3 py-2 transition hover:opacity-100 opacity-70"
             style={{ color: brand.ink }}>Menu</a>
-          <Link href={loggedIn ? "/ucet/profil" : "/ucet/prihlaseni"}
+          <Link href={loggedIn ? "/ucet/profil" : `/${brand.slug}/ucet/prihlaseni`}
             className="rounded-lg px-3 py-2 transition hover:opacity-100 opacity-70"
             style={{ color: brand.ink }}>
             {loggedIn ? "Účet" : "Přihlásit"}

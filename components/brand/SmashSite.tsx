@@ -163,7 +163,7 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
           </nav>
 
           <div className="flex items-center gap-2.5">
-            <Link href={loggedIn ? "/ucet/profil" : "/ucet/prihlaseni"}
+            <Link href={loggedIn ? "/ucet/profil" : `/${b.slug}/ucet/prihlaseni`}
               className="hidden sm:block text-sm font-medium uppercase tracking-wide transition hover:opacity-70"
               style={{ color: INK }}>
               {loggedIn ? "Účet" : "Přihlásit"}

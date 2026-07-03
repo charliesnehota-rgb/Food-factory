@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { getBrand, brandStyle, brands } from "@/lib/brand/registry";
 import { BrandSetter } from "@/components/brand/BrandSetter";
@@ -34,7 +34,6 @@ export async function generateMetadata(
     title: `${b.name} — ${b.eyebrow}`,
     description: b.heroSub,
     manifest: `/${brand}/manifest.webmanifest`,
-    themeColor: b.accent,
     appleWebApp: {
       capable: true,
       title: b.name,
@@ -63,6 +62,14 @@ export async function generateMetadata(
       "msapplication-TileImage": `/${brand}/icon/192`,
     },
   };
+}
+
+export async function generateViewport(
+  { params }: { params: Promise<{ brand: string }> }
+): Promise<Viewport> {
+  const { brand } = await params;
+  const b = getBrand(brand);
+  return b ? { themeColor: b.accent } : {};
 }
 
 export default async function BrandLayout({

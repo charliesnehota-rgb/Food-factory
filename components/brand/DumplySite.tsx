@@ -95,7 +95,7 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
           </nav>
 
           <div className="flex items-center gap-2">
-            <Link href={loggedIn ? "/ucet/profil" : "/ucet/prihlaseni"}
+            <Link href={loggedIn ? "/ucet/profil" : `/${b.slug}/ucet/prihlaseni`}
               className="hidden sm:block rounded-full px-3 py-2 text-sm font-semibold transition hover:opacity-70"
               style={{ color: b.ink }}>
               {loggedIn ? "Účet" : "Přihlásit"}

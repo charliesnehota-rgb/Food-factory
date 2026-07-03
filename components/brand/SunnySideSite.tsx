@@ -226,7 +226,7 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
             <a href="#menu">Jídelní lístek</a>
             <a href="#otevreno">Otevřeno</a>
             <a href="#doby">Denní doby</a>
-            <Link href={loggedIn ? "/ucet/profil" : "/ucet/prihlaseni?next=/sunny-side"} className="ss-icon-btn">{loggedIn ? "Účet" : "Přihlásit"}</Link>
+            <Link href={loggedIn ? "/ucet/profil" : "/sunny-side/ucet/prihlaseni"} className="ss-icon-btn">{loggedIn ? "Účet" : "Přihlásit"}</Link>
             <button className="ss-icon-btn ss-cart-btn" onClick={openCart}>
               Košík {count > 0 && <span style={{ background: "var(--amber)", color: "var(--ink)", borderRadius: 999, minWidth: 20, height: 20, padding: "0 5px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "2px solid var(--ink)" }}>{count}</span>}
             </button>
