@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
   const [cooldown, setCooldown] = useState(0);
+  const [consent, setConsent] = useState(false);
 
   async function handleRegister() {
     if (!name.trim()) { setError("Zadej jméno."); return; }
@@ -20,7 +21,7 @@ export default function RegisterPage() {
     const r = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), email, password }),
+      body: JSON.stringify({ name: name.trim(), email, password, marketing_consent: consent }),
     });
     const d = await r.json();
     setLoading(false);
@@ -112,6 +113,13 @@ export default function RegisterPage() {
             className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm focus:border-neutral-500 focus:outline-none" />
           <p className="mt-1 text-xs text-[var(--muted)]">Aspoň 8 znaků.</p>
         </div>
+        <label className="flex items-start gap-2.5 cursor-pointer select-none">
+          <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-white" />
+          <span className="text-xs leading-relaxed text-[var(--muted)]">
+            Chci e-mailem dostávat novinky a akce (volitelné, odhlášení kdykoli jedním klikem)
+          </span>
+        </label>
         {error && <p className="text-sm text-red-400 rounded-lg bg-red-500/10 px-3 py-2">{error}</p>}
         <button onClick={handleRegister} disabled={loading}
           className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-black hover:bg-neutral-200 disabled:opacity-50 transition">

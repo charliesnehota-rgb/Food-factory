@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useT } from "@/lib/i18n";
 import { useToast } from "@/lib/toast";
+import { CampaignsSection } from "./CampaignsSection";
 
 // --- Typy ---
 interface Proposal {
@@ -294,6 +295,8 @@ export default function MarketingPage() {
       </div>
 
       <p className="mt-4 text-xs text-[var(--muted)]">{t("marketing.footnote")}</p>
+
+      <CampaignsSection />
     </div>
   );
 }

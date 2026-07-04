@@ -9,7 +9,7 @@ import { brands } from "@/lib/brand/registry";
 export async function POST(req: NextRequest) {
   if (!supabaseAdmin) return NextResponse.json({ error: "DB nedostupná" }, { status: 503 });
 
-  const { email, password, name, resend, brand } = await req.json();
+  const { email, password, name, resend, brand, marketing_consent } = await req.json();
 
   const cleanEmail = String(email ?? "").trim().toLowerCase();
   const cleanName = String(name ?? "").trim();
@@ -70,6 +70,14 @@ export async function POST(req: NextRequest) {
 
   const link = data?.properties?.action_link;
   if (!link) return NextResponse.json({ error: "Nepodařilo se vygenerovat potvrzovací odkaz." }, { status: 500 });
+
+  // GDPR opt-in: souhlas s marketingovými sděleními (profil vytvořil DB trigger)
+  if (marketing_consent === true && data?.user?.id) {
+    await supabaseAdmin.from("user_profiles").update({
+      marketing_consent: true,
+      marketing_consent_at: new Date().toISOString(),
+    }).eq("id", data.user.id);
+  }
 
   const sent = await sendSignupConfirmationEmail(cleanEmail, cleanName, link);
   if (!sent.ok) {

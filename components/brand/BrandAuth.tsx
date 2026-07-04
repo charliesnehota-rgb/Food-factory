@@ -139,6 +139,7 @@ function RegisterInner({ b }: { b: BrandTheme }) {
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
   const [cooldown, setCooldown] = useState(0);
+  const [consent, setConsent] = useState(false);
 
   async function handleRegister() {
     if (!name.trim()) { setError("Zadej jméno."); return; }
@@ -148,7 +149,7 @@ function RegisterInner({ b }: { b: BrandTheme }) {
     const r = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), email, password, brand: b.slug }),
+      body: JSON.stringify({ name: name.trim(), email, password, brand: b.slug, marketing_consent: consent }),
     });
     const d = await r.json();
     setLoading(false);
@@ -227,6 +228,13 @@ function RegisterInner({ b }: { b: BrandTheme }) {
         <Field b={b} label="Heslo" type="password" autoComplete="new-password" hint="Aspoň 8 znaků."
           value={password} onChange={e => setPassword(e.target.value)}
           onKeyDown={e => e.key === "Enter" && handleRegister()} />
+        <label className="flex items-start gap-2.5 cursor-pointer select-none">
+          <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0" style={{ accentColor: b.accent }} />
+          <span className="text-xs leading-relaxed" style={{ color: b.muted }}>
+            Chci e-mailem dostávat novinky a akce (volitelné, odhlášení kdykoli jedním klikem)
+          </span>
+        </label>
         {error && <ErrorBox>{error}</ErrorBox>}
         <PrimaryBtn b={b} onClick={handleRegister} disabled={loading}>
           {loading ? "Vytvářím…" : "Vytvořit účet"}
