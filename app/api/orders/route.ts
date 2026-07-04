@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { conceptSlug, channel, fulfilment, items, customer, note } = body;
+    const { conceptSlug, channel, fulfilment, items, customer, note, marketing_opt_in } = body;
 
     if (!conceptSlug || !channel || !fulfilment || !items?.length || !customer?.name) {
       return NextResponse.json({ error: "Chybí povinná pole" }, { status: 400 });
@@ -156,6 +156,28 @@ export async function POST(req: NextRequest) {
     if (customerEmail) {
       try { await supabaseAdmin.from("orders").update({ customer_email: customerEmail }).eq("id", order.id); }
       catch { /* sloupec customer_email zatím nemusí existovat */ }
+    }
+
+    // Opt-in novinek z checkoutu (GDPR souhlas zaškrtnutím, best-effort)
+    if (marketing_opt_in === true && customerEmail) {
+      try {
+        if (user) {
+          // Přihlášený zákazník → souhlas na profilu
+          await supabaseAdmin.from("user_profiles").update({
+            marketing_consent: true,
+            marketing_consent_at: new Date().toISOString(),
+          }).eq("id", user.id).eq("marketing_consent", false);
+        } else {
+          // Host → tabulka odběratelů (re-subscribe obnoví souhlas)
+          await supabaseAdmin.from("marketing_subscribers").upsert({
+            email: customerEmail.toLowerCase(),
+            name: customer?.name?.trim() || null,
+            source: "checkout",
+            marketing_consent: true,
+            unsubscribed_at: null,
+          }, { onConflict: "email" });
+        }
+      } catch { /* marketing nesmí shodit objednávku */ }
     }
 
     const { data: insertedItems } = await supabaseAdmin.from("order_items").insert(

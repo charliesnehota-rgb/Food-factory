@@ -26,6 +26,7 @@ function ProfileInner() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [newsletter, setNewsletter] = useState(false);
 
   useEffect(() => {
     fetch("/api/account/profile").then(r => r.json()).then(d => {
@@ -36,6 +37,7 @@ function ProfileInner() {
       setPhone(p.phone ?? "");
       setAddress(p.address ?? "");
       setHasCard(!!p.stripe_customer_id);
+      setNewsletter(!!(p as Profile & { marketing_consent?: boolean }).marketing_consent);
       setLoading(false);
     });
   }, [router]);
@@ -44,7 +46,7 @@ function ProfileInner() {
     setSaving(true); setSaved(false);
     await fetch("/api/account/profile", {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ full_name: name, phone, address }),
+      body: JSON.stringify({ full_name: name, phone, address, marketing_consent: newsletter }),
     });
     setSaving(false); setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -98,6 +100,14 @@ function ProfileInner() {
           <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Ulice a číslo, město"
             className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm focus:border-neutral-500 focus:outline-none" />
         </div>
+
+        <label className="flex items-start gap-2.5 cursor-pointer select-none">
+          <input type="checkbox" checked={newsletter} onChange={e => setNewsletter(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-white" />
+          <span className="text-xs leading-relaxed text-[var(--muted)]">
+            Chci e-mailem dostávat novinky a akce Food Factory (odhlášení kdykoli)
+          </span>
+        </label>
 
         <button onClick={save} disabled={saving}
           className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-black hover:bg-neutral-200 disabled:opacity-50 transition">

@@ -124,7 +124,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "campaigns.status.failed": "Chyba",
     "campaigns.deleteConfirm": "Opravdu smazat tento koncept kampaně?",
     "campaigns.err.missing": "Vyplň název, předmět i tělo kampaně.",
-    "campaigns.footnote": "Odesílá se jen zákazníkům se souhlasem (opt-in při registraci). Každý e-mail má odhlašovací odkaz. Resend free tier: 100 e-mailů/den, 3 000/měsíc.",
+    "campaigns.footnote": "Odesílá se jen zákazníkům se souhlasem (opt-in při registraci, v objednávce nebo v profilu). Každý e-mail má odhlašovací odkaz. Resend free tier: 100 e-mailů/den, 3 000/měsíc.",
     "nav.signOut": "Odhlásit se",
 
     // --- Sklad sub-nav skupiny ---
@@ -684,7 +684,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "campaigns.status.failed": "失败",
     "campaigns.deleteConfirm": "确定删除此活动草稿？",
     "campaigns.err.missing": "请填写名称、主题和正文。",
-    "campaigns.footnote": "仅发送给已同意接收的顾客（注册时选择）。每封邮件含退订链接。Resend 免费额度：100 封/天，3000 封/月。",
+    "campaigns.footnote": "仅发送给已同意接收的顾客（注册、下单或个人资料中选择）。每封邮件含退订链接。Resend 免费额度：100 封/天，3000 封/月。",
     "nav.signOut": "退出登录",
 
     // --- Sklad sub-nav skupiny ---

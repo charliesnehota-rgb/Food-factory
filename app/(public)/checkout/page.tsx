@@ -30,6 +30,7 @@ export default function CheckoutPage() {
   const [payment, setPayment] = useState<Payment>("card");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [newsletter, setNewsletter] = useState(false);
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [note, setNote] = useState("");
@@ -72,6 +73,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           conceptSlug: primaryConcept, channel: "web", fulfilment,
           customer: { name: name.trim(), email: email.trim(), phone: phone.trim(), address: address.trim() },
+          marketing_opt_in: newsletter,
           note: note.trim(),
           items: items.map(i => ({
             productId: i.product.id,
@@ -206,6 +208,13 @@ export default function CheckoutPage() {
                   ? "E-mail z tvého účtu — potvrzení a stav objednávky pošleme sem."
                   : "Pošleme potvrzení a budeme informovat o stavu objednávky."}
               </p>
+              <label className="mt-2 flex items-start gap-2.5 cursor-pointer select-none">
+                <input type="checkbox" checked={newsletter} onChange={e => setNewsletter(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0" style={{ accentColor: ink }} />
+                <span className="text-xs leading-relaxed" style={{ color: muted }}>
+                  Posílejte mi e-mailem novinky a akce (volitelné, odhlášení kdykoli jedním klikem)
+                </span>
+              </label>
             </div>
 
             {[
