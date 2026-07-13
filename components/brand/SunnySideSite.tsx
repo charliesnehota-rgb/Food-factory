@@ -143,6 +143,7 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
         .ss-btn-ghost:hover { background:var(--paper);color:var(--teal-deep) }
         .ss-hero-badge { justify-self:center;position:relative }
         .ss-hero-badge img { width:min(360px,80%);display:block;margin:0 auto;border-radius:50%;filter:drop-shadow(4px 9px 7px rgba(0,0,0,.28)) }
+        .ss-hero-badge img.ss-hero-family { width:min(560px,100%);height:auto;border-radius:0;filter:drop-shadow(5px 10px 9px rgba(0,0,0,.22)) }
         .ss-bs1 { position:absolute;color:var(--amber);top:-2px;right:24px;font-size:30px;animation:ss-tw 3s ease-in-out infinite }
         .ss-bs2 { position:absolute;color:var(--amber);bottom:30px;left:2px;font-size:20px;animation:ss-tw 3s ease-in-out infinite .8s }
         @keyframes ss-tw { 0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.25);opacity:1} }
@@ -248,7 +249,8 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
           </div>
           <div className="ss-hero-badge">
             <span className="ss-bs1"><Spark size="30px" color="var(--amber)" /></span>
-            <img src={LOGO_SRC} alt="Prostě snídaně — šálek a croissant" />
+            <img className="ss-hero-family" src="/brands/sunny-side-family.webp"
+              alt="Rodina u snídaně — retro ilustrace" width={962} height={867} />
             <span className="ss-bs2"><Spark size="20px" color="var(--amber)" /></span>
           </div>
         </div>
