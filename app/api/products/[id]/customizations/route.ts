@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/db/supabase";
 import { requireStaff } from "@/lib/auth/require-staff";
+import { enqueueChannelSync } from "@/lib/channels";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!supabaseAdmin) return NextResponse.json([]);
@@ -41,5 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }).select().single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const { data: prod } = await supabaseAdmin.from("products").select("concept_slug").eq("id", id).single();
+  if (prod?.concept_slug) await enqueueChannelSync(prod.concept_slug, "menu_full");
   return NextResponse.json(data, { status: 201 });
 }

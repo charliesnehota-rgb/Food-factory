@@ -56,6 +56,8 @@ function AdminInner({ children }: { children: ReactNode }) {
     { href: "/admin/sklad",      label: t("nav.warehouse"),  icon: "warehouse" },
     { href: "/admin/pnl",        label: t("nav.pnl"),        icon: "pnl"       },
     { href: "/admin/marketing",  label: t("nav.marketing"),  icon: "marketing" },
+    { href: "/admin/kanaly",     label: t("nav.channels"),   icon: "more"      },
+    { href: "/admin/provoz",     label: t("nav.hours"),      icon: "overview"  },
   ];
   const accountantLinks = [
     { href: "/admin/sklad/exporty", label: t("nav.exports"), icon: "pnl" },

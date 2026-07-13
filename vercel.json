@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/low-stock",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/channel-sync",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

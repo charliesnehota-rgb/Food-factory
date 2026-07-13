@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/db/supabase";
 import { requireStaff } from "@/lib/auth/require-staff";
+import { enqueueChannelSync } from "@/lib/channels";
 
 // GET — veřejné (menu pro zákazníky i admin)
 export async function GET(req: NextRequest) {
@@ -69,5 +70,6 @@ export async function POST(req: NextRequest) {
   }).select().single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (data?.concept_slug) await enqueueChannelSync(data.concept_slug, "menu_full");
   return NextResponse.json(data, { status: 201 });
 }

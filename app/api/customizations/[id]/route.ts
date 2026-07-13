@@ -3,6 +3,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/db/supabase";
 import { requireStaff } from "@/lib/auth/require-staff";
+import { enqueueChannelSync } from "@/lib/channels";
+
+async function syncProductConcept(customizationOrProductId: { product_id?: string | null }) {
+  if (!supabaseAdmin || !customizationOrProductId?.product_id) return;
+  const { data: prod } = await supabaseAdmin.from("products")
+    .select("concept_slug").eq("id", customizationOrProductId.product_id).single();
+  if (prod?.concept_slug) await enqueueChannelSync(prod.concept_slug, "menu_full");
+}
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const staff = await requireStaff();
@@ -26,6 +34,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .update(allowed).eq("id", id).select().single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await syncProductConcept(data ?? {});
   return NextResponse.json(data);
 }
 
@@ -35,7 +44,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!supabaseAdmin) return NextResponse.json({ error: "DB nedostupná" }, { status: 503 });
 
   const { id } = await params;
+  const { data: cust } = await supabaseAdmin.from("product_customizations").select("product_id").eq("id", id).single();
   const { error } = await supabaseAdmin.from("product_customizations").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await syncProductConcept(cust ?? {});
   return NextResponse.json({ ok: true });
 }

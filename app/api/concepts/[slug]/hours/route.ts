@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/db/supabase";
 import { requireRole } from "@/lib/auth/require-staff";
+import { enqueueChannelSync } from "@/lib/channels";
 import { isOpenNow, nextOpenText, type WeekHours } from "@/lib/opening-hours";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
@@ -41,5 +42,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ sl
     .upsert({ concept_slug: slug, hours, updated_at: new Date().toISOString() }, { onConflict: "concept_slug" });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await enqueueChannelSync(slug, "hours");
   return NextResponse.json({ ok: true });
 }
