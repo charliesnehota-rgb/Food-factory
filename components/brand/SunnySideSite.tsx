@@ -143,6 +143,10 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
         .ss-btn-ghost:hover { background:var(--paper);color:var(--teal-deep) }
         .ss-hero-badge { justify-self:center;position:relative }
         .ss-hero-badge img { width:min(360px,80%);display:block;margin:0 auto;border-radius:50%;filter:drop-shadow(4px 9px 7px rgba(0,0,0,.28)) }
+        .ss-hero-badge--family { align-self:end;margin-bottom:-76px;width:100% }
+        .ss-hero-badge--family img.ss-hero-family { width:min(620px,100%);height:auto;border-radius:0;filter:drop-shadow(0 6px 8px rgba(0,0,0,.22)) }
+        .ss-hero-badge--family .ss-bs1 { top:6%;right:-2px }
+        .ss-hero-badge--family .ss-bs2 { bottom:45%;left:-6px }
         .ss-bs1 { position:absolute;color:var(--amber);top:-2px;right:24px;font-size:30px;animation:ss-tw 3s ease-in-out infinite }
         .ss-bs2 { position:absolute;color:var(--amber);bottom:30px;left:2px;font-size:20px;animation:ss-tw 3s ease-in-out infinite .8s }
         @keyframes ss-tw { 0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.25);opacity:1} }
@@ -202,6 +206,7 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
           .ss-nav a { display:none }
           .ss-hero .inner { grid-template-columns:1fr;text-align:center }
           .ss-hero-badge { order:-1;margin-bottom:20px }
+          .ss-hero-badge--family { order:0;margin:28px auto -76px }
           .ss-hero-cta { justify-content:center }
           .ss-board-cols { grid-template-columns:1fr;gap:30px }
           .ss-dp-grid { grid-template-columns:1fr 1fr }
@@ -246,9 +251,10 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
               <a className="ss-btn-ghost" href="#menu">Mrknout na lístek</a>
             </div>
           </div>
-          <div className="ss-hero-badge">
+          <div className="ss-hero-badge ss-hero-badge--family">
             <span className="ss-bs1"><Spark size="30px" color="var(--amber)" /></span>
-            <img src={LOGO_SRC} alt="Prostě snídaně — šálek a croissant" />
+            <img className="ss-hero-family" src="/brands/sunny-side-family.webp"
+              alt="Retro rodina u snídaně" width={1200} height={649} />
             <span className="ss-bs2"><Spark size="20px" color="var(--amber)" /></span>
           </div>
         </div>
