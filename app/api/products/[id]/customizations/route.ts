@@ -36,6 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { data, error } = await supabaseAdmin.from("product_customizations").insert({
     product_id: id,
     name: String(body.name).trim(),
+    name_en: body.name_en ? String(body.name_en).trim() : null,
     price_czk: Math.max(0, Number(body.price_czk) || 0),
     available: body.available !== false,
     sort_order: Number(body.sort_order) || 0,

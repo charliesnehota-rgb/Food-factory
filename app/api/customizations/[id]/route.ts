@@ -22,6 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const allowed: Record<string, unknown> = {};
   if (body.name !== undefined) allowed.name = String(body.name).trim();
+  if (body.name_en !== undefined) allowed.name_en = body.name_en ? String(body.name_en).trim() : null;
   if (body.price_czk !== undefined) allowed.price_czk = Math.max(0, Number(body.price_czk) || 0);
   if (body.available !== undefined) allowed.available = !!body.available;
   if (body.sort_order !== undefined) allowed.sort_order = Number(body.sort_order) || 0;

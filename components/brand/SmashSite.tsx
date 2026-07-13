@@ -8,20 +8,68 @@ import { formatCzk } from "@/lib/types";
 import type { MenuItem } from "@/lib/types";
 import type { BrandTheme } from "@/lib/brand/registry";
 import { ProductDetailModal } from "@/components/brand/ProductDetailModal";
+import { useCustomerLocale, itemName, itemDesc, itemCategory, LangToggle } from "@/lib/customer-locale";
 
 const SECTIONS = [
-  { id: "uvod", label: "Úvod" },
-  { id: "menu", label: "Menu" },
-  { id: "remeslo", label: "Řemeslo" },
-  { id: "galerie", label: "Galerie" },
-  { id: "kontakt", label: "Kontakt" },
+  { id: "uvod", label: "Úvod", labelEn: "Home" },
+  { id: "menu", label: "Menu", labelEn: "Menu" },
+  { id: "remeslo", label: "Řemeslo", labelEn: "Craft" },
+  { id: "galerie", label: "Galerie", labelEn: "Gallery" },
+  { id: "kontakt", label: "Kontakt", labelEn: "Contact" },
 ];
 
-const PROCESS = [
-  { n: "01", t: "Umlátíme", d: "Kulička hovězího z farmy, přímo na rozpálenou plotnu. Tlak, sekundy, křupavé okraje." },
-  { n: "02", t: "Roztavíme", d: "Cheddar přímo na placku, dokud nezačne téct přes hranu. Žádný spěch." },
-  { n: "03", t: "Složíme", d: "Bulka z lokální pekárny, kvašená okurka, naše tajná omáčka. Hotovo." },
-];
+const COPY = {
+  cs: {
+    account: "Účet", login: "Přihlásit",
+    h1a: "Umlácený. Roztavený.", h1b: "Tvůj.",
+    lede: "Tence umlácené hovězí placky, roztavený cheddar a domácí omáčky. Žádný mrazák. Žádné kompromisy. Jen řemeslo.",
+    cta1: "Objednat →", cta2: "Naše řemeslo",
+    menuKicker: "Jídelní lístek", menuH2: "Menu",
+    menuNote: "Malá karta, velká pozornost. Měníme podle sezóny a toho, co seženeme čerstvé.",
+    menuEmpty: "Menu se právě připravuje…",
+    craftKicker: "Jak to děláme", craftH2a: "Řemeslo,", craftH2b: "ne fastfood.",
+    craftP: "Stojíme za plotnou s rukama v rukavicích a hlídáme každou placku. Kvalita má cenu — a my ji nesnižujeme.",
+    process: [
+      { n: "01", t: "Umlátíme", d: "Kulička hovězího z farmy, přímo na rozpálenou plotnu. Tlak, sekundy, křupavé okraje." },
+      { n: "02", t: "Roztavíme", d: "Cheddar přímo na placku, dokud nezačne téct přes hranu. Žádný spěch." },
+      { n: "03", t: "Složíme", d: "Bulka z lokální pekárny, kvašená okurka, naše tajná omáčka. Hotovo." },
+    ],
+    galKicker: "Backstage", galH2: "Galerie",
+    galP: "Sem přijdou fotky z plotny a kuchyně. Zatím placeholdery.",
+    ctaH2: "Pořádný hlad?",
+    ctaP: "Objednej smash online — vyzvednutí za rohem, nebo rozvoz až ke dveřím.",
+    contactKicker: "Napiš nám", contactH2: "Kontakt",
+    thanks: "Díky!", thanksP: "Ozveme se co nejdřív.",
+    phName: "Jméno", phEmail: "E-mail", phMsg: "Tvoje zpráva…",
+    bistro: "L.T. Smash bistro", hours: "Po–Ne 11:00 — 22:00",
+    terms: "Obchodní podmínky",
+  },
+  en: {
+    account: "Account", login: "Sign in",
+    h1a: "Smashed. Melted.", h1b: "Yours.",
+    lede: "Thin-smashed beef patties, melted cheddar and house-made sauces. No freezer. No compromises. Just craft.",
+    cta1: "Order →", cta2: "Our craft",
+    menuKicker: "Menu", menuH2: "Menu",
+    menuNote: "A short menu, full attention. It changes with the season and whatever we source fresh.",
+    menuEmpty: "The menu is being prepared…",
+    craftKicker: "How we do it", craftH2a: "Craft,", craftH2b: "not fast food.",
+    craftP: "We stand at the griddle, gloves on, watching every single patty. Quality has a price — and we don't cut it.",
+    process: [
+      { n: "01", t: "We smash", d: "A ball of farm beef straight onto the hot griddle. Pressure, seconds, crispy edges." },
+      { n: "02", t: "We melt", d: "Cheddar right on the patty until it runs over the edge. No rush." },
+      { n: "03", t: "We build", d: "A bun from a local bakery, fermented pickle, our secret sauce. Done." },
+    ],
+    galKicker: "Backstage", galH2: "Gallery",
+    galP: "Photos from the griddle and the kitchen are coming. Placeholders for now.",
+    ctaH2: "Properly hungry?",
+    ctaP: "Order your smash online — pickup around the corner, or delivery to your door.",
+    contactKicker: "Write to us", contactH2: "Contact",
+    thanks: "Thanks!", thanksP: "We'll get back to you shortly.",
+    phName: "Name", phEmail: "E-mail", phMsg: "Your message…",
+    bistro: "L.T. Smash bistro", hours: "Mon–Sun 11:00 — 22:00",
+    terms: "Terms & Conditions",
+  },
+};
 
 // Galerie – placeholder bloky (později nahradíš fotkami do /public/smash/)
 const GALLERY = [
@@ -37,6 +85,8 @@ const TICKER = "SMASHED DAILY ✶ NO FREEZER ✶ LOCAL BEEF ✶ HAND-BUILT ✶ "
 
 export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuItem[] }) {
   const { count, openCart } = useCart();
+  const { locale } = useCustomerLocale();
+  const c = COPY[locale];
   const [detail, setDetail] = useState<MenuItem | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("uvod");
@@ -69,9 +119,9 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
 
   const categories = new Map<string, MenuItem[]>();
   for (const it of menu) {
-    const list = categories.get(it.category) ?? [];
+    const list = categories.get(itemCategory(it, locale)) ?? [];
     list.push(it);
-    categories.set(it.category, list);
+    categories.set(itemCategory(it, locale), list);
   }
 
   async function submitContact() {
@@ -156,7 +206,7 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
               <a key={s.id} href={`#${s.id}`}
                 className="sm-link-underline text-sm font-medium tracking-wide uppercase"
                 style={{ color: active === s.id ? INK : MUTED }}>
-                {s.label}
+                {locale === "en" ? s.labelEn : s.label}
               </a>
             ))}
           </nav>
@@ -165,8 +215,9 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
             <Link href={loggedIn ? "/ucet/profil" : `/${b.slug}/ucet/prihlaseni`}
               className="hidden sm:block text-sm font-medium uppercase tracking-wide transition hover:opacity-70"
               style={{ color: INK }}>
-              {loggedIn ? "Účet" : "Přihlásit"}
+              {loggedIn ? c.account : c.login}
             </Link>
+            <LangToggle ink={INK} line={LINE} />
             <button onClick={openCart}
               className="text-sm font-bold uppercase tracking-wide px-5 py-2.5 transition hover:scale-105"
               style={{ background: ACC, color: AINK, borderRadius: 2 }}>
@@ -182,7 +233,7 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
             {SECTIONS.map((s) => (
               <a key={s.id} href={`#${s.id}`} onClick={() => setMenuOpen(false)}
                 className="py-2.5 text-sm font-medium uppercase tracking-wide" style={{ color: INK }}>
-                {s.label}
+                {locale === "en" ? s.labelEn : s.label}
               </a>
             ))}
           </nav>
@@ -231,24 +282,23 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
           {/* obří headline na plnou šířku */}
           <h1 className="sm-display font-extrabold uppercase mx-auto"
             style={{ fontSize: "clamp(48px, 11vw, 150px)", lineHeight: .82, letterSpacing: "-0.03em", color: INK }}>
-            Umlácený. Roztavený. <span style={{ color: ACC }}>Tvůj.</span>
+            {c.h1a} <span style={{ color: ACC }}>{c.h1b}</span>
           </h1>
 
           <p className="mx-auto mt-8 max-w-lg text-lg leading-relaxed" style={{ color: MUTED }}>
-            Tence umlácené hovězí placky, roztavený cheddar a domácí omáčky.
-            Žádný mrazák. Žádné kompromisy. Jen řemeslo.
+            {c.lede}
           </p>
 
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <a href="#menu"
               className="text-sm font-bold uppercase tracking-wider px-9 py-4 transition hover:scale-105"
               style={{ background: ACC, color: AINK, borderRadius: 2 }}>
-              Objednat →
+              {c.cta1}
             </a>
             <a href="#remeslo"
               className="text-sm font-bold uppercase tracking-wider px-9 py-4 transition hover:scale-105"
               style={{ color: INK, border: `1px solid ${LINE}`, borderRadius: 2 }}>
-              Naše řemeslo
+              {c.cta2}
             </a>
           </div>
         </div>
@@ -267,11 +317,11 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
         <div className="mx-auto max-w-6xl px-5">
           <div className="flex items-end justify-between mb-14 flex-wrap gap-4">
             <div>
-              <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: ACC }}>Jídelní lístek</p>
-              <h2 className="sm-display text-5xl sm:text-6xl font-extrabold uppercase" style={{ letterSpacing: "-0.02em", color: INK }}>Menu</h2>
+              <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: ACC }}>{c.menuKicker}</p>
+              <h2 className="sm-display text-5xl sm:text-6xl font-extrabold uppercase" style={{ letterSpacing: "-0.02em", color: INK }}>{c.menuH2}</h2>
             </div>
             <p className="max-w-xs text-sm" style={{ color: MUTED }}>
-              Malá karta, velká pozornost. Měníme podle sezóny a toho, co seženeme čerstvé.
+              {c.menuNote}
             </p>
           </div>
 
@@ -287,12 +337,12 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
                     style={{ borderBottom: `1px solid ${LINE}` }}>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline gap-3">
-                        <span className="text-lg font-semibold" style={{ color: INK }}>{item.name}</span>
+                        <span className="text-lg font-semibold" style={{ color: INK }}>{itemName(item, locale)}</span>
                         {item.tags?.includes("vegetarian") && (
                           <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5" style={{ color: ACC, border: `1px solid ${ACC}`, borderRadius: 2 }}>veg</span>
                         )}
                       </div>
-                      {item.description && <p className="mt-1 text-sm" style={{ color: MUTED }}>{item.description}</p>}
+                      {itemDesc(item, locale) && <p className="mt-1 text-sm" style={{ color: MUTED }}>{itemDesc(item, locale)}</p>}
                     </div>
                     <span className="sm-display text-xl font-bold tabular-nums" style={{ color: INK }}>{formatCzk(item.priceCzk)}</span>
                     <button onClick={() => setDetail(item)} disabled={!item.available}
@@ -307,7 +357,7 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
           ))}
 
           {categories.size === 0 && (
-            <p style={{ color: MUTED }}>Menu se právě připravuje…</p>
+            <p style={{ color: MUTED }}>{c.menuEmpty}</p>
           )}
         </div>
       </section>
@@ -318,17 +368,16 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
         <div className="relative mx-auto max-w-6xl px-5">
           <div className="grid lg:grid-cols-12 gap-12 items-start">
             <div className="lg:col-span-4">
-              <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: ACC }}>Jak to děláme</p>
+              <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: ACC }}>{c.craftKicker}</p>
               <h2 className="sm-display text-4xl sm:text-5xl font-extrabold uppercase leading-[0.9]" style={{ color: INK }}>
-                Řemeslo,<br />ne fastfood.
+                {c.craftH2a}<br />{c.craftH2b}
               </h2>
               <p className="mt-5 text-sm leading-relaxed" style={{ color: MUTED }}>
-                Stojíme za plotnou s rukama v rukavicích a hlídáme každou placku.
-                Kvalita má cenu — a my ji nesnižujeme.
+                {c.craftP}
               </p>
             </div>
             <div className="lg:col-span-8 grid sm:grid-cols-3 gap-px" style={{ background: LINE }}>
-              {PROCESS.map((p) => (
+              {c.process.map((p) => (
                 <div key={p.n} className="p-7" style={{ background: SURF }}>
                   <div className="sm-display text-5xl font-extrabold mb-4" style={{ color: ACC }}>{p.n}</div>
                   <h3 className="sm-display text-xl font-bold uppercase mb-2" style={{ color: INK }}>{p.t}</h3>
@@ -345,10 +394,10 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
         <div className="mx-auto max-w-6xl px-5">
           <div className="flex items-end justify-between mb-12 flex-wrap gap-4">
             <div>
-              <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: ACC }}>Backstage</p>
-              <h2 className="sm-display text-5xl sm:text-6xl font-extrabold uppercase" style={{ letterSpacing: "-0.02em", color: INK }}>Galerie</h2>
+              <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: ACC }}>{c.galKicker}</p>
+              <h2 className="sm-display text-5xl sm:text-6xl font-extrabold uppercase" style={{ letterSpacing: "-0.02em", color: INK }}>{c.galH2}</h2>
             </div>
-            <p className="max-w-xs text-sm" style={{ color: MUTED }}>Sem přijdou fotky z plotny a kuchyně. Zatím placeholdery.</p>
+            <p className="max-w-xs text-sm" style={{ color: MUTED }}>{c.galP}</p>
           </div>
 
           {/* Masonry-ish grid placeholderů */}
@@ -368,10 +417,10 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
       <section className="py-28" style={{ background: ACC, color: AINK }}>
         <div className="mx-auto max-w-4xl px-5 text-center">
           <h2 className="sm-display text-5xl sm:text-7xl font-extrabold uppercase leading-[0.9]" style={{ letterSpacing: "-0.02em" }}>
-            Pořádný hlad?
+            {c.ctaH2}
           </h2>
           <p className="mx-auto mt-5 max-w-md text-lg font-medium opacity-80">
-            Objednej smash online — vyzvednutí za rohem, nebo rozvoz až ke dveřím.
+            {c.ctaP}
           </p>
           <a href="#menu"
             className="mt-9 inline-block text-sm font-bold uppercase tracking-wider px-10 py-4 transition hover:scale-105"
@@ -385,32 +434,32 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
       <section id="kontakt" className="scroll-mt-24 py-24">
         <div className="mx-auto max-w-2xl px-5">
           <div className="text-center mb-10">
-            <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: ACC }}>Napiš nám</p>
-            <h2 className="sm-display text-4xl font-extrabold uppercase" style={{ color: INK }}>Kontakt</h2>
+            <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: ACC }}>{c.contactKicker}</p>
+            <h2 className="sm-display text-4xl font-extrabold uppercase" style={{ color: INK }}>{c.contactH2}</h2>
           </div>
           {contactSent ? (
             <div className="text-center p-10" style={{ background: SURF, border: `1px solid ${LINE}`, borderRadius: 2 }}>
               <div className="sm-display text-5xl font-extrabold mb-3" style={{ color: ACC }}>✶</div>
-              <p className="sm-display text-xl font-bold uppercase" style={{ color: INK }}>Díky!</p>
-              <p className="mt-1" style={{ color: MUTED }}>Ozveme se co nejdřív.</p>
+              <p className="sm-display text-xl font-bold uppercase" style={{ color: INK }}>{c.thanks}</p>
+              <p className="mt-1" style={{ color: MUTED }}>{c.thanksP}</p>
             </div>
           ) : (
             <div className="space-y-3">
               <div className="grid sm:grid-cols-2 gap-3">
                 <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="Jméno" className="px-4 py-3.5 text-sm focus:outline-none"
+                  placeholder={c.phName} className="px-4 py-3.5 text-sm focus:outline-none"
                   style={{ background: SURF, border: `1px solid ${LINE}`, color: INK, borderRadius: 2 }} />
                 <input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                  type="email" placeholder="E-mail" className="px-4 py-3.5 text-sm focus:outline-none"
+                  type="email" placeholder={c.phEmail} className="px-4 py-3.5 text-sm focus:outline-none"
                   style={{ background: SURF, border: `1px solid ${LINE}`, color: INK, borderRadius: 2 }} />
               </div>
               <textarea value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
-                rows={4} placeholder="Tvoje zpráva…" className="w-full px-4 py-3.5 text-sm focus:outline-none resize-none"
+                rows={4} placeholder={c.phMsg} className="w-full px-4 py-3.5 text-sm focus:outline-none resize-none"
                 style={{ background: SURF, border: `1px solid ${LINE}`, color: INK, borderRadius: 2 }} />
               <button onClick={submitContact} disabled={sending}
                 className="w-full py-4 text-sm font-bold uppercase tracking-wider transition hover:scale-[1.01] disabled:opacity-50"
                 style={{ background: ACC, color: AINK, borderRadius: 2 }}>
-                {sending ? "Odesílám…" : "Odeslat"}
+                {sending ? (locale === "en" ? "Sending…" : "Odesílám…") : (locale === "en" ? "Send" : "Odeslat")}
               </button>
             </div>
           )}
@@ -427,11 +476,11 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
               </span>
               <span className="sm-display text-xl font-extrabold" style={{ color: INK }}>L.T. SMASH</span>
             </div>
-            <p className="text-sm" style={{ color: MUTED }}>L.T. Smash bistro</p>
+            <p className="text-sm" style={{ color: MUTED }}>{c.bistro}</p>
           </div>
           <div>
             <h4 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: ACC }}>Otevřeno</h4>
-            <p className="text-sm" style={{ color: MUTED }}>Po–Ne 11:00 — 22:00</p>
+            <p className="text-sm" style={{ color: MUTED }}>{c.hours}</p>
           </div>
           <div>
             <h4 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: ACC }}>Sledujte</h4>
@@ -439,7 +488,7 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
           </div>
         </div>
         <div className="mx-auto max-w-6xl px-5 py-5 flex items-center justify-between text-xs" style={{ borderTop: `1px solid ${LINE}`, color: MUTED }}>
-          <span>© {new Date().getFullYear()} L.T. Smash · <a href="/" className="transition hover:underline underline-offset-2" style={{ color: "inherit" }}>Powered by Food Factory</a> · <a href="/obchodni-podminky" className="transition hover:underline underline-offset-2" style={{ color: "inherit" }}>Obchodní podmínky</a></span>
+          <span>© {new Date().getFullYear()} L.T. Smash · <a href="/" className="transition hover:underline underline-offset-2" style={{ color: "inherit" }}>Powered by Food Factory</a> · <a href="/obchodni-podminky" className="transition hover:underline underline-offset-2" style={{ color: "inherit" }}>{c.terms}</a></span>
         </div>
       </footer>
 

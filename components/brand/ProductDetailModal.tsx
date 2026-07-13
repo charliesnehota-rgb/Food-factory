@@ -5,6 +5,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useCart, type CartCustomization } from "@/lib/cart";
 import { formatCzk } from "@/lib/types";
+import { useCustomerLocale, itemName, itemDesc, custName } from "@/lib/customer-locale";
 import { formatAllergens } from "@/lib/allergens";
 import type { MenuItem } from "@/lib/types";
 
@@ -12,6 +13,7 @@ interface DbCustomization {
   id: string;
   product_id: string;
   name: string;
+  name_en: string | null;
   price_czk: number;
   available: boolean;
   sort_order: number;
@@ -43,6 +45,8 @@ export function ProductDetailModal({ item, theme, onClose }: {
   onClose: () => void;
 }) {
   const { addItem } = useCart();
+  const { locale } = useCustomerLocale();
+  const en = locale === "en";
   const [customizations, setCustomizations] = useState<DbCustomization[]>([]);
   const [loadingCust, setLoadingCust] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -78,7 +82,7 @@ export function ProductDetailModal({ item, theme, onClose }: {
   const selectedList: CartCustomization[] = useMemo(() =>
     customizations
       .filter(c => selected.has(c.id))
-      .map(c => ({ id: c.id, name: c.name, priceCzk: Number(c.price_czk) })),
+      .map(c => ({ id: c.id, name: c.name, nameEn: c.name_en ?? undefined, priceCzk: Number(c.price_czk) })),
     [customizations, selected]);
 
   const unitPrice = item.priceCzk + selectedList.reduce((s, c) => s + c.priceCzk, 0);
@@ -96,7 +100,7 @@ export function ProductDetailModal({ item, theme, onClose }: {
   return (
     <div
       className="fixed inset-0 z-[95] flex items-end sm:items-center justify-center p-3 sm:p-6"
-      role="dialog" aria-modal="true" aria-label={item.name}
+      role="dialog" aria-modal="true" aria-label={itemName(item, locale)}
       onClick={onClose}
     >
       {/* Backdrop */}
@@ -118,13 +122,13 @@ export function ProductDetailModal({ item, theme, onClose }: {
         <div className="relative shrink-0" style={{ background: t.surface, borderBottom: `1px solid ${t.line}` }}>
           {item.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={item.imageUrl} alt={item.name} className="h-44 w-full object-cover" />
+            <img src={item.imageUrl} alt={itemName(item, locale)} className="h-44 w-full object-cover" />
           ) : (
             <div className="h-36 w-full flex items-center justify-center text-6xl select-none">{emoji}</div>
           )}
           <button
             onClick={onClose}
-            aria-label="Zavřít"
+            aria-label={en ? "Close" : "Zavřít"}
             className="absolute right-3 top-3 h-9 w-9 rounded-full flex items-center justify-center text-lg font-bold transition hover:opacity-80"
             style={{ background: t.bg, color: t.ink, border: `1px solid ${t.line}` }}
           >✕</button>
@@ -134,10 +138,10 @@ export function ProductDetailModal({ item, theme, onClose }: {
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           <div>
             <div className="flex items-baseline justify-between gap-3">
-              <h3 className="text-xl font-bold" style={{ fontFamily: t.displayFont }}>{item.name}</h3>
+              <h3 className="text-xl font-bold" style={{ fontFamily: t.displayFont }}>{itemName(item, locale)}</h3>
               <span className="text-base font-semibold whitespace-nowrap" style={{ color: t.muted }}>{formatCzk(item.priceCzk)}</span>
             </div>
-            {item.description && <p className="mt-1 text-sm" style={{ color: t.muted }}>{item.description}</p>}
+            {itemDesc(item, locale) && <p className="mt-1 text-sm" style={{ color: t.muted }}>{itemDesc(item, locale)}</p>}
             {item.allergens && item.allergens.length > 0 && (
               <p className="mt-1.5 text-xs" style={{ color: t.muted, opacity: 0.85 }}>
                 Alergeny: {formatAllergens(item.allergens)}
@@ -154,7 +158,7 @@ export function ProductDetailModal({ item, theme, onClose }: {
             </div>
           ) : customizations.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em]" style={{ color: t.muted }}>Přídavky</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em]" style={{ color: t.muted }}>{en ? "Extras" : "Přídavky"}</p>
               <div className="space-y-2">
                 {customizations.map(c => {
                   const on = selected.has(c.id);
@@ -173,7 +177,7 @@ export function ProductDetailModal({ item, theme, onClose }: {
                           color: on ? t.accentInk : "transparent",
                           border: `2px solid ${on ? t.accent : t.muted}`,
                         }}>✓</span>
-                      <span className="flex-1 text-sm font-medium">{c.name}</span>
+                      <span className="flex-1 text-sm font-medium">{custName(c, locale)}</span>
                       <span className="text-sm whitespace-nowrap" style={{ color: on ? t.ink : t.muted }}>
                         +{formatCzk(Number(c.price_czk))}
                       </span>
@@ -186,13 +190,13 @@ export function ProductDetailModal({ item, theme, onClose }: {
 
           {/* Poznámka */}
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em]" style={{ color: t.muted }}>Poznámka <span className="normal-case tracking-normal font-normal">(volitelné)</span></p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em]" style={{ color: t.muted }}>{en ? "Note" : "Poznámka"} <span className="normal-case tracking-normal font-normal">{en ? "(optional)" : "(volitelné)"}</span></p>
             <textarea
               value={note}
               onChange={e => setNote(e.target.value)}
               rows={2}
               maxLength={200}
-              placeholder="Např. bez cibule, méně slaná…"
+              placeholder={en ? "E.g. no onion, less salty…" : "Např. bez cibule, méně slaná…"}
               className="w-full resize-none rounded-xl px-3 py-2.5 text-sm focus:outline-none"
               style={{ background: t.surface, border: `1px solid ${t.line}`, color: t.ink }}
             />
@@ -206,7 +210,7 @@ export function ProductDetailModal({ item, theme, onClose }: {
             <button
               onClick={() => setQty(q => Math.max(1, q - 1))}
               disabled={qty <= 1}
-              aria-label="Méně porcí"
+              aria-label={en ? "Fewer portions" : "Méně porcí"}
               className="h-9 w-9 rounded-full flex items-center justify-center text-lg font-bold transition disabled:opacity-30"
               style={{ color: t.ink }}
             >−</button>
@@ -214,7 +218,7 @@ export function ProductDetailModal({ item, theme, onClose }: {
             <button
               onClick={() => setQty(q => Math.min(10, q + 1))}
               disabled={qty >= 10}
-              aria-label="Více porcí"
+              aria-label={en ? "More portions" : "Více porcí"}
               className="h-9 w-9 rounded-full flex items-center justify-center text-lg font-bold transition disabled:opacity-30"
               style={{ color: t.ink }}
             >+</button>
@@ -226,7 +230,7 @@ export function ProductDetailModal({ item, theme, onClose }: {
             className="flex-1 rounded-full py-3 text-sm font-bold transition hover:opacity-90 disabled:opacity-40"
             style={{ background: t.accent, color: t.accentInk }}
           >
-            {item.available ? <>Přidat do košíku · {formatCzk(totalPrice)}</> : "Vyprodáno"}
+            {item.available ? <>{en ? "Add to cart" : "Přidat do košíku"} · {formatCzk(totalPrice)}</> : (en ? "Sold out" : "Vyprodáno")}
           </button>
         </div>
       </div>

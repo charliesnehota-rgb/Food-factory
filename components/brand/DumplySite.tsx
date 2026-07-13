@@ -8,17 +8,60 @@ import { formatCzk } from "@/lib/types";
 import type { MenuItem } from "@/lib/types";
 import type { BrandTheme } from "@/lib/brand/registry";
 import { ProductDetailModal } from "@/components/brand/ProductDetailModal";
+import { useCustomerLocale, itemName, itemDesc, itemCategory, LangToggle } from "@/lib/customer-locale";
 
 const SECTIONS = [
-  { id: "uvod", label: "Úvod" },
-  { id: "menu", label: "Menu" },
-  { id: "o-nas", label: "O nás" },
-  { id: "galerie", label: "Galerie" },
-  { id: "kontakt", label: "Kontakt" },
+  { id: "uvod", label: "Úvod", labelEn: "Home" },
+  { id: "menu", label: "Menu", labelEn: "Menu" },
+  { id: "o-nas", label: "O nás", labelEn: "About" },
+  { id: "galerie", label: "Galerie", labelEn: "Gallery" },
+  { id: "kontakt", label: "Kontakt", labelEn: "Contact" },
 ];
+
+const COPY = {
+  cs: {
+    account: "Účet", login: "Přihlásit",
+    ctaMenu: "Prohlédnout menu →", ctaStory: "Náš příběh",
+    menuH2: "Menu", menuHint: "Najeď myší na knedlíček 🥟",
+    add: "Přidat do košíku", soldOut: "Vyprodáno",
+    aboutH2: "O nás",
+    about1: "Dumply je malá kuchyně v srdci Prahy, kde milujeme ruční knedlíčky. Každé ráno skládáme těsto, plníme čerstvými surovinami a paříme v bambusových košících.",
+    about2: "Žádné mražené polotovary — jen poctivá práce, špetka lásky a omáčky, co lepí prsty. Věříme, že dobré jídlo má dělat radost. A taky se trochu usmívat. 🥟",
+    stat1: "ručně skládané", stat2big: "každé ráno", stat2: "čerstvé",
+    galleryH2: "Galerie", galleryP: "Brzy sem přibydou fotky našich knedlíčků",
+    contactH2: "Napiš nám", contactP: "Máš dotaz, nápad nebo chuť na spolupráci?",
+    follow: "Sleduj nás",
+    phName: "Jméno", phEmail: "E-mail", phMsg: "Tvoje zpráva…",
+    sending: "Odesílám…", send: "Odeslat zprávu",
+    thanks: "Děkujeme!", thanksP: "Ozveme se ti co nejdřív.",
+    heroEyebrow: null as string | null, heroTitle: null as string | null, heroSub: null as string | null,
+  },
+  en: {
+    account: "Account", login: "Sign in",
+    ctaMenu: "Browse the menu →", ctaStory: "Our story",
+    menuH2: "Menu", menuHint: "Hover over a dumpling 🥟",
+    add: "Add to cart", soldOut: "Sold out",
+    aboutH2: "About us",
+    about1: "Dumply is a small kitchen in the heart of Prague where we love handmade dumplings. Every morning we fold the dough, fill it with fresh ingredients and steam it in bamboo baskets.",
+    about2: "No frozen shortcuts — just honest work, a pinch of love and sauces that stick to your fingers. We believe good food should make you happy. And smile a little. 🥟",
+    stat1: "hand-folded", stat2big: "every morning", stat2: "fresh",
+    galleryH2: "Gallery", galleryP: "Photos of our dumplings are coming soon",
+    contactH2: "Drop us a line", contactP: "Got a question, an idea or a partnership in mind?",
+    follow: "Follow us",
+    phName: "Name", phEmail: "E-mail", phMsg: "Your message…",
+    sending: "Sending…", send: "Send message",
+    thanks: "Thank you!", thanksP: "We'll get back to you as soon as we can.",
+    heroEyebrow: "Prague · handmade dumplings", heroTitle: "Dumplings.\nWith love.", heroSub: "Hand-folded dumplings, dim sum and bao. Steamed fresh every day.",
+  },
+};
 
 export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuItem[] }) {
   const { count, openCart } = useCart();
+  const { locale } = useCustomerLocale();
+  const c = COPY[locale];
+  const hero = locale === "en"
+    ? { eyebrow: c.heroEyebrow!, title: c.heroTitle!, sub: c.heroSub! }
+    : { eyebrow: b.eyebrow, title: b.heroTitle, sub: b.heroSub };
   const [detail, setDetail] = useState<MenuItem | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("uvod");
@@ -55,9 +98,9 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
   // Kategorie menu
   const categories = new Map<string, MenuItem[]>();
   for (const it of menu) {
-    const list = categories.get(it.category) ?? [];
+    const list = categories.get(itemCategory(it, locale)) ?? [];
     list.push(it);
-    categories.set(it.category, list);
+    categories.set(itemCategory(it, locale), list);
   }
 
   return (
@@ -85,7 +128,7 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
               <a key={s.id} href={`#${s.id}`}
                 className="relative rounded-full px-4 py-2 text-sm font-semibold transition"
                 style={{ color: active === s.id ? b.accent : b.muted }}>
-                {s.label}
+                {locale === "en" ? s.labelEn : s.label}
                 {active === s.id && (
                   <span className="absolute left-1/2 -translate-x-1/2 bottom-1 h-1 w-1 rounded-full"
                     style={{ background: b.pop }} />
@@ -98,8 +141,9 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
             <Link href={loggedIn ? "/ucet/profil" : `/${b.slug}/ucet/prihlaseni`}
               className="hidden sm:block rounded-full px-3 py-2 text-sm font-semibold transition hover:opacity-70"
               style={{ color: b.ink }}>
-              {loggedIn ? "Účet" : "Přihlásit"}
+              {loggedIn ? c.account : c.login}
             </Link>
+            <LangToggle ink={b.ink} line={b.line} />
             <button onClick={openCart}
               className="rounded-full px-4 py-2 text-sm font-bold transition hover:scale-105"
               style={{ background: b.accent, color: b.accentInk }}>
@@ -117,7 +161,7 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
             {SECTIONS.map((s) => (
               <a key={s.id} href={`#${s.id}`} onClick={() => setMenuOpen(false)}
                 className="rounded-xl px-4 py-2.5 text-sm font-semibold" style={{ color: b.ink }}>
-                {s.label}
+                {locale === "en" ? s.labelEn : s.label}
               </a>
             ))}
           </nav>
@@ -134,18 +178,18 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
             <div>
               <p className="mb-5 inline-block rounded-full px-4 py-1.5 text-xs font-bold tracking-wide"
                 style={{ background: b.surface, color: b.accent, border: `2px solid ${b.line}` }}>
-                {b.eyebrow}
+                {hero.eyebrow}
               </p>
               <h1 className="whitespace-pre-line text-5xl font-bold leading-[1.05] sm:text-6xl"
                 style={{ fontFamily: b.displayFont, color: b.ink }}>
-                {b.heroTitle}
+                {hero.title}
               </h1>
-              <p className="mt-5 max-w-md text-lg" style={{ color: b.muted }}>{b.heroSub}</p>
+              <p className="mt-5 max-w-md text-lg" style={{ color: b.muted }}>{hero.sub}</p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a href="#menu" className="rounded-full px-7 py-3.5 text-sm font-bold transition hover:scale-105"
-                  style={{ background: b.accent, color: b.accentInk }}>Prohlédnout menu →</a>
+                  style={{ background: b.accent, color: b.accentInk }}>{c.ctaMenu}</a>
                 <a href="#o-nas" className="rounded-full px-7 py-3.5 text-sm font-bold transition hover:scale-105"
-                  style={{ background: b.pop, color: b.ink }}>Náš příběh</a>
+                  style={{ background: b.pop, color: b.ink }}>{c.ctaStory}</a>
               </div>
             </div>
             {/* Velké logo s jemným pohupováním */}
@@ -166,8 +210,8 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
       <section id="menu" className="scroll-mt-24 py-20" style={{ background: b.surface }}>
         <div className="mx-auto max-w-5xl px-5">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold" style={{ fontFamily: b.displayFont, color: b.ink }}>Menu</h2>
-            <p className="mt-2" style={{ color: b.muted }}>Najeď myší na knedlíček 🥟</p>
+            <h2 className="text-4xl font-bold" style={{ fontFamily: b.displayFont, color: b.ink }}>{c.menuH2}</h2>
+            <p className="mt-2" style={{ color: b.muted }}>{c.menuHint}</p>
           </div>
 
           {Array.from(categories.entries()).map(([category, list]) => (
@@ -179,15 +223,15 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
                     className="group rounded-3xl p-5 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.03]"
                     style={{ background: b.bg, border: `2px solid ${b.line}`, boxShadow: "0 2px 0 " + b.line }}>
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className="font-bold text-lg" style={{ fontFamily: b.displayFont, color: b.ink }}>{item.name}</h4>
+                      <h4 className="font-bold text-lg" style={{ fontFamily: b.displayFont, color: b.ink }}>{itemName(item, locale)}</h4>
                       <span className="shrink-0 rounded-full px-2.5 py-1 text-sm font-bold"
                         style={{ background: b.pop, color: b.ink }}>{formatCzk(item.priceCzk)}</span>
                     </div>
-                    <p className="mt-2 text-sm min-h-[40px]" style={{ color: b.muted }}>{item.description}</p>
+                    <p className="mt-2 text-sm min-h-[40px]" style={{ color: b.muted }}>{itemDesc(item, locale)}</p>
                     <button onClick={() => setDetail(item)} disabled={!item.available}
                       className="mt-4 w-full rounded-full py-2.5 text-sm font-bold transition group-hover:scale-105 disabled:opacity-40"
                       style={{ background: b.accent, color: b.accentInk }}>
-                      {item.available ? "Přidat do košíku" : "Vyprodáno"}
+                      {item.available ? c.add : c.soldOut}
                     </button>
                   </div>
                 ))}
@@ -210,23 +254,21 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
             </div>
           </div>
           <div className="order-1 sm:order-2">
-            <h2 className="text-4xl font-bold" style={{ fontFamily: b.displayFont, color: b.ink }}>O nás</h2>
+            <h2 className="text-4xl font-bold" style={{ fontFamily: b.displayFont, color: b.ink }}>{c.aboutH2}</h2>
             <p className="mt-4 text-lg leading-relaxed" style={{ color: b.muted }}>
-              Dumply je malá kuchyně v srdci Prahy, kde milujeme ruční knedlíčky. Každé ráno skládáme
-              těsto, plníme čerstvými surovinami a paříme v bambusových košících.
+              {c.about1}
             </p>
             <p className="mt-3 text-lg leading-relaxed" style={{ color: b.muted }}>
-              Žádné mražené polotovary — jen poctivá práce, špetka lásky a omáčky, co lepí prsty.
-              Věříme, že dobré jídlo má dělat radost. A taky se trochu usmívat. 🥟
+              {c.about2}
             </p>
             <div className="mt-6 flex gap-6">
               <div>
                 <div className="text-3xl font-bold" style={{ fontFamily: b.displayFont, color: b.accent }}>100%</div>
-                <div className="text-sm" style={{ color: b.muted }}>ručně skládané</div>
+                <div className="text-sm" style={{ color: b.muted }}>{c.stat1}</div>
               </div>
               <div>
-                <div className="text-3xl font-bold" style={{ fontFamily: b.displayFont, color: b.accent }}>každé ráno</div>
-                <div className="text-sm" style={{ color: b.muted }}>čerstvé</div>
+                <div className="text-3xl font-bold" style={{ fontFamily: b.displayFont, color: b.accent }}>{c.stat2big}</div>
+                <div className="text-sm" style={{ color: b.muted }}>{c.stat2}</div>
               </div>
             </div>
           </div>
@@ -236,8 +278,8 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
       {/* ── GALERIE ── */}
       <section id="galerie" className="scroll-mt-24 py-20" style={{ background: b.surface }}>
         <div className="mx-auto max-w-5xl px-5">
-          <h2 className="text-4xl font-bold text-center mb-3" style={{ fontFamily: b.displayFont, color: b.ink }}>Galerie</h2>
-          <p className="text-center mb-10" style={{ color: b.muted }}>Brzy sem přibydou fotky našich knedlíčků</p>
+          <h2 className="text-4xl font-bold text-center mb-3" style={{ fontFamily: b.displayFont, color: b.ink }}>{c.galleryH2}</h2>
+          <p className="text-center mb-10" style={{ color: b.muted }}>{c.galleryP}</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {[0,1,2,3,4,5].map((i) => (
               <div key={i}
@@ -253,12 +295,12 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
       {/* ── KONTAKT + FORMULÁŘ + SOCIÁLNÍ SÍTĚ ── */}
       <section id="kontakt" className="scroll-mt-24 py-20">
         <div className="mx-auto max-w-2xl px-5">
-          <h2 className="text-4xl font-bold text-center" style={{ fontFamily: b.displayFont, color: b.ink }}>Napiš nám</h2>
-          <p className="text-center mt-2 mb-10" style={{ color: b.muted }}>Máš dotaz, nápad nebo chuť na spolupráci?</p>
+          <h2 className="text-4xl font-bold text-center" style={{ fontFamily: b.displayFont, color: b.ink }}>{c.contactH2}</h2>
+          <p className="text-center mt-2 mb-10" style={{ color: b.muted }}>{c.contactP}</p>
           <ContactForm brand={b} />
 
           <div className="mt-12 text-center">
-            <p className="text-sm mb-4" style={{ color: b.muted }}>Sleduj nás</p>
+            <p className="text-sm mb-4" style={{ color: b.muted }}>{c.follow}</p>
             <div className="flex justify-center gap-4">
               <a href="#" aria-label="Facebook"
                 className="flex items-center justify-center rounded-full transition hover:scale-110"
@@ -310,6 +352,8 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
 }
 
 function ContactForm({ brand: b }: { brand: BrandTheme }) {
+  const { locale } = useCustomerLocale();
+  const c = COPY[locale];
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -335,8 +379,8 @@ function ContactForm({ brand: b }: { brand: BrandTheme }) {
     return (
       <div className="rounded-3xl p-8 text-center" style={{ background: b.surface, border: `2px solid ${b.line}` }}>
         <div className="text-4xl mb-3">🥟</div>
-        <p className="font-bold text-lg" style={{ fontFamily: b.displayFont, color: b.ink }}>Děkujeme!</p>
-        <p className="mt-1" style={{ color: b.muted }}>Ozveme se ti co nejdřív.</p>
+        <p className="font-bold text-lg" style={{ fontFamily: b.displayFont, color: b.ink }}>{c.thanks}</p>
+        <p className="mt-1" style={{ color: b.muted }}>{c.thanksP}</p>
       </div>
     );
   }
@@ -344,17 +388,17 @@ function ContactForm({ brand: b }: { brand: BrandTheme }) {
   return (
     <div className="space-y-4">
       <div className="grid sm:grid-cols-2 gap-4">
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="Jméno"
+        <input value={name} onChange={e => setName(e.target.value)} placeholder={c.phName}
           className="rounded-2xl px-4 py-3 text-sm focus:outline-none" style={inputStyle} />
-        <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="E-mail"
+        <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder={c.phEmail}
           className="rounded-2xl px-4 py-3 text-sm focus:outline-none" style={inputStyle} />
       </div>
-      <textarea value={message} onChange={e => setMessage(e.target.value)} rows={4} placeholder="Tvoje zpráva…"
+      <textarea value={message} onChange={e => setMessage(e.target.value)} rows={4} placeholder={c.phMsg}
         className="w-full rounded-2xl px-4 py-3 text-sm focus:outline-none resize-none" style={inputStyle} />
       <button onClick={submit} disabled={sending}
         className="w-full rounded-full py-3.5 text-sm font-bold transition hover:scale-[1.02] disabled:opacity-50"
         style={{ background: b.accent, color: b.accentInk }}>
-        {sending ? "Odesílám…" : "Odeslat zprávu"}
+        {sending ? c.sending : c.send}
       </button>
     </div>
   );

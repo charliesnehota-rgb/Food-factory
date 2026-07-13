@@ -6,6 +6,7 @@ import type { MenuItem } from "@/lib/types";
 export interface CartCustomization {
   id: string;
   name: string;
+  nameEn?: string;
   priceCzk: number;
 }
 

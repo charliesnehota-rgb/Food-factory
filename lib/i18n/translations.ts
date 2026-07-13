@@ -208,6 +208,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     "products.labelVat": "Sazba DPH (%)",
     "products.labelConcept": "Koncept",
     "products.labelAvailable": "Dostupný",
+    "products.labelNameEn": "Název (EN)",
+    "products.labelDescEn": "Popis (EN)",
+    "products.labelCategoryEn": "Kategorie (EN)",
+    "customizations.labelNameEn": "Název (EN)",
 
     // --- Customizace produktů ---
     "customizations.button": "Customizace",
@@ -816,6 +820,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     "products.labelVat": "税率（%）",
     "products.labelConcept": "品牌",
     "products.labelAvailable": "上架",
+    "products.labelNameEn": "名称（英文）",
+    "products.labelDescEn": "描述（英文）",
+    "products.labelCategoryEn": "分类（英文）",
+    "customizations.labelNameEn": "名称（英文）",
 
     // --- Customizace produktů ---
     "customizations.button": "加料选项",

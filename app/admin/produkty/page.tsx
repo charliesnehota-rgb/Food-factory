@@ -7,6 +7,7 @@ import { ALLERGENS } from "@/lib/allergens";
 
 interface Product {
   id: string; concept_slug: string; name: string; description: string;
+  name_en?: string | null; description_en?: string | null; category_en?: string | null;
   price_czk: number; category: string; tags: string[]; available: boolean; sort_order: number;
   allergens: number[];
 }
@@ -57,7 +58,7 @@ export default function ProductsPage() {
   const [custOpen, setCustOpen] = useState<string | null>(null);         // rozbalený produkt
   const [custs, setCusts] = useState<Record<string, Customization[]>>({});
   const [custLoading, setCustLoading] = useState(false);
-  const [custNew, setCustNew] = useState({ name: "", price_czk: "", available: true });
+  const [custNew, setCustNew] = useState({ name: "", name_en: "", price_czk: "", available: true });
   const [custSaving, setCustSaving] = useState(false);
 
   const loadCusts = useCallback(async (productId: string) => {
@@ -71,7 +72,7 @@ export default function ProductsPage() {
   function toggleCustSection(productId: string) {
     if (custOpen === productId) { setCustOpen(null); return; }
     setCustOpen(productId);
-    setCustNew({ name: "", price_czk: "", available: true });
+    setCustNew({ name: "", name_en: "", price_czk: "", available: true });
     if (!custs[productId]) loadCusts(productId);
   }
 
@@ -82,12 +83,13 @@ export default function ProductsPage() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: custNew.name.trim(),
+        name_en: custNew.name_en.trim() || null,
         price_czk: Number(custNew.price_czk) || 0,
         available: custNew.available,
         sort_order: (custs[productId]?.length ?? 0) + 1,
       }),
     });
-    setCustNew({ name: "", price_czk: "", available: true });
+    setCustNew({ name: "", name_en: "", price_czk: "", available: true });
     setCustSaving(false);
     loadCusts(productId);
   }
@@ -193,6 +195,18 @@ export default function ProductsPage() {
             <div className="sm:col-span-2">
               <label className="text-xs text-[var(--muted)]">{t("products.labelDesc")}</label>
               <input value={newData.description ?? ""} onChange={e => setNewData({ ...newData, description: e.target.value })} className={inputCls} />
+            </div>
+            <div>
+              <label className="text-xs text-[var(--muted)]">{t("products.labelNameEn")}</label>
+              <input value={newData.name_en ?? ""} onChange={e => setNewData({ ...newData, name_en: e.target.value })} className={inputCls} />
+            </div>
+            <div>
+              <label className="text-xs text-[var(--muted)]">{t("products.labelCategoryEn")}</label>
+              <input value={newData.category_en ?? ""} onChange={e => setNewData({ ...newData, category_en: e.target.value })} className={inputCls} />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-xs text-[var(--muted)]">{t("products.labelDescEn")}</label>
+              <input value={newData.description_en ?? ""} onChange={e => setNewData({ ...newData, description_en: e.target.value })} className={inputCls} />
             </div>
             <div className="sm:col-span-2">
               <label className="text-xs text-[var(--muted)] block mb-1">{t("products.labelAllergens")}</label>
@@ -335,6 +349,11 @@ export default function ProductsPage() {
                             <label className="text-xs text-[var(--muted)]">{t("customizations.labelName")}</label>
                             <input value={custNew.name} onChange={e => setCustNew({ ...custNew, name: e.target.value })}
                               placeholder={t("customizations.namePlaceholder")} className={inputCls} />
+                          </div>
+                          <div className="flex-1 min-w-[150px]">
+                            <label className="text-xs text-[var(--muted)]">{t("customizations.labelNameEn")}</label>
+                            <input value={custNew.name_en} onChange={e => setCustNew({ ...custNew, name_en: e.target.value })}
+                              placeholder="e.g. Bacon" className={inputCls} />
                           </div>
                           <div className="w-28">
                             <label className="text-xs text-[var(--muted)]">{t("customizations.labelPrice")}</label>

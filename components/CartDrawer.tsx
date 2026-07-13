@@ -1,11 +1,14 @@
 "use client";
 import { useCart, lineUnitPrice } from "@/lib/cart";
+import { useCustomerLocale, itemName } from "@/lib/customer-locale";
 import { useBrand } from "@/lib/brand-context";
 import { formatCzk } from "@/lib/types";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import Link from "next/link";
 
 export function CartDrawer() {
+  const { locale } = useCustomerLocale();
+  const en = locale === "en";
   const { items, isOpen, closeCart, removeItem, updateQty, total, count } = useCart();
   const { brand } = useBrand();
 
@@ -33,7 +36,7 @@ export function CartDrawer() {
             {brand ? (
               <BrandLogo brand={brand} size="sm" />
             ) : (
-              <span className="font-semibold" style={{ color: ink }}>Košík</span>
+              <span className="font-semibold" style={{ color: ink }}>{en ? "Cart" : "Košík"}</span>
             )}
             <span className="text-xs" style={{ color: muted }}>
               {count} {count === 1 ? "položka" : count < 5 ? "položky" : "položek"}
@@ -50,17 +53,17 @@ export function CartDrawer() {
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3" style={{ color: muted }}>
               <span className="text-4xl">🛒</span>
-              <p className="text-sm">Košík je prázdný</p>
+              <p className="text-sm">{en ? "Your cart is empty" : "Košík je prázdný"}</p>
             </div>
           ) : (
             items.map(item => (
               <div key={item.lineKey} className="flex items-start gap-3 rounded-2xl p-3"
                 style={{ background: surface, border: `1px solid ${line}` }}>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm" style={{ color: ink }}>{item.product.name}</p>
+                  <p className="font-medium text-sm" style={{ color: ink }}>{itemName(item.product, locale)}</p>
                   {item.customizations.length > 0 && (
                     <p className="text-xs mt-0.5" style={{ color: muted }}>
-                      {item.customizations.map(c => `+ ${c.name}`).join(", ")}
+                      {item.customizations.map(c => `+ ${en && c.nameEn ? c.nameEn : c.name}`).join(", ")}
                     </p>
                   )}
                   {item.note && (
@@ -98,7 +101,7 @@ export function CartDrawer() {
             <Link href="/checkout" onClick={closeCart}
               className="block w-full rounded-xl py-3 text-center text-sm font-semibold transition hover:opacity-90"
               style={{ background: accent, color: accentInk }}>
-              Pokračovat k objednávce →
+              {en ? "Proceed to checkout →" : "Pokračovat k objednávce →"}
             </Link>
             {brand && (
               <p className="text-xs text-center" style={{ color: muted }}>

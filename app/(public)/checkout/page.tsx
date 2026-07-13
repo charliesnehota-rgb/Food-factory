@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCart, lineUnitPrice } from "@/lib/cart";
+import { useCustomerLocale, itemName } from "@/lib/customer-locale";
 import { useBrand } from "@/lib/brand-context";
 import { formatCzk } from "@/lib/types";
 import { BrandLogo } from "@/components/brand/BrandLogo";
@@ -12,6 +13,8 @@ type Payment = "cash" | "card";
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
+  const { locale } = useCustomerLocale();
+  const en = locale === "en";
   const { brand } = useBrand();
   const router = useRouter();
 
@@ -80,10 +83,10 @@ export default function CheckoutPage() {
   const inputCls = "w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1";
 
   async function handleSubmit() {
-    if (!name.trim()) { setError("Zadej jméno."); return; }
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Zadej platný e-mail pro potvrzení."); return; }
-    if (fulfilment === "delivery" && !address.trim()) { setError("Zadej adresu doručení."); return; }
-    if (items.length === 0) { setError("Košík je prázdný."); return; }
+    if (!name.trim()) { setError(en ? "Enter your name." : "Zadej jméno."); return; }
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError(en ? "Enter a valid e-mail for confirmation." : "Zadej platný e-mail pro potvrzení."); return; }
+    if (fulfilment === "delivery" && !address.trim()) { setError(en ? "Enter a delivery address." : "Zadej adresu doručení."); return; }
+    if (items.length === 0) { setError(en ? "Your cart is empty." : "Košík je prázdný."); return; }
     setLoading(true); setError("");
 
     try {
@@ -104,7 +107,7 @@ export default function CheckoutPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Chyba při odeslání."); setLoading(false); return; }
+      if (!res.ok) { setError(data.error ?? (en ? "Failed to submit." : "Chyba při odeslání.")); setLoading(false); return; }
 
       if (payment === "card") {
         const payRes = await fetch("/api/checkout", {
@@ -114,12 +117,12 @@ export default function CheckoutPage() {
         const payData = await payRes.json();
         if (payRes.ok && payData.paid) { clearCart(); router.push(payData.redirect); return; }
         if (payRes.ok && payData.url) { clearCart(); window.location.href = payData.url; return; }
-        setError(payData.error ?? "Platba kartou není dostupná."); setLoading(false); return;
+        setError(payData.error ?? (en ? "Card payment is unavailable." : "Platba kartou není dostupná.")); setLoading(false); return;
       }
       clearCart();
       router.push(`/objednavka/${data.orderId}`);
     } catch {
-      setError("Chyba připojení."); setLoading(false);
+      setError(en ? "Connection error." : "Chyba připojení."); setLoading(false);
     }
   }
 
@@ -130,7 +133,7 @@ export default function CheckoutPage() {
   if (items.length === 0) return (
     <div className="mx-auto max-w-lg px-4 py-20 text-center">
       <p className="text-4xl mb-4">🛒</p>
-      <p style={{ color: muted }}>Košík je prázdný.</p>
+      <p style={{ color: muted }}>{en ? "Your cart is empty." : "Košík je prázdný."}</p>
       <a href="/" className="mt-4 inline-block text-sm underline" style={{ color: ink }}>Zpět na výběr jídla</a>
     </div>
   );
@@ -143,7 +146,7 @@ export default function CheckoutPage() {
           {brand ? (
             <BrandLogo brand={brand} size="md" />
           ) : (
-            <span className="font-semibold" style={{ color: ink }}>Objednávka</span>
+            <span className="font-semibold" style={{ color: ink }}>{en ? "Checkout" : "Objednávka"}</span>
           )}
           <a href={brand ? `/${brand.slug}` : "/"} className="text-sm transition"
             style={{ color: muted }}>← Zpět na menu</a>
@@ -152,12 +155,12 @@ export default function CheckoutPage() {
 
       <div className="mx-auto max-w-2xl px-4 py-10">
         <h1 className="text-2xl font-semibold mb-2" style={{ color: ink, fontFamily: brand?.displayFont }}>
-          Objednávka
+          {en ? "Checkout" : "Objednávka"}
         </h1>
         {authChecked && !loggedIn && (
           <p className="mb-8 text-sm" style={{ color: muted }}>
             Objednáváš jako host — registrace není potřeba.{" "}
-            <a href="/ucet/prihlaseni?next=/checkout" className="underline" style={{ color: accent }}>Máš účet? Přihlas se</a>
+            <a href="/ucet/prihlaseni?next=/checkout" className="underline" style={{ color: accent }}>{en ? "Have an account? Sign in" : "Máš účet? Přihlas se"}</a>
           </p>
         )}
         {loggedIn && <div className="mb-8" />}
@@ -167,9 +170,9 @@ export default function CheckoutPage() {
           <div className="space-y-5">
             {/* Doručení */}
             <div>
-              <label className="mb-2 block text-sm font-medium" style={{ color: ink }}>Způsob doručení</label>
+              <label className="mb-2 block text-sm font-medium" style={{ color: ink }}>{en ? "Fulfilment" : "Způsob doručení"}</label>
               <div className="grid grid-cols-2 gap-2">
-                {([["delivery","🛵 Doručení","59 Kč"],["pickup","🏃 Vyzvednutí","zdarma"]] as const).map(([val,label,sub]) => (
+                {([["delivery", en ? "🛵 Delivery" : "🛵 Doručení", en ? "59 CZK" : "59 Kč"],["pickup", en ? "🏃 Pickup" : "🏃 Vyzvednutí", en ? "free" : "zdarma"]] as const).map(([val,label,sub]) => (
                   <button key={val} onClick={() => setFulfilment(val)}
                     className="rounded-xl p-3 text-left transition"
                     style={{
@@ -185,9 +188,9 @@ export default function CheckoutPage() {
 
             {/* Platba */}
             <div>
-              <label className="mb-2 block text-sm font-medium" style={{ color: ink }}>Platba</label>
+              <label className="mb-2 block text-sm font-medium" style={{ color: ink }}>{en ? "Payment" : "Platba"}</label>
               <div className="grid grid-cols-2 gap-2">
-                {([["card", hasCard ? "💳 Uloženou kartou" : "💳 Kartou online", hasCard ? "jedním klikem" : "ihned"],["cash","💵 Při převzetí","hotově/kartou"]] as const).map(([val,label,sub]) => (
+                {([["card", hasCard ? (en ? "💳 Saved card" : "💳 Uloženou kartou") : (en ? "💳 Card online" : "💳 Kartou online"), hasCard ? (en ? "one click" : "jedním klikem") : (en ? "instant" : "ihned")],["cash", en ? "💵 On delivery" : "💵 Při převzetí", en ? "cash/card" : "hotově/kartou"]] as const).map(([val,label,sub]) => (
                   <button key={val} onClick={() => setPayment(val)}
                     className="rounded-xl p-3 text-left transition"
                     style={{
@@ -202,7 +205,7 @@ export default function CheckoutPage() {
             </div>
 
             {[
-              { label: "Jméno *", value: name, set: setName, type: "text", placeholder: "Jana Nováková" },
+              { label: en ? "Name *" : "Jméno *", value: name, set: setName, type: "text", placeholder: en ? "Jane Smith" : "Jana Nováková" },
             ].map(f => (
               <div key={f.label}>
                 <label className="mb-1 block text-sm font-medium" style={{ color: ink }}>{f.label}</label>
@@ -225,20 +228,20 @@ export default function CheckoutPage() {
                 style={{ background: surface, border: `1px solid ${line}`, color: ink, opacity: loggedIn ? 0.7 : 1, cursor: loggedIn ? "not-allowed" : "text" }} />
               <p className="mt-1 text-xs" style={{ color: muted }}>
                 {loggedIn
-                  ? "E-mail z tvého účtu — potvrzení a stav objednávky pošleme sem."
-                  : "Pošleme potvrzení a budeme informovat o stavu objednávky."}
+                  ? (en ? "E-mail from your account — we\u2019ll send confirmation and order status here." : "E-mail z tvého účtu — potvrzení a stav objednávky pošleme sem.")
+                  : (en ? "We\u2019ll send a confirmation and keep you posted on your order." : "Pošleme potvrzení a budeme informovat o stavu objednávky.")}
               </p>
               <label className="mt-2 flex items-start gap-2.5 cursor-pointer select-none">
                 <input type="checkbox" checked={newsletter} onChange={e => setNewsletter(e.target.checked)}
                   className="mt-0.5 h-4 w-4 shrink-0" style={{ accentColor: ink }} />
                 <span className="text-xs leading-relaxed" style={{ color: muted }}>
-                  Posílejte mi e-mailem novinky a akce (volitelné, odhlášení kdykoli jedním klikem)
+                  {en ? "Send me news and deals by e-mail (optional, one-click unsubscribe anytime)" : "Posílejte mi e-mailem novinky a akce (volitelné, odhlášení kdykoli jedním klikem)"}
                 </span>
               </label>
             </div>
 
             {[
-              { label: "Telefon", value: phone, set: setPhone, type: "tel", placeholder: "+420 777 123 456" },
+              { label: en ? "Phone" : "Telefon", value: phone, set: setPhone, type: "tel", placeholder: "+420 777 123 456" },
             ].map(f => (
               <div key={f.label}>
                 <label className="mb-1 block text-sm font-medium" style={{ color: ink }}>{f.label}</label>
@@ -250,15 +253,15 @@ export default function CheckoutPage() {
             {fulfilment === "delivery" && (
               <div>
                 <label className="mb-1 block text-sm font-medium" style={{ color: ink }}>Adresa doručení *</label>
-                <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Ulice a číslo, město"
+                <input value={address} onChange={e => setAddress(e.target.value)} placeholder={en ? "Street and number, city" : "Ulice a číslo, město"}
                   className={inputCls} style={{ background: surface, border: `1px solid ${line}`, color: ink }} />
               </div>
             )}
 
             <div>
-              <label className="mb-1 block text-sm font-medium" style={{ color: ink }}>Poznámka ke kuchyni</label>
+              <label className="mb-1 block text-sm font-medium" style={{ color: ink }}>{en ? "Note for the kitchen" : "Poznámka ke kuchyni"}</label>
               <textarea value={note} onChange={e => setNote(e.target.value)} rows={2}
-                placeholder="Bez cibule, extra omáčka…"
+                placeholder={en ? "No onion, extra sauce…" : "Bez cibule, extra omáčka…"}
                 className={inputCls + " resize-none"} style={{ background: surface, border: `1px solid ${line}`, color: ink }} />
             </div>
           </div>
@@ -270,14 +273,14 @@ export default function CheckoutPage() {
                 <BrandLogo brand={brand} size="sm" />
               </div>
             )}
-            <h2 className="font-medium" style={{ color: ink }}>Souhrn objednávky</h2>
+            <h2 className="font-medium" style={{ color: ink }}>{en ? "Order summary" : "Souhrn objednávky"}</h2>
             {items.map(item => (
               <div key={item.lineKey} className="flex justify-between gap-3 text-sm">
                 <div className="min-w-0">
-                  <span style={{ color: muted }}>{item.qty}× {item.product.name}</span>
+                  <span style={{ color: muted }}>{item.qty}× {itemName(item.product, locale)}</span>
                   {item.customizations.length > 0 && (
                     <div className="text-xs mt-0.5" style={{ color: muted, opacity: 0.85 }}>
-                      {item.customizations.map(c => `+ ${c.name}`).join(", ")}
+                      {item.customizations.map(c => `+ ${en && c.nameEn ? c.nameEn : c.name}`).join(", ")}
                     </div>
                   )}
                   {item.note && (
@@ -289,14 +292,14 @@ export default function CheckoutPage() {
             ))}
             <div className="pt-3 space-y-1" style={{ borderTop: `1px solid ${line}` }}>
               <div className="flex justify-between text-sm">
-                <span style={{ color: muted }}>Jídlo</span><span style={{ color: ink }}>{formatCzk(total)}</span>
+                <span style={{ color: muted }}>{en ? "Food" : "Jídlo"}</span><span style={{ color: ink }}>{formatCzk(total)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span style={{ color: muted }}>Doručení</span>
+                <span style={{ color: muted }}>{en ? "Delivery" : "Doručení"}</span>
                 <span style={{ color: ink }}>{deliveryFee === 0 ? "zdarma" : formatCzk(deliveryFee)}</span>
               </div>
               <div className="flex justify-between font-semibold text-base pt-1">
-                <span style={{ color: ink }}>Celkem</span>
+                <span style={{ color: ink }}>{en ? "Total" : "Celkem"}</span>
                 <span style={{ color: ink }}>{formatCzk(total + deliveryFee)}</span>
               </div>
             </div>
@@ -317,11 +320,11 @@ export default function CheckoutPage() {
             <button onClick={handleSubmit} disabled={loading || !!closedInfo}
               className="w-full rounded-xl py-3 text-sm font-semibold transition hover:opacity-90 disabled:opacity-50 mt-2"
               style={{ background: accent, color: accentInk }}>
-              {loading ? "Zpracovávám…" : payment === "card" ? (hasCard ? "Zaplatit uloženou kartou" : "Zaplatit kartou →") : "Odeslat objednávku"}
+              {loading ? (en ? "Processing…" : "Zpracovávám…") : payment === "card" ? (hasCard ? (en ? "Pay with saved card" : "Zaplatit uloženou kartou") : (en ? "Pay by card →" : "Zaplatit kartou →")) : (en ? "Place order" : "Odeslat objednávku")}
             </button>
             <p className="text-center text-xs" style={{ color: muted }}>
-              Odesláním objednávky souhlasíte s{" "}
-              <a href="/obchodni-podminky" target="_blank" className="underline underline-offset-2" style={{ color: muted }}>obchodními podmínkami</a>.
+              {en ? "By placing the order you agree to the " : "Odesláním objednávky souhlasíte s "}{""}
+              <a href="/obchodni-podminky" target="_blank" className="underline underline-offset-2" style={{ color: muted }}>{en ? "terms and conditions" : "obchodními podmínkami"}</a>.
             </p>
           </div>
         </div>

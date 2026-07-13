@@ -6,6 +6,7 @@ import { createSupabaseBrowser } from "@/lib/auth/client";
 import type { MenuItem } from "@/lib/types";
 import type { BrandTheme } from "@/lib/brand/registry";
 import { ProductDetailModal } from "@/components/brand/ProductDetailModal";
+import { useCustomerLocale, itemName, itemDesc, itemCategory, LangToggle } from "@/lib/customer-locale";
 
 // Sdílená base64 WebP ikona (šálek + croissant)
 const LOGO_SRC =
@@ -41,13 +42,57 @@ const MENU_ITEMS_STATIC = [
 ];
 
 const DAYPARTS = [
-  { h: "30deg", m: "0deg", time: "07:00–10:00", label: "Ráno", desc: "Espresso, croissant a vejce. Klasický start dne." },
-  { h: "90deg", m: "200deg", time: "10:00–13:00", label: "Dopoledne", desc: "Lívance, avokádový toast a flat white v klidu." },
-  { h: "150deg", m: "80deg", time: "13:00–17:00", label: "Odpoledne", desc: "Pozdní brunch nebo šakšuka, když jsi prospal ráno." },
-  { h: "230deg", m: "300deg", time: "17:00–22:00", label: "Večer", desc: "Breakfast burrito a horká čokoláda na dobrou noc." },
+  { h: "30deg", m: "0deg", time: "07:00–10:00", label: "Ráno", labelEn: "Morning", desc: "Espresso, croissant a vejce. Klasický start dne.", descEn: "Espresso, croissant and eggs. The classic start of the day." },
+  { h: "90deg", m: "200deg", time: "10:00–13:00", label: "Dopoledne", labelEn: "Late morning", desc: "Lívance, avokádový toast a flat white v klidu.", descEn: "Pancakes, avocado toast and a flat white, no rush." },
+  { h: "150deg", m: "80deg", time: "13:00–17:00", label: "Odpoledne", labelEn: "Afternoon", desc: "Pozdní brunch nebo šakšuka, když jsi prospal ráno.", descEn: "Late brunch or shakshuka if you slept through the morning." },
+  { h: "230deg", m: "300deg", time: "17:00–22:00", label: "Večer", labelEn: "Evening", desc: "Breakfast burrito a horká čokoláda na dobrou noc.", descEn: "Breakfast burrito and hot chocolate before bed." },
 ];
 
-const MARQUEE = "Vajíčka jak je máš rád ✦ Poctivá káva ✦ Lívance s javorovým sirupem ✦ Křupavý toast ✦ Šakšuka ✦ Flat white ✦ Od rána do večera ✦ ";
+const MARQUEE = {
+  cs: "Vajíčka jak je máš rád ✦ Poctivá káva ✦ Lívance s javorovým sirupem ✦ Křupavý toast ✦ Šakšuka ✦ Flat white ✦ Od rána do večera ✦ ",
+  en: "Eggs just how you like them ✦ Honest coffee ✦ Pancakes with maple syrup ✦ Crispy toast ✦ Shakshuka ✦ Flat white ✦ From morning till night ✦ ",
+};
+
+const COPY = {
+  cs: {
+    navMenu: "Jídelní lístek", navOpen: "Otevřeno", navDayparts: "Denní doby",
+    account: "Účet", login: "Přihlásit", cart: "Košík",
+    eyebrow: "Snídaně po celý den", h1a: "Snídaně", h1b: "kdykoliv.",
+    lede: "Vajíčka, lívance, toasty a poctivá káva. Od první kávy ráno až do večerního brunche.",
+    cta1: "Objednat snídani", cta2: "Mrknout na lístek",
+    menuKicker: "Jídelní lístek", menuH2: "Co dneska bude", pick: "Vybrat",
+    openSmall: "Bez výmluv na pozdní ráno", openH2: "Otevřeno celý den",
+    hrs: "Po–Pá 7:00–22:00 · So–Ne 8:00–22:00",
+    dpKicker: "Kdykoliv ti vyhládne", dpH2: "Snídaně podle hodin",
+    ctaH2: "Není hlad po ránu?",
+    ctaP: "Nevadí — jsme tady pro vás celý den. Stav se, nebo si nech snídani dovézt až ke dveřím.",
+    ctaBtn: "Objednat online",
+    footTag: "Snídaně po celý den.", footMenu: "Lístek",
+    f1: "Z pánve", f2: "Toasty & sladké", f3: "Káva",
+    footOpen: "Otevřeno", footHrs1: "Po–Pá 7–22", footHrs2: "So–Ne 8–22",
+    footFollow: "Sledujte nás", terms: "Obchodní podmínky", tagline: "Snídaně kdykoliv",
+    heroAlt: "Retro rodina u snídaně",
+  },
+  en: {
+    navMenu: "Menu", navOpen: "Open hours", navDayparts: "Dayparts",
+    account: "Account", login: "Sign in", cart: "Cart",
+    eyebrow: "Breakfast all day long", h1a: "Breakfast", h1b: "anytime.",
+    lede: "Eggs, pancakes, toasts and honest coffee. From the first morning cup to an evening brunch.",
+    cta1: "Order breakfast", cta2: "See the menu",
+    menuKicker: "Menu", menuH2: "What's cooking today", pick: "Choose",
+    openSmall: "No excuses for a late morning", openH2: "Open all day",
+    hrs: "Mon–Fri 7:00–22:00 · Sat–Sun 8:00–22:00",
+    dpKicker: "Whenever hunger strikes", dpH2: "Breakfast by the hour",
+    ctaH2: "Not hungry in the morning?",
+    ctaP: "No problem — we're here all day. Drop by, or have breakfast delivered to your door.",
+    ctaBtn: "Order online",
+    footTag: "Breakfast all day long.", footMenu: "Menu",
+    f1: "From the pan", f2: "Toasts & sweets", f3: "Coffee",
+    footOpen: "Open", footHrs1: "Mon–Fri 7–22", footHrs2: "Sat–Sun 8–22",
+    footFollow: "Follow us", terms: "Terms & Conditions", tagline: "Breakfast anytime",
+    heroAlt: "Retro family at breakfast",
+  },
+};
 
 function Spark({ size = "1em", color = "currentColor" }: { size?: string; color?: string }) {
   return (
@@ -62,6 +107,8 @@ function Spark({ size = "1em", color = "currentColor" }: { size?: string; color?
 
 export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: MenuItem[] }) {
   const { count, openCart } = useCart();
+  const { locale } = useCustomerLocale();
+  const c = COPY[locale];
   const [detail, setDetail] = useState<MenuItem | null>(null);
   const [loggedIn, setLoggedIn] = useState(false);
   const bulbsRef = useRef<HTMLDivElement>(null);
@@ -94,9 +141,10 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
     if (menu && menu.length > 0) {
       const map = new Map<string, DisplayItem[]>();
       for (const it of menu) {
-        const g = map.get(it.category) ?? [];
-        g.push({ n: it.name, d: it.description ?? "", p: it.priceCzk, item: it });
-        map.set(it.category, g);
+        const cat = itemCategory(it, locale);
+        const g = map.get(cat) ?? [];
+        g.push({ n: itemName(it, locale), d: itemDesc(it, locale), p: it.priceCzk, item: it });
+        map.set(cat, g);
       }
       return Array.from(map.entries()).map(([cat, items]) => ({ cat, items }));
     }
@@ -229,12 +277,13 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
             <span className="ss-nav" style={{ fontFamily: '"Anton", Impact, sans-serif', textTransform: "uppercase", fontSize: 24 }}>Prostě snídaně</span>
           </a>
           <nav className="ss-nav">
-            <a href="#menu">Jídelní lístek</a>
-            <a href="#otevreno">Otevřeno</a>
-            <a href="#doby">Denní doby</a>
-            <Link href={loggedIn ? "/ucet/profil" : "/sunny-side/ucet/prihlaseni"} className="ss-icon-btn">{loggedIn ? "Účet" : "Přihlásit"}</Link>
+            <a href="#menu">{c.navMenu}</a>
+            <a href="#otevreno">{c.navOpen}</a>
+            <a href="#doby">{c.navDayparts}</a>
+            <Link href={loggedIn ? "/ucet/profil" : "/sunny-side/ucet/prihlaseni"} className="ss-icon-btn">{loggedIn ? c.account : c.login}</Link>
+            <LangToggle ink="var(--ink)" line="var(--ink)" />
             <button className="ss-icon-btn ss-cart-btn" onClick={openCart}>
-              Košík {count > 0 && <span style={{ background: "var(--amber)", color: "var(--ink)", borderRadius: 999, minWidth: 20, height: 20, padding: "0 5px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "2px solid var(--ink)" }}>{count}</span>}
+              {c.cart} {count > 0 && <span style={{ background: "var(--amber)", color: "var(--ink)", borderRadius: 999, minWidth: 20, height: 20, padding: "0 5px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "2px solid var(--ink)" }}>{count}</span>}
             </button>
           </nav>
         </div>
@@ -244,18 +293,18 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
       <section className="ss-hero ss-hero--family">
         <div className="inner">
           <div className="ss-hero-text">
-            <span className="ss-eyebrow"><Spark size="1em" color="var(--amber)" /> Snídaně po celý den</span>
-            <h1 className="ss-h1">Snídaně<br /><span className="y">kdykoliv.</span></h1>
-            <p className="ss-lede">Vajíčka, lívance, toasty a poctivá káva. Od první kávy ráno až do večerního brunche.</p>
+            <span className="ss-eyebrow"><Spark size="1em" color="var(--amber)" /> {c.eyebrow}</span>
+            <h1 className="ss-h1">{c.h1a}<br /><span className="y">{c.h1b}</span></h1>
+            <p className="ss-lede">{c.lede}</p>
             <div className="ss-hero-cta">
-              <a className="ss-btn-amber" href="#menu">Objednat snídani</a>
-              <a className="ss-btn-ghost" href="#menu">Mrknout na lístek</a>
+              <a className="ss-btn-amber" href="#menu">{c.cta1}</a>
+              <a className="ss-btn-ghost" href="#menu">{c.cta2}</a>
             </div>
           </div>
           <div className="ss-hero-badge ss-hero-badge--family">
             <span className="ss-bs1"><Spark size="30px" color="var(--amber)" /></span>
             <img className="ss-hero-family" src="/brands/sunny-side-family-v2.webp"
-              alt="Retro rodina u snídaně" width={1200} height={649} />
+              alt={c.heroAlt} width={1200} height={649} />
             <span className="ss-bs2"><Spark size="20px" color="var(--amber)" /></span>
           </div>
         </div>
@@ -264,7 +313,7 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
       {/* MARQUEE BAND */}
       <section className="ss-band">
         <div className="line">
-          <span className="ss-marquee">{MARQUEE.repeat(4)}&nbsp;&nbsp;&nbsp;&nbsp;{MARQUEE.repeat(4)}</span>
+          <span className="ss-marquee">{MARQUEE[locale].repeat(4)}&nbsp;&nbsp;&nbsp;&nbsp;{MARQUEE[locale].repeat(4)}</span>
         </div>
       </section>
 
@@ -272,8 +321,8 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
       <section className="ss-menu-sec" id="menu">
         <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 24px" }}>
           <div className="ss-sec-head">
-            <span className="ss-kicker"><Spark size="13px" color="var(--brick)" /> Jídelní lístek <Spark size="13px" color="var(--brick)" /></span>
-            <h2 className="ss-h2">Co dneska bude</h2>
+            <span className="ss-kicker"><Spark size="13px" color="var(--brick)" /> {c.menuKicker} <Spark size="13px" color="var(--brick)" /></span>
+            <h2 className="ss-h2">{c.menuH2}</h2>
           </div>
           <div className="ss-board ss-enamel">
             <div className="ss-board-cols">
@@ -287,7 +336,7 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
                         <span className="ss-ds" />
                         <span className="ss-pr">{it.p} Kč</span>
                         {it.item && (
-                          <button className="ss-add" aria-label={`Vybrat ${it.n}`} onClick={() => setDetail(it.item)}>+</button>
+                          <button className="ss-add" aria-label={`${c.pick} ${it.n}`} onClick={() => setDetail(it.item)}>+</button>
                         )}
                       </div>
                       {it.d && <span className="ss-desc">{it.d}</span>}
@@ -305,9 +354,9 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
         <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 24px" }}>
           <div className="ss-sign">
             <div className="ss-bulbs-wrap" ref={bulbsRef} />
-            <div className="small">Bez výmluv na pozdní ráno</div>
-            <h2>Otevřeno celý den</h2>
-            <div className="hrs">Po–Pá 7:00–22:00 · So–Ne 8:00–22:00</div>
+            <div className="small">{c.openSmall}</div>
+            <h2>{c.openH2}</h2>
+            <div className="hrs">{c.hrs}</div>
           </div>
         </div>
       </section>
@@ -316,8 +365,8 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
       <section className="ss-dayparts" id="doby">
         <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 24px" }}>
           <div className="ss-sec-head">
-            <span className="ss-kicker"><Spark size="13px" color="var(--brick)" /> Kdykoliv ti vyhládne <Spark size="13px" color="var(--brick)" /></span>
-            <h2 className="ss-h2">Snídaně podle hodin</h2>
+            <span className="ss-kicker"><Spark size="13px" color="var(--brick)" /> {c.dpKicker} <Spark size="13px" color="var(--brick)" /></span>
+            <h2 className="ss-h2">{c.dpH2}</h2>
           </div>
         </div>
         <div className="ss-dp-grid">
@@ -329,8 +378,8 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
                 <div className="ss-clock-dot" />
               </div>
               <div className="time">{dp.time}</div>
-              <h3>{dp.label}</h3>
-              <p>{dp.desc}</p>
+              <h3>{locale === "en" ? dp.labelEn : dp.label}</h3>
+              <p>{locale === "en" ? dp.descEn : dp.desc}</p>
             </div>
           ))}
         </div>
@@ -339,9 +388,9 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
       {/* CTA */}
       <section className="ss-cta">
         <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 24px" }}>
-          <h2>Není hlad po ránu?</h2>
-          <p>Nevadí — jsme tady pro vás celý den. Stav se, nebo si nech snídani dovézt až ke dveřím.</p>
-          <a className="ss-btn-dark" href="#menu" style={{ textDecoration: "none" }}>Objednat online <Spark size="20px" color="var(--paper)" /></a>
+          <h2>{c.ctaH2}</h2>
+          <p>{c.ctaP}</p>
+          <a className="ss-btn-dark" href="#menu" style={{ textDecoration: "none" }}>{c.ctaBtn} <Spark size="20px" color="var(--paper)" /></a>
         </div>
       </section>
 
@@ -353,15 +402,15 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
               <img src={LOGO_SRC} alt="" style={{ width: 54, height: 54 }} />
               <span style={{ fontFamily: '"Anton",Impact,sans-serif', textTransform: "uppercase", fontSize: 24, color: "var(--cream)" }}>Prostě snídaně</span>
             </a>
-            <p style={{ color: "#b9ab92", maxWidth: "30ch", marginTop: 12, fontSize: 14 }}>Snídaně po celý den.</p>
+            <p style={{ color: "#b9ab92", maxWidth: "30ch", marginTop: 12, fontSize: 14 }}>{c.footTag}</p>
           </div>
-          <div className="ss-foot-col"><h4>Lístek</h4><a href="#menu">Z pánve</a><a href="#menu">Toasty & sladké</a><a href="#menu">Káva</a></div>
-          <div className="ss-foot-col"><h4>Otevřeno</h4><p>Po–Pá 7–22</p><p>So–Ne 8–22</p></div>
-          <div className="ss-foot-col"><h4>Sledujte nás</h4><a href="#">Instagram</a><a href="#">Facebook</a></div>
+          <div className="ss-foot-col"><h4>{c.footMenu}</h4><a href="#menu">{c.f1}</a><a href="#menu">{c.f2}</a><a href="#menu">{c.f3}</a></div>
+          <div className="ss-foot-col"><h4>{c.footOpen}</h4><p>{c.footHrs1}</p><p>{c.footHrs2}</p></div>
+          <div className="ss-foot-col"><h4>{c.footFollow}</h4><a href="#">Instagram</a><a href="#">Facebook</a></div>
         </div>
         <div className="ss-copy">
-          <span>© 2026 Prostě snídaně · <a href="/" style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 2 }}>Powered by Food Factory</a> · <a href="/obchodni-podminky" style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 2 }}>Obchodní podmínky</a></span>
-          <span>Snídaně kdykoliv <Spark size="11px" color="#9c8e76" /></span>
+          <span>© 2026 Prostě snídaně · <a href="/" style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 2 }}>Powered by Food Factory</a> · <a href="/obchodni-podminky" style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 2 }}>{c.terms}</a></span>
+          <span>{c.tagline} <Spark size="11px" color="#9c8e76" /></span>
         </div>
       </footer>
 

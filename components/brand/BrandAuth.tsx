@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseBrowser } from "@/lib/auth/client";
 import type { BrandTheme } from "@/lib/brand/registry";
+import { useCustomerLocale } from "@/lib/customer-locale";
 
 const EMOJI: Record<string, string> = { "sunny-side": "🍳", "dumply": "🥟", "smash": "🍔" };
 
@@ -66,6 +67,8 @@ function PrimaryBtn({ b, ...btn }: { b: BrandTheme } & React.ButtonHTMLAttribute
 
 // ═══════════════════ PŘIHLÁŠENÍ ═══════════════════
 function LoginInner({ b }: { b: BrandTheme }) {
+  const { locale } = useCustomerLocale();
+  const en = locale === "en";
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") ?? `/${b.slug}`;
@@ -75,45 +78,45 @@ function LoginInner({ b }: { b: BrandTheme }) {
   const [loading, setLoading] = useState(false);
 
   async function handleLogin() {
-    if (!email || !password) { setError("Zadej e-mail a heslo."); return; }
+    if (!email || !password) { setError(en ? "Enter e-mail and password." : "Zadej e-mail a heslo."); return; }
     setLoading(true); setError("");
     const supabase = createSupabaseBrowser();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) { setError("Nesprávný e-mail nebo heslo."); return; }
+    if (error) { setError(en ? "Wrong e-mail or password." : "Nesprávný e-mail nebo heslo."); return; }
     router.push(next);
     router.refresh();
   }
 
   return (
     <Shell b={b}>
-      <Head b={b} title="Přihlášení" sub={b.name} />
+      <Head b={b} title={en ? "Sign in" : "Přihlášení"} sub={b.name} />
       {params.get("confirmed") === "1" && (
         <div className="mb-5 rounded-xl px-4 py-3 text-sm"
           style={{ background: "rgba(30,140,80,.12)", color: "#1E7A4A", border: "1px solid rgba(30,140,80,.35)" }}>
-          ✓ E-mail potvrzen! Přihlas se a můžeš objednávat.
+          {en ? "✓ E-mail confirmed! Sign in and start ordering." : "✓ E-mail potvrzen! Přihlas se a můžeš objednávat."}
         </div>
       )}
       <div className="space-y-4">
         <Field b={b} label="E-mail" type="email" autoComplete="email"
           value={email} onChange={e => setEmail(e.target.value)} />
-        <Field b={b} label="Heslo" type="password" autoComplete="current-password"
+        <Field b={b} label={en ? "Password" : "Heslo"} type="password" autoComplete="current-password"
           value={password} onChange={e => setPassword(e.target.value)}
           onKeyDown={e => e.key === "Enter" && handleLogin()} />
         {error && <ErrorBox>{error}</ErrorBox>}
         <PrimaryBtn b={b} onClick={handleLogin} disabled={loading}>
-          {loading ? "Přihlašuji…" : "Přihlásit se"}
+          {loading ? (en ? "Signing in…" : "Přihlašuji…") : (en ? "Sign in" : "Přihlásit se")}
         </PrimaryBtn>
       </div>
       <p className="text-center text-sm mt-6" style={{ color: b.muted }}>
-        Nemáš účet?{" "}
+        {en ? "No account yet?" : "Nemáš účet?"}{" "}
         <Link href={`/${b.slug}/ucet/registrace${next !== `/${b.slug}` ? `?next=${encodeURIComponent(next)}` : ""}`}
           className="font-semibold underline underline-offset-2" style={{ color: b.accent }}>
-          Zaregistruj se
+          {en ? "Create one" : "Zaregistruj se"}
         </Link>
       </p>
       <p className="text-center text-xs mt-4" style={{ color: b.muted, opacity: 0.75 }}>
-        Jeden účet Food Factory platí pro všechny naše provozy
+        {en ? "One Food Factory account works across all our kitchens" : "Jeden účet Food Factory platí pro všechny naše provozy"}
       </p>
     </Shell>
   );
@@ -129,6 +132,8 @@ export function BrandLogin({ brand }: { brand: BrandTheme }) {
 
 // ═══════════════════ REGISTRACE ═══════════════════
 function RegisterInner({ b }: { b: BrandTheme }) {
+  const { locale } = useCustomerLocale();
+  const en = locale === "en";
   const params = useSearchParams();
   const next = params.get("next") ?? `/${b.slug}`;
   const [name, setName] = useState("");
@@ -142,8 +147,8 @@ function RegisterInner({ b }: { b: BrandTheme }) {
   const [consent, setConsent] = useState(false);
 
   async function handleRegister() {
-    if (!name.trim()) { setError("Zadej jméno."); return; }
-    if (password.length < 8) { setError("Heslo musí mít aspoň 8 znaků."); return; }
+    if (!name.trim()) { setError(en ? "Enter your name." : "Zadej jméno."); return; }
+    if (password.length < 8) { setError(en ? "Password must be at least 8 characters." : "Heslo musí mít aspoň 8 znaků."); return; }
     setLoading(true); setError("");
 
     const r = await fetch("/api/auth/register", {
@@ -154,7 +159,7 @@ function RegisterInner({ b }: { b: BrandTheme }) {
     const d = await r.json();
     setLoading(false);
 
-    if (!r.ok) { setError(d.error ?? "Registrace se nezdařila."); return; }
+    if (!r.ok) { setError(d.error ?? (en ? "Registration failed." : "Registrace se nezdařila.")); return; }
     setSentTo(d.email ?? email);
   }
 
@@ -182,34 +187,34 @@ function RegisterInner({ b }: { b: BrandTheme }) {
       <Shell b={b}>
         <div className="text-center">
           <div className="text-5xl mb-5">📧</div>
-          <h1 className="text-xl font-bold uppercase tracking-wide mb-3" style={{ fontFamily: b.displayFont, color: b.ink }}>Zkontroluj svůj e-mail</h1>
-          <p className="text-sm mb-1" style={{ color: b.muted }}>Poslali jsme potvrzovací odkaz na</p>
+          <h1 className="text-xl font-bold uppercase tracking-wide mb-3" style={{ fontFamily: b.displayFont, color: b.ink }}>{en ? "Check your inbox" : "Zkontroluj svůj e-mail"}</h1>
+          <p className="text-sm mb-1" style={{ color: b.muted }}>{en ? "We sent a confirmation link to" : "Poslali jsme potvrzovací odkaz na"}</p>
           <p className="text-base font-semibold mb-6 break-all" style={{ color: b.ink }}>{sentTo}</p>
 
           <div className="rounded-2xl px-5 py-4 text-left mb-7"
             style={{ background: b.bg, border: `1px solid ${b.line}` }}>
-            <p className="text-sm font-medium mb-2" style={{ color: b.ink }}>Dokonči registraci ve 2 krocích:</p>
+            <p className="text-sm font-medium mb-2" style={{ color: b.ink }}>{en ? "Finish sign-up in 2 steps:" : "Dokonči registraci ve 2 krocích:"}</p>
             <ol className="text-sm space-y-1.5 list-decimal list-inside" style={{ color: b.muted }}>
-              <li>Otevři e-mail a klikni na <span className="font-semibold" style={{ color: b.ink }}>Potvrdit e-mail</span></li>
-              <li>Přihlas se svým heslem — a můžeš objednávat</li>
+              <li>{en ? "Open the e-mail and click " : "Otevři e-mail a klikni na "}<span className="font-semibold" style={{ color: b.ink }}>{en ? "Confirm e-mail" : "Potvrdit e-mail"}</span></li>
+              <li>{en ? "Sign in with your password — and start ordering" : "Přihlas se svým heslem — a můžeš objednávat"}</li>
             </ol>
             <p className="text-xs mt-3" style={{ color: b.muted, opacity: 0.8 }}>
-              ⚠️ E-mail nikde? Zkontroluj <span className="font-semibold">spam</span> nebo složku Hromadné.
+              {en ? <>⚠️ No e-mail? Check <span className="font-semibold">spam</span> or Promotions.</> : <>⚠️ E-mail nikde? Zkontroluj <span className="font-semibold">spam</span> nebo složku Hromadné.</>}
             </p>
           </div>
 
           <button onClick={handleResend} disabled={resendState === "sending" || cooldown > 0}
             className="rounded-full px-5 py-2.5 text-sm font-medium transition hover:opacity-80 disabled:opacity-50"
             style={{ border: `1px solid ${b.line}`, color: b.muted }}>
-            {resendState === "sending" ? "Odesílám…"
-              : cooldown > 0 ? `Odesláno ✓ (znovu za ${cooldown} s)`
-              : "Odeslat e-mail znovu"}
+            {resendState === "sending" ? (en ? "Sending…" : "Odesílám…")
+              : cooldown > 0 ? (en ? `Sent ✓ (again in ${cooldown} s)` : `Odesláno ✓ (znovu za ${cooldown} s)`)
+              : (en ? "Resend e-mail" : "Odeslat e-mail znovu")}
           </button>
 
           <p className="text-sm mt-7" style={{ color: b.muted }}>
-            Máš potvrzeno?{" "}
+            {en ? "Confirmed?" : "Máš potvrzeno?"}{" "}
             <Link href={`/${b.slug}/ucet/prihlaseni`} className="font-semibold underline underline-offset-2" style={{ color: b.accent }}>
-              Přihlas se
+              {en ? "Sign in" : "Přihlas se"}
             </Link>
           </p>
         </div>
@@ -220,31 +225,31 @@ function RegisterInner({ b }: { b: BrandTheme }) {
   // ── Registrační formulář ──
   return (
     <Shell b={b}>
-      <Head b={b} title="Vytvořit účet" sub="Objednávej rychleji a sleduj stav" />
+      <Head b={b} title={en ? "Create account" : "Vytvořit účet"} sub={en ? "Order faster and track status" : "Objednávej rychleji a sleduj stav"} />
       <div className="space-y-4">
-        <Field b={b} label="Jméno" value={name} onChange={e => setName(e.target.value)} />
+        <Field b={b} label={en ? "Name" : "Jméno"} value={name} onChange={e => setName(e.target.value)} />
         <Field b={b} label="E-mail" type="email" autoComplete="email"
           value={email} onChange={e => setEmail(e.target.value)} />
-        <Field b={b} label="Heslo" type="password" autoComplete="new-password" hint="Aspoň 8 znaků."
+        <Field b={b} label={en ? "Password" : "Heslo"} type="password" autoComplete="new-password" hint={en ? "At least 8 characters." : "Aspoň 8 znaků."}
           value={password} onChange={e => setPassword(e.target.value)}
           onKeyDown={e => e.key === "Enter" && handleRegister()} />
         <label className="flex items-start gap-2.5 cursor-pointer select-none">
           <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
             className="mt-0.5 h-4 w-4 shrink-0" style={{ accentColor: b.accent }} />
           <span className="text-xs leading-relaxed" style={{ color: b.muted }}>
-            Chci e-mailem dostávat novinky a akce (volitelné, odhlášení kdykoli jedním klikem)
+            {en ? "Send me news and deals by e-mail (optional, one-click unsubscribe anytime)" : "Chci e-mailem dostávat novinky a akce (volitelné, odhlášení kdykoli jedním klikem)"}
           </span>
         </label>
         {error && <ErrorBox>{error}</ErrorBox>}
         <PrimaryBtn b={b} onClick={handleRegister} disabled={loading}>
-          {loading ? "Vytvářím…" : "Vytvořit účet"}
+          {loading ? (en ? "Creating…" : "Vytvářím…") : (en ? "Create account" : "Vytvořit účet")}
         </PrimaryBtn>
       </div>
       <p className="text-center text-sm mt-6" style={{ color: b.muted }}>
-        Už máš účet?{" "}
+        {en ? "Already have an account?" : "Už máš účet?"}{" "}
         <Link href={`/${b.slug}/ucet/prihlaseni${next !== `/${b.slug}` ? `?next=${encodeURIComponent(next)}` : ""}`}
           className="font-semibold underline underline-offset-2" style={{ color: b.accent }}>
-          Přihlas se
+          {en ? "Sign in" : "Přihlas se"}
         </Link>
       </p>
     </Shell>

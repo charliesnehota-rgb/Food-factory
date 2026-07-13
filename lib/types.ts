@@ -13,6 +13,10 @@ export interface MenuItem {
   imageUrl?: string;
   available: boolean;
   allergens?: number[]; // čísla 1–14 dle EU 1169/2011
+  // EN mutace (fallback = české texty)
+  nameEn?: string;
+  descriptionEn?: string;
+  categoryEn?: string;
 }
 
 // Přídavek k produktu (slanina, sýr…) — tabulka product_customizations
@@ -20,6 +24,7 @@ export interface ProductCustomization {
   id: string;
   productId: string;
   name: string;
+  nameEn?: string;
   priceCzk: number;
   available: boolean;
   sortOrder: number;
