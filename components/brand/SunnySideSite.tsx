@@ -143,10 +143,12 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
         .ss-btn-ghost:hover { background:var(--paper);color:var(--teal-deep) }
         .ss-hero-badge { justify-self:center;position:relative }
         .ss-hero-badge img { width:min(360px,80%);display:block;margin:0 auto;border-radius:50%;filter:drop-shadow(4px 9px 7px rgba(0,0,0,.28)) }
-        .ss-hero-badge--family { align-self:end;margin-bottom:-76px;width:100% }
-        .ss-hero-badge--family img.ss-hero-family { width:min(620px,100%);height:auto;border-radius:0;filter:drop-shadow(0 6px 8px rgba(0,0,0,.22)) }
-        .ss-hero-badge--family .ss-bs1 { top:6%;right:-2px }
-        .ss-hero-badge--family .ss-bs2 { bottom:45%;left:-6px }
+        .ss-hero--family .inner { grid-template-columns:1fr }
+        .ss-hero--family .ss-hero-text { max-width:640px }
+        .ss-hero-badge--family { align-self:end;margin-bottom:-76px;width:100%;justify-self:center }
+        .ss-hero-badge--family img.ss-hero-family { width:min(1240px,100%);height:auto;border-radius:0;margin:20px auto 0;filter:drop-shadow(0 6px 8px rgba(0,0,0,.22)) }
+        .ss-hero-badge--family .ss-bs1 { top:2%;right:4% }
+        .ss-hero-badge--family .ss-bs2 { top:14%;left:3% }
         .ss-bs1 { position:absolute;color:var(--amber);top:-2px;right:24px;font-size:30px;animation:ss-tw 3s ease-in-out infinite }
         .ss-bs2 { position:absolute;color:var(--amber);bottom:30px;left:2px;font-size:20px;animation:ss-tw 3s ease-in-out infinite .8s }
         @keyframes ss-tw { 0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.25);opacity:1} }
@@ -240,7 +242,7 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
       </header>
 
       {/* HERO */}
-      <section className="ss-hero">
+      <section className="ss-hero ss-hero--family">
         <div className="inner">
           <div className="ss-hero-text">
             <span className="ss-eyebrow"><Spark size="1em" color="var(--amber)" /> Snídaně po celý den</span>
