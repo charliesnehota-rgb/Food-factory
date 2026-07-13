@@ -91,7 +91,7 @@ export default async function BrandLayout({
   return (
     <div style={brandStyle(b)} className="min-h-screen flex flex-col">
       <BrandSetter brand={b} />
-      <PWAInit brandSlug={brand} brandName={b.name} accentColor={b.accent} />
+      <PWAInit />
       {children}
     </div>
   );
