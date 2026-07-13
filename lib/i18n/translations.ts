@@ -256,7 +256,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "channels.status.done": "Odesláno",
     "channels.status.failed": "Chyba",
     "channels.status.skipped": "Přeskočeno",
-    "channels.footnote": "Wolt limituje menu/ceny na 1 volání za 15 min a dostupnost na 1 za 5 min per provozovna — změny se proto slévají a odesílají v dávkách (cron á 5 min). Ceny na platformách = cena z adminu × koeficient, zaokrouhleno na koruny.",
+    "channels.footnote": "Wolt limituje menu/ceny na 1 volání za 15 min a dostupnost na 1 za 5 min per provozovna — změny se slévají a odesílají hned po uložení; co nestihne rate-limit okno, vezme denní pojistka v 6:15 nebo tlačítko Synchronizovat teď. Ceny na platformách = cena z adminu × koeficient, zaokrouhleno na koruny.",
 
     "provoz.title": "Provozní doba",
     "provoz.desc": "Mimo otevírací dobu web zobrazí „zavřeno“ a objednávky se zablokují.",
@@ -864,7 +864,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "channels.status.done": "已发送",
     "channels.status.failed": "失败",
     "channels.status.skipped": "已跳过",
-    "channels.footnote": "Wolt 限制菜单/价格每 15 分钟 1 次调用、库存每 5 分钟 1 次（按门店）——更改会合并后分批发送（每 5 分钟 cron）。平台价格 = 后台价格 × 系数，四舍五入到克朗。",
+    "channels.footnote": "Wolt 限制菜单/价格每 15 分钟 1 次调用、库存每 5 分钟 1 次（按门店）——更改会合并并在保存后立即发送；受限于频率窗口的更改由每日 6:15 的定时任务或「立即同步」按钮处理。平台价格 = 后台价格 × 系数，四舍五入到克朗。",
 
 "provoz.title": "营业时间",
     "provoz.desc": "非营业时间网站显示「已打烊」，并禁止下单。",

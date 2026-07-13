@@ -1,5 +1,7 @@
 // POST /api/admin/channels/full-sync — zafrontuje kompletní menu push
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
+import { processChannelQueue } from "@/lib/channels/worker";
 import { supabaseAdmin } from "@/lib/db/supabase";
 import { requireRole } from "@/lib/auth/require-staff";
 
@@ -22,5 +24,6 @@ export async function POST(req: NextRequest) {
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   }
+  after(() => processChannelQueue());
   return NextResponse.json({ ok: true, queued: !existing });
 }

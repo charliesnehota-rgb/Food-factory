@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/channel-sync",
-      "schedule": "*/5 * * * *"
+      "schedule": "15 6 * * *"
     }
   ]
 }

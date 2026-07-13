@@ -4,6 +4,7 @@
 // dostupnosti a hodin se zapisují do channel_sync_queue a worker je
 // s debouncingem posílá na Wolt / foodoru (viz lib/channels/worker.ts).
 // ═══════════════════════════════════════════════════════════
+import { after } from "next/server";
 import { supabaseAdmin } from "@/lib/db/supabase";
 
 export type Channel = "wolt" | "foodora";
@@ -121,8 +122,22 @@ export async function enqueueChannelSync(
         });
       }
     }
+    // Okamžité zpracování po odeslání odpovědi (Hobby plán nemá 5min cron;
+    // denní cron slouží jen jako pojistka pro odložené položky).
+    scheduleImmediateProcessing();
   } catch {
     /* channel sync nesmí rozbít admin akci */
+  }
+}
+
+function scheduleImmediateProcessing() {
+  try {
+    after(async () => {
+      const { processChannelQueue } = await import("./worker");
+      await processChannelQueue();
+    });
+  } catch {
+    /* mimo request scope (např. skript) — vezme to denní cron nebo admin tlačítko */
   }
 }
 
