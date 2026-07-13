@@ -5,6 +5,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useCart, type CartCustomization } from "@/lib/cart";
 import { formatCzk } from "@/lib/types";
+import { formatAllergens } from "@/lib/allergens";
 import type { MenuItem } from "@/lib/types";
 
 interface DbCustomization {
@@ -137,6 +138,11 @@ export function ProductDetailModal({ item, theme, onClose }: {
               <span className="text-base font-semibold whitespace-nowrap" style={{ color: t.muted }}>{formatCzk(item.priceCzk)}</span>
             </div>
             {item.description && <p className="mt-1 text-sm" style={{ color: t.muted }}>{item.description}</p>}
+            {item.allergens && item.allergens.length > 0 && (
+              <p className="mt-1.5 text-xs" style={{ color: t.muted, opacity: 0.85 }}>
+                Alergeny: {formatAllergens(item.allergens)}
+              </p>
+            )}
           </div>
 
           {/* Customizace */}

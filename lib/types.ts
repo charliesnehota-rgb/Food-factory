@@ -12,6 +12,7 @@ export interface MenuItem {
   tags?: string[];
   imageUrl?: string;
   available: boolean;
+  allergens?: number[]; // čísla 1–14 dle EU 1169/2011
 }
 
 // Přídavek k produktu (slanina, sýr…) — tabulka product_customizations

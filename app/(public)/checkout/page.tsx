@@ -31,6 +31,8 @@ export default function CheckoutPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [newsletter, setNewsletter] = useState(false);
+  const [closedInfo, setClosedInfo] = useState<string | null>(null);
+  const [website, setWebsite] = useState(""); // honeypot — lidé nevidí, boti vyplní
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [note, setNote] = useState("");
@@ -55,6 +57,23 @@ export default function CheckoutPage() {
   }, [router]);
 
   const deliveryFee = fulfilment === "delivery" ? 59 : 0;
+
+  // Provozní doba: mimo otevírací hodiny objednávku nejde odeslat
+  const conceptSlug = items[0]?.product.conceptSlug;
+  useEffect(() => {
+    if (!conceptSlug) { setClosedInfo(null); return; }
+    let cancelled = false;
+    fetch(`/api/concepts/${conceptSlug}/hours`)
+      .then(r => r.json())
+      .then(d => {
+        if (cancelled) return;
+        setClosedInfo(d.isOpen === false
+          ? `Máme zavřeno${d.nextOpen ? ` — otevíráme ${d.nextOpen}` : ""}. Objednávku zatím nejde odeslat.`
+          : null);
+      })
+      .catch(() => { /* server to pohlídá */ });
+    return () => { cancelled = true; };
+  }, [conceptSlug]);
   const conceptSlugs = [...new Set(items.map(i => i.product.conceptSlug))];
   const primaryConcept = conceptSlugs[0] ?? brand?.slug ?? "smash";
 
@@ -74,6 +93,7 @@ export default function CheckoutPage() {
           conceptSlug: primaryConcept, channel: "web", fulfilment,
           customer: { name: name.trim(), email: email.trim(), phone: phone.trim(), address: address.trim() },
           marketing_opt_in: newsletter,
+          website,
           note: note.trim(),
           items: items.map(i => ({
             productId: i.product.id,
@@ -281,13 +301,28 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {closedInfo && (
+              <p className="text-sm rounded-lg px-3 py-2"
+                style={{ background: "rgba(220,160,40,.12)", color: "#B07A20", border: "1px solid rgba(220,160,40,.4)" }}>
+                🕐 {closedInfo}
+              </p>
+            )}
             {error && <p className="text-sm text-red-400 rounded-lg bg-red-500/10 px-3 py-2">{error}</p>}
 
-            <button onClick={handleSubmit} disabled={loading}
+            {/* Honeypot — skryté pole proti botům, lidé ho nikdy nevyplní */}
+            <input type="text" value={website} onChange={e => setWebsite(e.target.value)}
+              name="website" tabIndex={-1} autoComplete="off" aria-hidden="true"
+              style={{ position: "absolute", left: "-9999px", height: 0, width: 0, opacity: 0 }} />
+
+            <button onClick={handleSubmit} disabled={loading || !!closedInfo}
               className="w-full rounded-xl py-3 text-sm font-semibold transition hover:opacity-90 disabled:opacity-50 mt-2"
               style={{ background: accent, color: accentInk }}>
               {loading ? "Zpracovávám…" : payment === "card" ? (hasCard ? "Zaplatit uloženou kartou" : "Zaplatit kartou →") : "Odeslat objednávku"}
             </button>
+            <p className="text-center text-xs" style={{ color: muted }}>
+              Odesláním objednávky souhlasíte s{" "}
+              <a href="/obchodni-podminky" target="_blank" className="underline underline-offset-2" style={{ color: muted }}>obchodními podmínkami</a>.
+            </p>
           </div>
         </div>
       </div>

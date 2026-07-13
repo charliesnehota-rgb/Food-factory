@@ -353,7 +353,7 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
           <div className="ss-foot-col"><h4>Sledujte nás</h4><a href="#">Instagram</a><a href="#">Facebook</a></div>
         </div>
         <div className="ss-copy">
-          <span>© 2026 Prostě snídaně · <a href="/" style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 2 }}>Powered by Food Factory</a></span>
+          <span>© 2026 Prostě snídaně · <a href="/" style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 2 }}>Powered by Food Factory</a> · <a href="/obchodni-podminky" style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 2 }}>Obchodní podmínky</a></span>
           <span>Snídaně kdykoliv <Spark size="11px" color="#9c8e76" /></span>
         </div>
       </footer>

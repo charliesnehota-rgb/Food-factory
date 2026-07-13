@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   if (!supabaseAdmin) return NextResponse.json({ error: "DB nedostupná" }, { status: 503 });
 
   const body = await req.json();
-  const { concept_slug, name, description, price_czk, category, tags, available, sort_order } = body;
+  const { concept_slug, name, description, price_czk, category, tags, available, sort_order, allergens } = body;
 
   if (!concept_slug || !name || price_czk == null) {
     return NextResponse.json({ error: "Chybí povinná pole: concept_slug, name, price_czk" }, { status: 400 });
@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
     description: description ?? "",
     price_czk, category: category ?? "Jídlo",
     tags: tags ?? [], available: available ?? true,
+    allergens: Array.isArray(allergens) ? allergens.filter((n: unknown) => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= 14) : [],
     sort_order: sort_order ?? 99,
   }).select().single();
 

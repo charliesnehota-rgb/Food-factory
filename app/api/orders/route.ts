@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchOrders } from "@/lib/db/orders";
 import { supabaseAdmin } from "@/lib/db/supabase";
+import { isOpenNow, nextOpenText, type WeekHours } from "@/lib/opening-hours";
 import { createSupabaseServer } from "@/lib/auth/server";
 import { requireStaff } from "@/lib/auth/require-staff";
 import { sendOrderConfirmationEmail } from "@/lib/notifications";
@@ -48,10 +49,43 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Chybí povinná pole" }, { status: 400 });
     }
 
+    // ── OCHRANA PROTI SPAMU ──
+    // Honeypot: skryté pole "website" vyplňují jen boti
+    if (typeof body.website === "string" && body.website.trim() !== "") {
+      return NextResponse.json({ error: "Neplatný požadavek." }, { status: 400 });
+    }
+
     // E-mail pro potvrzení a notifikace: přihlášený z účtu, host ze zadání
     const customerEmail = (user?.email ?? customer?.email ?? "").trim() || null;
     if (!user && !customerEmail) {
       return NextResponse.json({ error: "Zadej e-mail pro potvrzení objednávky." }, { status: 400 });
+    }
+
+    // Throttle: max 5 objednávek z jednoho e-mailu za 15 minut
+    if (customerEmail) {
+      const ago15 = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+      const { count } = await supabaseAdmin
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("customer_email", customerEmail)
+        .gte("created_at", ago15);
+      if ((count ?? 0) >= 5) {
+        return NextResponse.json({ error: "Příliš mnoho objednávek za krátkou dobu. Zkus to prosím za chvíli." }, { status: 429 });
+      }
+    }
+
+    // ── PROVOZNÍ DOBA ──
+    // Webové objednávky mimo otevírací dobu blokujeme (KDS by je nikdo neviděl).
+    if (channel === "web") {
+      const { data: settings } = await supabaseAdmin
+        .from("concept_settings").select("hours").eq("concept_slug", conceptSlug).single();
+      const hours = (settings?.hours ?? null) as WeekHours | null;
+      if (hours && !isOpenNow(hours)) {
+        const next = nextOpenText(hours);
+        return NextResponse.json({
+          error: `Máme zavřeno${next ? ` — otevíráme ${next}` : ""}. Objednávku zatím nejde odeslat.`,
+        }, { status: 400 });
+      }
     }
 
     // ── SERVER-SIDE CENY ──

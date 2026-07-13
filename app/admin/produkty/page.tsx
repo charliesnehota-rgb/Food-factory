@@ -3,10 +3,32 @@
 import { Fragment, useState, useEffect, useCallback } from "react";
 import { formatCzk } from "@/lib/types";
 import { useT } from "@/lib/i18n";
+import { ALLERGENS } from "@/lib/allergens";
 
 interface Product {
   id: string; concept_slug: string; name: string; description: string;
   price_czk: number; category: string; tags: string[]; available: boolean; sort_order: number;
+  allergens: number[];
+}
+
+// Chips 1–14 pro výběr alergenů (EU 1169/2011)
+function AllergenChips({ value, onChange }: { value: number[]; onChange: (v: number[]) => void }) {
+  const toggle = (n: number) =>
+    onChange(value.includes(n) ? value.filter(x => x !== n) : [...value, n].sort((a, b) => a - b));
+  return (
+    <div className="flex flex-wrap gap-1">
+      {Array.from({ length: 14 }, (_, i) => i + 1).map(n => (
+        <button key={n} type="button" onClick={() => toggle(n)}
+          title={ALLERGENS[n]}
+          className={"h-7 w-7 rounded-full text-xs font-semibold border transition " +
+            (value.includes(n)
+              ? "bg-white text-black border-white"
+              : "border-[var(--border)] text-[var(--muted)] hover:border-neutral-500")}>
+          {n}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 interface Customization {
@@ -172,6 +194,10 @@ export default function ProductsPage() {
               <label className="text-xs text-[var(--muted)]">{t("products.labelDesc")}</label>
               <input value={newData.description ?? ""} onChange={e => setNewData({ ...newData, description: e.target.value })} className={inputCls} />
             </div>
+            <div className="sm:col-span-2">
+              <label className="text-xs text-[var(--muted)] block mb-1">{t("products.labelAllergens")}</label>
+              <AllergenChips value={newData.allergens ?? []} onChange={v => setNewData({ ...newData, allergens: v })} />
+            </div>
           </div>
           <div className="flex gap-2 pt-1">
             <button onClick={createProduct} disabled={saving}
@@ -211,6 +237,7 @@ export default function ProductsPage() {
                       <div className="space-y-1">
                         <input value={editData.name ?? ""} onChange={e => setEditData({ ...editData, name: e.target.value })} className={inputCls} />
                         <input value={editData.description ?? ""} onChange={e => setEditData({ ...editData, description: e.target.value })} className={inputCls} />
+                        <AllergenChips value={editData.allergens ?? []} onChange={v => setEditData({ ...editData, allergens: v })} />
                       </div>
                     ) : (
                       <div>

@@ -32,6 +32,7 @@ export async function fetchProductsForConcept(slug: string): Promise<MenuItem[]>
       tags: p.tags ?? [],
       imageUrl: p.image_url ?? undefined,
       available: p.available,
+      allergens: p.allergens ?? [],
     }));
   } catch {
     // DB nedostupná / timeout / výjimka → stránka nikdy nespadne, ukáže statické menu

@@ -288,7 +288,7 @@ export function DumplySite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIt
             </span>
             <span className="font-bold text-lg" style={{ fontFamily: b.displayFont, color: b.accentInk }}>Dumply</span>
           </div>
-          <p className="text-sm" style={{ color: b.accentInk, opacity: 0.8 }}>© {new Date().getFullYear()} Dumply · <a href="/" className="underline-offset-2 hover:underline" style={{ color: "inherit" }}>Powered by Food Factory</a></p>
+          <p className="text-sm" style={{ color: b.accentInk, opacity: 0.8 }}>© {new Date().getFullYear()} Dumply · <a href="/" className="underline-offset-2 hover:underline" style={{ color: "inherit" }}>Powered by Food Factory</a> · <a href="/obchodni-podminky" className="underline-offset-2 hover:underline" style={{ color: "inherit" }}>Obchodní podmínky</a></p>
           <a href="/" className="text-sm" style={{ color: b.accentInk, opacity: 0.7 }}>Food Factory</a>
         </div>
       </footer>

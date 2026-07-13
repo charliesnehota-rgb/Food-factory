@@ -221,6 +221,19 @@ export const translations: Record<Lang, Record<string, string>> = {
     "customizations.namePlaceholder": "např. Slanina",
     "customizations.deleteConfirm": "Opravdu smazat tuto customizaci?",
 
+    // --- Provozní doba ---
+    "nav.hours": "Provozní doba",
+    "provoz.title": "Provozní doba",
+    "provoz.desc": "Mimo otevírací dobu web zobrazí „zavřeno“ a objednávky se zablokují.",
+    "provoz.day.1": "Pondělí", "provoz.day.2": "Úterý", "provoz.day.3": "Středa",
+    "provoz.day.4": "Čtvrtek", "provoz.day.5": "Pátek", "provoz.day.6": "Sobota", "provoz.day.0": "Neděle",
+    "provoz.closed": "Zavřeno",
+    "provoz.openNow": "● Teď otevřeno",
+    "provoz.closedNow": "● Teď zavřeno",
+    "provoz.saved": "Provozní doba uložena.",
+    "provoz.footnote": "Časy platí pro Prahu (Europe/Prague). Interval přes půlnoc (např. 22:00–02:00) je podporovaný.",
+    "products.labelAllergens": "Alergeny (čísla 1–14)",
+
     // --- Nové heslo ---
     "newPassword.title": "Nové heslo",
     "newPassword.label.new": "Nové heslo",
@@ -780,6 +793,19 @@ export const translations: Record<Lang, Record<string, string>> = {
     "customizations.labelPrice": "价格（CZK）",
     "customizations.namePlaceholder": "例如：培根",
     "customizations.deleteConfirm": "确定删除此加料选项？",
+
+    // --- Provozní doba ---
+    "nav.hours": "营业时间",
+    "provoz.title": "营业时间",
+    "provoz.desc": "非营业时间网站显示「已打烊」，并禁止下单。",
+    "provoz.day.1": "周一", "provoz.day.2": "周二", "provoz.day.3": "周三",
+    "provoz.day.4": "周四", "provoz.day.5": "周五", "provoz.day.6": "周六", "provoz.day.0": "周日",
+    "provoz.closed": "休息",
+    "provoz.openNow": "● 营业中",
+    "provoz.closedNow": "● 已打烊",
+    "provoz.saved": "营业时间已保存。",
+    "provoz.footnote": "时间为布拉格时区（Europe/Prague）。支持跨午夜时段（如 22:00–02:00）。",
+    "products.labelAllergens": "过敏原（编号 1–14）",
 
     // --- Nové heslo ---
     "newPassword.title": "修改密码",

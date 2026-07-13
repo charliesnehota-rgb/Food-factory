@@ -17,7 +17,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   // Povolené pole pro update
   const allowed: Record<string, unknown> = {};
-  for (const key of ["name", "description", "price_czk", "category", "tags", "available", "sort_order", "image_url"]) {
+  for (const key of ["name", "description", "price_czk", "category", "tags", "available", "sort_order", "image_url", "allergens"]) {
     if (body[key] !== undefined) allowed[key] = body[key];
   }
 

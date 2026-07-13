@@ -34,6 +34,12 @@ export async function generateMetadata(
     title: `${b.name} — ${b.eyebrow}`,
     description: b.heroSub,
     manifest: `/${brand}/manifest.webmanifest`,
+    openGraph: {
+      title: b.name,
+      description: b.heroSub,
+      type: "website",
+      locale: "cs_CZ",
+    },
     appleWebApp: {
       capable: true,
       title: b.name,

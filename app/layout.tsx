@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/react";
 import { CartProvider } from "@/lib/cart";
 import { BrandProvider } from "@/lib/brand-context";
 import { CartDrawer } from "@/components/CartDrawer";
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             {children}
           </CartProvider>
         </BrandProvider>
+              <Analytics />
       </body>
     </html>
   );
