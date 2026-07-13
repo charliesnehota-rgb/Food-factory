@@ -107,8 +107,7 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
           background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
           background-size:200px 200px;
         }
-        .sm-ticker-track { display:inline-flex; white-space:nowrap; animation: sm-slide 30s linear infinite; }
-        @keyframes sm-slide { to { transform: translateX(-50%); } }
+        .sm-ticker-track { display:inline-flex; white-space:nowrap; }
         .sm-hover-card { transition: transform .25s cubic-bezier(.2,.8,.2,1); }
         .sm-hover-card:hover { transform: translateY(-4px); }
         .sm-link-underline { position:relative; }
@@ -259,7 +258,6 @@ export function SmashSite({ brand: b, menu }: { brand: BrandTheme; menu: MenuIte
       {/* ── TICKER ── */}
       <div className="py-4 overflow-hidden" style={{ borderTop: `1px solid ${LINE}`, borderBottom: `1px solid ${LINE}`, background: INK }}>
         <div className="sm-ticker-track">
-          <span className="sm-display text-lg font-bold uppercase tracking-wider" style={{ color: BG }}>{TICKER.repeat(6)}</span>
           <span className="sm-display text-lg font-bold uppercase tracking-wider" style={{ color: BG }}>{TICKER.repeat(6)}</span>
         </div>
       </div>
