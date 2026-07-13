@@ -1,4 +1,4 @@
-const CACHE = "ff-v1";
+const CACHE = "ff-v2";
 const OFFLINE = "/offline";
 
 // Assety ke cachování při instalaci

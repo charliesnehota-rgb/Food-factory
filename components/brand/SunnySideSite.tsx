@@ -253,7 +253,7 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
           </div>
           <div className="ss-hero-badge ss-hero-badge--family">
             <span className="ss-bs1"><Spark size="30px" color="var(--amber)" /></span>
-            <img className="ss-hero-family" src="/brands/sunny-side-family.webp"
+            <img className="ss-hero-family" src="/brands/sunny-side-family-v2.webp"
               alt="Retro rodina u snídaně" width={1200} height={649} />
             <span className="ss-bs2"><Spark size="20px" color="var(--amber)" /></span>
           </div>
