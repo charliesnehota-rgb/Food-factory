@@ -127,8 +127,8 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
         .ss-cart-btn { background:var(--brick);color:var(--paper);padding:10px 18px;border-radius:999px;border:3px solid var(--ink);font-weight:700;box-shadow:3px 3px 0 var(--ink);transition:transform .12s,box-shadow .12s }
         .ss-cart-btn:hover { transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--ink) }
         .ss-hero { position:relative;background:var(--teal);color:var(--paper);border-bottom:6px solid var(--ink);overflow:hidden;padding:64px 0 76px }
-        .ss-hero::before { content:"";position:absolute;inset:-100%;z-index:0;
-          background:repeating-conic-gradient(from 0deg at 50% 50%,rgba(247,239,220,.11) 0deg 8deg,transparent 8deg 16deg);
+        .ss-hero::before { content:"";position:absolute;z-index:0;left:50%;top:50%;width:260vmax;height:260vmax;margin:-130vmax 0 0 -130vmax;
+          background:repeating-conic-gradient(from 0deg at 50% 50%,rgba(247,239,220,.11) 0deg 7.5deg,transparent 7.5deg 15deg);
           animation:ss-spin 110s linear infinite }
         @keyframes ss-spin { to { transform:rotate(360deg) } }
         .ss-hero .inner { position:relative;z-index:1;display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;max-width:1080px;margin:0 auto;padding:0 24px }
@@ -168,7 +168,7 @@ export function SunnySideSite({ brand: _b, menu }: { brand: BrandTheme; menu: Me
         .ss-add:hover { background:var(--brick-deep);transform:scale(1.12) }
         .ss-desc { display:block;font-size:13px;color:var(--ink-soft);margin-top:2px }
         .ss-openday { position:relative;background:var(--teal-deep);padding:90px 0;border-top:6px solid var(--ink);border-bottom:6px solid var(--ink);overflow:hidden }
-        .ss-openday::before { content:"";position:absolute;inset:-100%;background:repeating-conic-gradient(from 0deg at 50% 50%,rgba(231,165,44,.08) 0 7deg,transparent 7deg 14deg);animation:ss-spin 140s linear infinite }
+        .ss-openday::before { content:"";position:absolute;left:50%;top:50%;width:260vmax;height:260vmax;margin:-130vmax 0 0 -130vmax;background:repeating-conic-gradient(from 0deg at 50% 50%,rgba(231,165,44,.08) 0 7.5deg,transparent 7.5deg 15deg);animation:ss-spin 140s linear infinite }
         .ss-sign { position:relative;z-index:1;max-width:760px;margin:0 auto;text-align:center;background:var(--brick);border:5px solid var(--ink);border-radius:200px/120px;padding:50px 56px;box-shadow:0 0 0 6px var(--paper),0 0 0 11px var(--ink) }
         .ss-sign .small { color:var(--amber);font-weight:700;letter-spacing:.25em;text-transform:uppercase;font-size:13px }
         .ss-sign h2 { color:var(--paper);font-family:"Anton",Impact,sans-serif;text-transform:uppercase;font-size:clamp(34px,5.4vw,60px);margin:8px 0 6px }
