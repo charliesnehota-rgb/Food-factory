@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useCustomerLocale } from "@/lib/customer-locale";
 import Link from "next/link";
 import { PushPermission } from "@/components/PushPermission";
 import { createSupabaseBrowser } from "@/lib/auth/client";
@@ -15,6 +16,8 @@ interface Profile {
 function ProfileInner() {
   const router = useRouter();
   const params = useSearchParams();
+  const { locale } = useCustomerLocale();
+  const en = locale === "en";
   const cardAdded = params.get("card") === "added";
 
   const [email, setEmail] = useState("");
@@ -65,14 +68,14 @@ function ProfileInner() {
     router.refresh();
   }
 
-  if (loading) return <div className="px-4 py-20 text-center text-[var(--muted)]">Načítám…</div>;
+  if (loading) return <div className="px-4 py-20 text-center text-[var(--muted)]">{en ? "Loading…" : "Načítám…"}</div>;
 
   return (
     <div className="mx-auto max-w-lg px-4 py-12">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-semibold">Můj účet</h1>
+        <h1 className="text-2xl font-semibold">{en ? "My account" : "Můj účet"}</h1>
         <button onClick={signOut} className="text-xs text-[var(--muted)] hover:text-white rounded-md border border-[var(--border)] px-3 py-1.5 hover:border-neutral-600">
-          Odhlásit se
+          {en ? "Sign out" : "Odhlásit se"}
         </button>
       </div>
 
@@ -86,18 +89,18 @@ function ProfileInner() {
 
       <div className="space-y-5">
         <div>
-          <label className="mb-1 block text-sm font-medium">Jméno</label>
+          <label className="mb-1 block text-sm font-medium">{en ? "Name" : "Jméno"}</label>
           <input value={name} onChange={e => setName(e.target.value)}
             className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm focus:border-neutral-500 focus:outline-none" />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">Telefon</label>
+          <label className="mb-1 block text-sm font-medium">{en ? "Phone" : "Telefon"}</label>
           <input value={phone} onChange={e => setPhone(e.target.value)} type="tel"
             className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm focus:border-neutral-500 focus:outline-none" />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">Adresa doručení</label>
-          <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Ulice a číslo, město"
+          <label className="mb-1 block text-sm font-medium">{en ? "Delivery address" : "Adresa doručení"}</label>
+          <input value={address} onChange={e => setAddress(e.target.value)} placeholder={en ? "Street and number, city" : "Ulice a číslo, město"}
             className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm focus:border-neutral-500 focus:outline-none" />
         </div>
 
@@ -105,18 +108,18 @@ function ProfileInner() {
           <input type="checkbox" checked={newsletter} onChange={e => setNewsletter(e.target.checked)}
             className="mt-0.5 h-4 w-4 shrink-0 accent-white" />
           <span className="text-xs leading-relaxed text-[var(--muted)]">
-            Chci e-mailem dostávat novinky a akce Food Factory (odhlášení kdykoli)
+            {en ? "I want to receive Food Factory news and deals by e-mail (unsubscribe anytime)" : "Chci e-mailem dostávat novinky a akce Food Factory (odhlášení kdykoli)"}
           </span>
         </label>
 
         <button onClick={save} disabled={saving}
           className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-black hover:bg-neutral-200 disabled:opacity-50 transition">
-          {saving ? "Ukládám…" : saved ? "✓ Uloženo" : "Uložit údaje"}
+          {saving ? (en ? "Saving…" : "Ukládám…") : saved ? (en ? "✓ Saved" : "✓ Uloženo") : (en ? "Save details" : "Uložit údaje")}
         </button>
 
         {/* Platba */}
         <div className="border-t border-[var(--border)] pt-6">
-          <h2 className="font-medium mb-3">Platba</h2>
+          <h2 className="font-medium mb-3">{en ? "Payment" : "Platba"}</h2>
           <div className="grid grid-cols-2 gap-2 mb-4">
             {([["card","💳 Kartou"],["cash","💵 Při převzetí"]] as const).map(([v,l]) => (
               <button key={v} onClick={() => setPayMethod(v)}
@@ -129,13 +132,13 @@ function ProfileInner() {
           {payMethod === "card" && (
             hasCard ? (
               <div className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm">
-                <span className="text-green-400">✓ Karta uložena</span>
-                <button onClick={addCard} className="text-xs text-[var(--muted)] underline hover:text-white">Změnit kartu</button>
+                <span className="text-green-400">{en ? "✓ Card saved" : "✓ Karta uložena"}</span>
+                <button onClick={addCard} className="text-xs text-[var(--muted)] underline hover:text-white">{en ? "Change card" : "Změnit kartu"}</button>
               </div>
             ) : (
               <button onClick={addCard}
                 className="w-full rounded-xl border border-[var(--border)] py-3 text-sm hover:border-neutral-600 transition">
-                + Přidat platební kartu
+                {en ? "+ Add payment card" : "+ Přidat platební kartu"}
               </button>
             )
           )}
@@ -145,7 +148,7 @@ function ProfileInner() {
 
         <div className="border-t border-[var(--border)] pt-6">
           <Link href="/ucet/objednavky" className="text-sm underline hover:text-white">
-            Moje objednávky →
+            {en ? "My orders →" : "Moje objednávky →"}
           </Link>
         </div>
       </div>
