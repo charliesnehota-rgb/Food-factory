@@ -50,7 +50,7 @@ export type OrderStatus =
   | "delivered"
   | "cancelled";
 
-export type OrderChannel = "web" | "wolt" | "foodora" | "pos";
+export type OrderChannel = "web" | "app" | "wolt" | "foodora" | "pos";
 export type FulfilmentType = "delivery" | "pickup" | "dine_in";
 
 export interface OrderItemCustomization {

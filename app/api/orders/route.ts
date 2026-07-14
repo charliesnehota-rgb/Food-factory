@@ -75,8 +75,8 @@ export async function POST(req: NextRequest) {
     }
 
     // ── PROVOZNÍ DOBA ──
-    // Webové objednávky mimo otevírací dobu blokujeme (KDS by je nikdo neviděl).
-    if (channel === "web") {
+    // Objednávky z webu i appky mimo otevírací dobu blokujeme (KDS by je nikdo neviděl).
+    if (channel === "web" || channel === "app") {
       const { data: settings } = await supabaseAdmin
         .from("concept_settings").select("hours").eq("concept_slug", conceptSlug).single();
       const hours = (settings?.hours ?? null) as WeekHours | null;
