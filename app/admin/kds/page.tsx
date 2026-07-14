@@ -26,6 +26,14 @@ const CONCEPT_META: Record<string, { name: string; accent: string; emoji: string
 
 const FULFILMENT_ICON: Record<string, string> = { delivery: "🛵", pickup: "🥡", dine_in: "🍽" };
 
+// Web/app objednávky bez potvrzené platby do kuchyně nepatří vůbec —
+// zaplacené přicházejí rovnou jako "accepted" (Stripe webhook / uložená
+// karta), takže cokoli nezaplaceného je opuštěný checkout, ne práce.
+function paidForKitchen(o: Order): boolean {
+  if (o.channel !== "web" && o.channel !== "app") return true;
+  return o.payment?.status === "paid";
+}
+
 // KDS sloupce + akce
 const COLUMNS: { status: Status; labelKey: string; next: Status | null; nextLabelKey: string }[] = [
   { status: "new",       labelKey: "kds.col.new",       next: "accepted",  nextLabelKey: "kds.action.accept" },
@@ -68,14 +76,18 @@ export default function KDSPage() {
   const load = useCallback(async () => {
     const d = await fetch("/api/orders", { cache: "no-store" }).then(r => r.json()).catch(() => null);
     if (!Array.isArray(d)) return;
-    // Beep na novou objednávku (ne při prvním načtení)
+    // Nezaplacené web/app objednávky do kuchyně vůbec nepouštíme.
+    const visible = (d as Order[]).filter(paidForKitchen);
+    // Beep na nově příchozí objednávku (ne při prvním načtení). Zaplacené
+    // web/app objednávky přicházejí rovnou jako "accepted", proto pípáme
+    // na každou novou viditelnou objednávku ve stavech new/accepted.
     if (!firstLoad.current) {
-      const hasNew = d.some((o: Order) => o.status === "new" && !knownIds.current.has(o.id));
+      const hasNew = visible.some(o => (o.status === "new" || o.status === "accepted") && !knownIds.current.has(o.id));
       if (hasNew) beep();
     }
-    knownIds.current = new Set(d.map((o: Order) => o.id));
+    knownIds.current = new Set(visible.map(o => o.id));
     firstLoad.current = false;
-    setOrders(d);
+    setOrders(visible);
   }, []);
 
   useEffect(() => {
@@ -158,9 +170,6 @@ export default function KDSPage() {
                         <span style={{ color: meta.accent }} className="text-base leading-none">{meta.emoji}</span>
                         <span className="font-mono text-xs font-semibold truncate">{o.id.split("-").pop()}</span>
                         <span className="text-sm">{FULFILMENT_ICON[o.fulfilment]}</span>
-                        {(o.channel === "web" || o.channel === "app") && o.payment?.status !== "paid" && (
-                          <span className="text-[10px] font-bold rounded-md px-1.5 py-0.5 bg-red-500/15 text-red-400">{t("kds.unpaid")}</span>
-                        )}
                         <span
                           className="ml-auto font-mono text-xs font-bold rounded-md px-1.5 py-0.5"
                           style={{ color: ageColor(min), background: `${ageColor(min)}18` }}

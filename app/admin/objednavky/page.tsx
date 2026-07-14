@@ -47,11 +47,16 @@ export default function OrdersBoard() {
     setMenuOpen(null);
     setOrders(prev => prev.map(o => o.id === id ? { ...o, status: ns } : o));
     try {
-      await fetch(`/api/orders/${id}`, {
+      const res = await fetch(`/api/orders/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: ns }),
       });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        alert(d.error ?? t("orders.updateFailed"));
+        load();
+      }
     } catch { load(); }
   }
 
@@ -108,7 +113,12 @@ export default function OrdersBoard() {
                     <div key={o.id} className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">{o.id}</span>
-                        <span className="rounded bg-[var(--card)] px-1.5 py-0.5 text-xs text-[var(--muted)]">{CHANNEL_LABEL[o.channel]}</span>
+                        <span className="flex items-center gap-1.5">
+                          {(o.channel === "web" || o.channel === "app") && o.payment?.status !== "paid" && o.status !== "cancelled" && (
+                            <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-xs font-bold text-red-400">{t("orders.unpaid")}</span>
+                          )}
+                          <span className="rounded bg-[var(--card)] px-1.5 py-0.5 text-xs text-[var(--muted)]">{CHANNEL_LABEL[o.channel]}</span>
+                        </span>
                       </div>
                       <ul className="mt-2 space-y-0.5 text-sm text-[var(--muted)]">
                         {o.items.map((it, idx) => (

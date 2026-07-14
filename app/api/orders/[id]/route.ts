@@ -13,6 +13,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   try {
     const { status } = await req.json();
+
+    // ── PÁROVÁNÍ S PLATEBNÍ BRÁNOU ──
+    // Web/app objednávky pouští do kuchyňského toku až potvrzená platba
+    // ze Stripe (webhook / uložená karta). Do té doby je povolené jen storno.
+    if (supabaseAdmin && status !== "cancelled") {
+      const { data: existing } = await supabaseAdmin
+        .from("orders").select("channel, payment_status").eq("id", id).single();
+      if (
+        existing &&
+        (existing.channel === "web" || existing.channel === "app") &&
+        existing.payment_status !== "paid"
+      ) {
+        return NextResponse.json(
+          { error: "Objednávka není zaplacená — do přípravy ji pustí až potvrzení platby." },
+          { status: 409 },
+        );
+      }
+    }
+
     await updateOrderStatus(id, status as OrderStatus);
 
     // Skladový odečet podle receptur (fáze 2). Best-effort — nikdy neblokuje
