@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchOrders } from "@/lib/db/orders";
 import { supabaseAdmin } from "@/lib/db/supabase";
 import { isOpenNow, nextOpenText, type WeekHours } from "@/lib/opening-hours";
-import { createSupabaseServer } from "@/lib/auth/server";
+import { getUserFromRequest } from "@/lib/auth/server";
 import { requireStaff } from "@/lib/auth/require-staff";
 import { sendOrderConfirmationEmail } from "@/lib/notifications";
 import { getBrand } from "@/lib/brand/registry";
@@ -37,9 +37,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  const supabase = await createSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Uživatel z Bearer tokenu (mobilní appka) nebo cookies (web).
   // Objednat může i host bez registrace — přihlášení není povinné.
+  const user = await getUserFromRequest(req);
 
   try {
     const body = await req.json();

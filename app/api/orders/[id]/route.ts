@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { updateOrderStatus } from "@/lib/db/orders";
 import { requireStaff } from "@/lib/auth/require-staff";
 import { supabaseAdmin } from "@/lib/db/supabase";
-import { sendPushNotification, sendStatusEmail } from "@/lib/notifications";
+import { sendExpoPushNotification, sendPushNotification, sendStatusEmail } from "@/lib/notifications";
 import { consumeForOrder, reverseForOrder } from "@/lib/stock/consumption";
 import type { OrderStatus } from "@/lib/types";
 
@@ -72,6 +72,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
               .from("push_subscriptions").select("endpoint, p256dh, auth_key").eq("user_id", order.user_id);
             if (subs?.length) {
               await sendPushNotification(subs, id, status as OrderStatus);
+            }
+            // Expo push do mobilní aplikace (tokeny registruje appka)
+            const { data: expoTokens } = await supabaseAdmin
+              .from("expo_push_tokens").select("token").eq("user_id", order.user_id);
+            if (expoTokens?.length) {
+              await sendExpoPushNotification(expoTokens.map((t) => t.token), id, status as OrderStatus);
             }
             const { data: profile } = await supabaseAdmin
               .from("user_profiles").select("full_name").eq("id", order.user_id).single();

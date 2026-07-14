@@ -48,6 +48,27 @@ export async function sendPushNotification(subs: PushSub[], orderId: string, sta
   );
 }
 
+// Expo push do mobilní aplikace — přímé volání Expo Push API, bez SDK.
+// Tokeny drží tabulka expo_push_tokens (registruje je appka po přihlášení).
+export async function sendExpoPushNotification(tokens: string[], orderId: string, status: OrderStatus) {
+  const msg = STATUS_MESSAGES[status];
+  if (!msg || tokens.length === 0) return;
+
+  const messages = tokens.map((to) => ({
+    to,
+    sound: "default",
+    title: msg.title,
+    body: msg.body,
+    data: { orderId, status },
+  }));
+
+  await fetch("https://exp.host/--/api/v2/push/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(messages),
+  }).catch(() => null); // push je best-effort
+}
+
 // Odeslání e-mailu přes Resend
 export async function sendStatusEmail(
   toEmail: string,

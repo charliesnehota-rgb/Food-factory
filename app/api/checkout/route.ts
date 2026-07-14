@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/db/supabase";
-import { createSupabaseServer } from "@/lib/auth/server";
+import { getUserFromRequest } from "@/lib/auth/server";
 
 export async function POST(req: NextRequest) {
   if (!stripe || !supabaseAdmin) {
     return NextResponse.json({ error: "Platby nejsou nakonfigurovány" }, { status: 503 });
   }
 
-  const supabase = await createSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Uživatel z Bearer tokenu (mobilní appka) nebo cookies (web).
   // Host (bez přihlášení) může platit kartou přes standardní Stripe Checkout.
+  const user = await getUserFromRequest(req);
 
   try {
     const { orderId } = await req.json();
@@ -32,8 +32,21 @@ export async function POST(req: NextRequest) {
     let customerId: string | undefined;
     if (user) {
       const { data: profile } = await supabaseAdmin
-        .from("user_profiles").select("stripe_customer_id").eq("id", user.id).single();
+        .from("user_profiles").select("stripe_customer_id, full_name").eq("id", user.id).single();
       customerId = profile?.stripe_customer_id;
+
+      // Přihlášený bez Stripe zákazníka: založ ho, aby hostovaný checkout
+      // kartu uložil (setup_future_usage) a příští platba šla na jeden klik.
+      if (!customerId) {
+        try {
+          const customer = await stripe.customers.create({
+            email: user.email, name: profile?.full_name ?? undefined,
+            metadata: { user_id: user.id },
+          });
+          customerId = customer.id;
+          await supabaseAdmin.from("user_profiles").update({ stripe_customer_id: customerId }).eq("id", user.id);
+        } catch { /* checkout jede i bez zákazníka, jen se karta neuloží */ }
+      }
 
       if (customerId) {
       // Zkus zaplatit uloženou kartou (jeden klik, off_session)
