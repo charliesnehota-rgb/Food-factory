@@ -8,7 +8,7 @@ import { useT } from "@/lib/i18n";
 const FLOW: OrderStatus[] = ["new", "preparing", "ready", "out_for_delivery", "delivered"];
 
 const CHANNEL_LABEL: Record<Order["channel"], string> = {
-  web: "Web", wolt: "Wolt", foodora: "Foodora", pos: "POS",
+  web: "Web", app: "App", wolt: "Wolt", foodora: "Foodora", pos: "POS",
 };
 
 function nextStatus(s: OrderStatus): OrderStatus | null {
