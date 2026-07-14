@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getBrand, brandStyle, brands } from "@/lib/brand/registry";
 import { BrandSetter } from "@/components/brand/BrandSetter";
@@ -34,6 +35,9 @@ export async function generateMetadata(
     title: `${b.name} — ${b.eyebrow}`,
     description: b.heroSub,
     manifest: `/${brand}/manifest.webmanifest`,
+    // Skrytý režim: na sdílené doméně (vercel.app apod.) se brand weby
+    // neindexují — restaurace se Googlu ukážou až na vlastních doménách.
+    robots: (await isOwnDomain(brand)) ? undefined : { index: false, follow: false },
     openGraph: {
       title: b.name,
       description: b.heroSub,
@@ -95,4 +99,19 @@ export default async function BrandLayout({
       {children}
     </div>
   );
+}
+
+// Je aktuální host vlastní doménou tohoto brandu (dle BRAND_DOMAINS)?
+async function isOwnDomain(slug: string): Promise<boolean> {
+  try {
+    const h = await headers();
+    const host = (h.get("host") ?? "").toLowerCase().replace(/^www\./, "").split(":")[0];
+    const raw = process.env.BRAND_DOMAINS ?? "";
+    return raw.split(",").some(pair => {
+      const [domain, s] = pair.split("=").map(x => x?.trim().toLowerCase());
+      return domain === host && s === slug;
+    });
+  } catch {
+    return false;
+  }
 }
