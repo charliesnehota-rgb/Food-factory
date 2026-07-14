@@ -19,7 +19,7 @@ export default function TermsPage() {
         </section>
         <section>
           <h2>3. Ceny a platba</h2>
-          <p>Ceny jsou uvedeny včetně DPH. K objednávce s doručením se účtuje doručné dle aktuálního ceníku zobrazeného v košíku. Platbu lze provést online kartou (zpracovává Stripe) nebo hotově při převzetí.</p>
+          <p>Ceny jsou uvedeny včetně DPH. K objednávce s doručením se účtuje doručné dle aktuálního ceníku zobrazeného v košíku. Platbu lze provést pouze online kartou (zpracovává Stripe); hotovost nepřijímáme.</p>
         </section>
         <section>
           <h2>4. Doručení a převzetí</h2>

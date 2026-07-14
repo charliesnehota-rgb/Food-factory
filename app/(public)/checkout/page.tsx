@@ -9,7 +9,6 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 import { createSupabaseBrowser } from "@/lib/auth/client";
 
 type Fulfilment = "delivery" | "pickup";
-type Payment = "cash" | "card";
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
@@ -30,7 +29,6 @@ export default function CheckoutPage() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [hasCard, setHasCard] = useState(false);
   const [fulfilment, setFulfilment] = useState<Fulfilment>("delivery");
-  const [payment, setPayment] = useState<Payment>("card");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [newsletter, setNewsletter] = useState(false);
@@ -109,18 +107,14 @@ export default function CheckoutPage() {
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? (en ? "Failed to submit." : "Chyba při odeslání.")); setLoading(false); return; }
 
-      if (payment === "card") {
-        const payRes = await fetch("/api/checkout", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId: data.orderId }),
-        });
-        const payData = await payRes.json();
-        if (payRes.ok && payData.paid) { clearCart(); router.push(payData.redirect); return; }
-        if (payRes.ok && payData.url) { clearCart(); window.location.href = payData.url; return; }
-        setError(payData.error ?? (en ? "Card payment is unavailable." : "Platba kartou není dostupná.")); setLoading(false); return;
-      }
-      clearCart();
-      router.push(`/objednavka/${data.orderId}`);
+      const payRes = await fetch("/api/checkout", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: data.orderId }),
+      });
+      const payData = await payRes.json();
+      if (payRes.ok && payData.paid) { clearCart(); router.push(payData.redirect); return; }
+      if (payRes.ok && payData.url) { clearCart(); window.location.href = payData.url; return; }
+      setError(payData.error ?? (en ? "Card payment is unavailable." : "Platba kartou není dostupná.")); setLoading(false); return;
     } catch {
       setError(en ? "Connection error." : "Chyba připojení."); setLoading(false);
     }
@@ -178,24 +172,6 @@ export default function CheckoutPage() {
                     style={{
                       background: fulfilment === val ? surface : "transparent",
                       border: `1px solid ${fulfilment === val ? accent : line}`,
-                    }}>
-                    <div className="text-sm font-medium" style={{ color: ink }}>{label}</div>
-                    <div className="text-xs" style={{ color: muted }}>{sub}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Platba */}
-            <div>
-              <label className="mb-2 block text-sm font-medium" style={{ color: ink }}>{en ? "Payment" : "Platba"}</label>
-              <div className="grid grid-cols-2 gap-2">
-                {([["card", hasCard ? (en ? "💳 Saved card" : "💳 Uloženou kartou") : (en ? "💳 Card online" : "💳 Kartou online"), hasCard ? (en ? "one click" : "jedním klikem") : (en ? "instant" : "ihned")],["cash", en ? "💵 On delivery" : "💵 Při převzetí", en ? "cash/card" : "hotově/kartou"]] as const).map(([val,label,sub]) => (
-                  <button key={val} onClick={() => setPayment(val)}
-                    className="rounded-xl p-3 text-left transition"
-                    style={{
-                      background: payment === val ? surface : "transparent",
-                      border: `1px solid ${payment === val ? accent : line}`,
                     }}>
                     <div className="text-sm font-medium" style={{ color: ink }}>{label}</div>
                     <div className="text-xs" style={{ color: muted }}>{sub}</div>
@@ -320,7 +296,7 @@ export default function CheckoutPage() {
             <button onClick={handleSubmit} disabled={loading || !!closedInfo}
               className="w-full rounded-xl py-3 text-sm font-semibold transition hover:opacity-90 disabled:opacity-50 mt-2"
               style={{ background: accent, color: accentInk }}>
-              {loading ? (en ? "Processing…" : "Zpracovávám…") : payment === "card" ? (hasCard ? (en ? "Pay with saved card" : "Zaplatit uloženou kartou") : (en ? "Pay by card →" : "Zaplatit kartou →")) : (en ? "Place order" : "Odeslat objednávku")}
+              {loading ? (en ? "Processing…" : "Zpracovávám…") : hasCard ? (en ? "Pay with saved card" : "Zaplatit uloženou kartou") : (en ? "Pay by card →" : "Zaplatit kartou →")}
             </button>
             <p className="text-center text-xs" style={{ color: muted }}>
               {en ? "By placing the order you agree to the " : "Odesláním objednávky souhlasíte s "}{""}

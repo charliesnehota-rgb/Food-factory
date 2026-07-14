@@ -79,7 +79,7 @@ export interface Order {
   customer: { name: string; phone?: string; address?: string };
   createdAt: string; // ISO 8601
   delivery?: { provider: "wolt" | "foodora" | "self"; trackingId?: string; eta?: string };
-  payment?: { provider: "stripe" | "cash"; status: "pending" | "paid" | "refunded"; intentId?: string };
+  payment?: { provider: "stripe"; status: "pending" | "paid" | "refunded"; intentId?: string };
 }
 
 export const DAYPART_LABEL: Record<Daypart, string> = {

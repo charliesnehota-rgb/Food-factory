@@ -25,7 +25,6 @@ function ProfileInner() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [hasCard, setHasCard] = useState(false);
-  const [payMethod, setPayMethod] = useState<"card" | "cash">("card");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -120,17 +119,7 @@ function ProfileInner() {
         {/* Platba */}
         <div className="border-t border-[var(--border)] pt-6">
           <h2 className="font-medium mb-3">{en ? "Payment" : "Platba"}</h2>
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            {([["card","💳 Kartou"],["cash","💵 Při převzetí"]] as const).map(([v,l]) => (
-              <button key={v} onClick={() => setPayMethod(v)}
-                className={`rounded-xl border p-3 text-sm font-medium transition ${payMethod===v?"border-white bg-[var(--card)]":"border-[var(--border)] hover:border-neutral-600"}`}>
-                {l}
-              </button>
-            ))}
-          </div>
-
-          {payMethod === "card" && (
-            hasCard ? (
+          {hasCard ? (
               <div className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm">
                 <span className="text-green-400">{en ? "✓ Card saved" : "✓ Karta uložena"}</span>
                 <button onClick={addCard} className="text-xs text-[var(--muted)] underline hover:text-white">{en ? "Change card" : "Změnit kartu"}</button>
@@ -140,8 +129,7 @@ function ProfileInner() {
                 className="w-full rounded-xl border border-[var(--border)] py-3 text-sm hover:border-neutral-600 transition">
                 {en ? "+ Add payment card" : "+ Přidat platební kartu"}
               </button>
-            )
-          )}
+            )}
         </div>
 
         <PushPermission />

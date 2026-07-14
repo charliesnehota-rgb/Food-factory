@@ -9,6 +9,7 @@ interface OrderItem { name: string; qty: number; note?: string }
 interface Order {
   id: string;
   conceptSlug: string;
+  channel: string;
   fulfilment: "delivery" | "pickup" | "dine_in";
   status: Status;
   items: OrderItem[];
@@ -157,6 +158,9 @@ export default function KDSPage() {
                         <span style={{ color: meta.accent }} className="text-base leading-none">{meta.emoji}</span>
                         <span className="font-mono text-xs font-semibold truncate">{o.id.split("-").pop()}</span>
                         <span className="text-sm">{FULFILMENT_ICON[o.fulfilment]}</span>
+                        {(o.channel === "web" || o.channel === "app") && o.payment?.status !== "paid" && (
+                          <span className="text-[10px] font-bold rounded-md px-1.5 py-0.5 bg-red-500/15 text-red-400">{t("kds.unpaid")}</span>
+                        )}
                         <span
                           className="ml-auto font-mono text-xs font-bold rounded-md px-1.5 py-0.5"
                           style={{ color: ageColor(min), background: `${ageColor(min)}18` }}
