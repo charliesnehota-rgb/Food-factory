@@ -37,3 +37,23 @@ function dbOrderToModel(row: any): Order {
     payment: row.payment_provider ? { provider: row.payment_provider, status: row.payment_status, intentId: row.stripe_intent_id ?? undefined } : undefined,
   };
 }
+
+// Auto-storno opuštěných checkoutů: web/app objednávka bez potvrzené platby
+// starší než 30 minut se stornuje (Stripe Checkout session má stejnou
+// platnost, viz /api/checkout). Kdyby platba přece jen dorazila později,
+// webhook objednávku vzkřísí na accepted+paid — zaplaceno vždy vyhrává.
+const STALE_UNPAID_MINUTES = 30;
+
+export async function cancelStaleUnpaidOrders(): Promise<number> {
+  if (!supabaseAdmin) return 0;
+  const cutoff = new Date(Date.now() - STALE_UNPAID_MINUTES * 60 * 1000).toISOString();
+  const { data } = await supabaseAdmin
+    .from("orders")
+    .update({ status: "cancelled" })
+    .eq("status", "new")
+    .in("channel", ["web", "app"])
+    .neq("payment_status", "paid")
+    .lt("created_at", cutoff)
+    .select("id");
+  return data?.length ?? 0;
+}

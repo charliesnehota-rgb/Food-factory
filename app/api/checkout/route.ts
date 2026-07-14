@@ -88,6 +88,8 @@ export async function POST(req: NextRequest) {
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      // Platnost platebního odkazu = okno auto-storna objednávky (30 min)
+      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
       ...(customerId ? { customer: customerId } : {}),
       line_items: lineItems,
       success_url: `${origin}/objednavka/${orderId}?paid=1`,

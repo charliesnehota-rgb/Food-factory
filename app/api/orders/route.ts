@@ -1,7 +1,7 @@
 // GET /api/orders — JEN pracovník: všechny objednávky (?concept=slug filtr)
 // POST /api/orders — vytvoří objednávku přihlášeného zákazníka
 import { NextRequest, NextResponse } from "next/server";
-import { fetchOrders } from "@/lib/db/orders";
+import { cancelStaleUnpaidOrders, fetchOrders } from "@/lib/db/orders";
 import { supabaseAdmin } from "@/lib/db/supabase";
 import { isOpenNow, nextOpenText, type WeekHours } from "@/lib/opening-hours";
 import { getUserFromRequest } from "@/lib/auth/server";
@@ -22,10 +22,19 @@ function makeOrderId(conceptSlug: string): string {
   return `${code}-${num}`;
 }
 
+// Průběžný úklid opuštěných checkoutů — jede na vlně pollingu KDS/adminu,
+// throttlovaný na jednou za minutu na instanci (denní cron je pojistka).
+let lastSweepAt = 0;
+
 export async function GET(req: NextRequest) {
   // Seznam všech objednávek je jen pro pracovníky
   const staff = await requireStaff();
   if (!staff) return NextResponse.json({ error: "Přístup zamítnut" }, { status: 403 });
+
+  if (Date.now() - lastSweepAt > 60_000) {
+    lastSweepAt = Date.now();
+    await cancelStaleUnpaidOrders();
+  }
 
   const concept = req.nextUrl.searchParams.get("concept") ?? undefined;
   const orders = await fetchOrders(concept);
