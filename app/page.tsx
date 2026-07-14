@@ -158,9 +158,9 @@ export default function Manifest() {
         </h1>
 
         <div className="mf-triad" aria-label="Levně. Kvalitně. Rychle.">
-          <span>Levně</span><span className="dot">·</span>
+          <span className="mf-circled">Levně<SketchCircle /></span><span className="dot">·</span>
           <span className="mf-outline">Kvalitně</span><span className="dot">·</span>
-          <span className="mf-circled">Rychle<SketchCircle /></span>
+          <span>Rychle</span>
         </div>
 
         <p className="mf-copy">
