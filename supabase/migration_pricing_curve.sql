@@ -1,0 +1,14 @@
+-- ═══════════════════════════════════════════════════════════
+-- CENOTVORBA: hodinová křivka marže per koncept (den × hodina)
+-- ═══════════════════════════════════════════════════════════
+-- price_czk u produktu je od teď "základní" (průměrná) cena.
+-- Skutečná cena v appce/webu = price_czk upravená o marži z křivky
+-- pro aktuální den + hodinu (Europe/Prague). Nemá vliv na aktivní
+-- price_overrides (happy hour apod.) — ty mají vždy přednost.
+--
+-- margin_curve: {"1":{"7":-10,"8":-5,"12":15,"13":10}, "2":{...}, …}
+-- klíč dne  = JS getDay (0 = neděle … 6 = sobota), stejně jako u hours
+-- klíč hod. = "0".."23" (bez vedoucí nuly, jen hodiny v provozní době)
+-- hodnota   = % odchylka od price_czk (kladná = přirážka, záporná = sleva)
+-- chybějící den/hodina = 0 % (beze změny)
+alter table concept_settings add column if not exists margin_curve jsonb not null default '{}'::jsonb;

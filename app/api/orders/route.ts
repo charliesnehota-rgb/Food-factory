@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cancelStaleUnpaidOrders, fetchOrders } from "@/lib/db/orders";
 import { supabaseAdmin } from "@/lib/db/supabase";
 import { isOpenNow, nextOpenText, type WeekHours } from "@/lib/opening-hours";
+import { applyMarginCurve, type MarginCurve } from "@/lib/pricing";
 import { getUserFromRequest } from "@/lib/auth/server";
 import { requireStaff } from "@/lib/auth/require-staff";
 import { sendOrderConfirmationEmail } from "@/lib/notifications";
@@ -104,7 +105,7 @@ export async function POST(req: NextRequest) {
     )];
 
     const nowIso = new Date().toISOString();
-    const [prodRes, ovrRes, custRes] = await Promise.all([
+    const [prodRes, ovrRes, custRes, curveRes] = await Promise.all([
       supabaseAdmin.from("products")
         .select("id, name, price_czk, available, concept_slug")
         .in("id", productIds),
@@ -118,11 +119,18 @@ export async function POST(req: NextRequest) {
             .select("id, product_id, name, price_czk, available")
             .in("id", custIds)
         : Promise.resolve({ data: [] as { id: string; product_id: string; name: string; price_czk: number; available: boolean }[] }),
+      supabaseAdmin.from("concept_settings").select("concept_slug, margin_curve"),
     ]);
 
     const productMap = new Map((prodRes.data ?? []).map(p => [p.id, p]));
     const overrideMap = new Map((ovrRes.data ?? []).map(o => [o.product_id, Number(o.override_czk)]));
     const custMap = new Map((custRes.data ?? []).map(c => [c.id, c]));
+    // curveRes.error → sloupec margin_curve ještě nemusí existovat (migrace se
+    // aplikuje ručně); v tom případě se ceny chovají jako dřív (0 % — beze změny).
+    const curveRows = !curveRes.error && curveRes.data ? curveRes.data : [];
+    const curveMap = new Map(
+      (curveRows as { concept_slug: string; margin_curve: MarginCurve }[]).map(r => [r.concept_slug, r.margin_curve])
+    );
 
     // Validace: všechny položky existují, jsou dostupné a patří ke konceptu
     type PricedCust = { customizationId: string; name: string; unitPriceCzk: number; qty: number };
@@ -144,7 +152,7 @@ export async function POST(req: NextRequest) {
         lineCusts.push({ customizationId: dbCust.id, name: dbCust.name, unitPriceCzk: Number(dbCust.price_czk), qty: 1 });
       }
 
-      const base = overrideMap.get(i.productId) ?? Number(p.price_czk);
+      const base = overrideMap.get(i.productId) ?? applyMarginCurve(Number(p.price_czk), curveMap.get(p.concept_slug));
       const unit = base + lineCusts.reduce((s, c) => s + c.unitPriceCzk * c.qty, 0);
 
       // Poznámka pro kuchyň: přídavky + poznámka zákazníka v jednom textu,

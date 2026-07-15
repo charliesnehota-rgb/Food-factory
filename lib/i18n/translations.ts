@@ -274,6 +274,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     "provoz.closedNow": "● Teď zavřeno",
     "provoz.saved": "Provozní doba uložena.",
     "provoz.footnote": "Časy platí pro Prahu (Europe/Prague). Interval přes půlnoc (např. 22:00–02:00) je podporovaný.",
+
+    "nav.pricing": "Cenotvorba",
+    "cenotvorba.title": "Cenotvorba",
+    "cenotvorba.desc": "Cena produktu je základní (průměrná) cena. Tady nastavíš, jak se od ní cena v appce i na webu odchyluje během dne — přirážka ve špičce, sleva mimo špičku. Aktivní akce (happy hour apod.) mají vždy přednost.",
+    "cenotvorba.copyToAll": "Kopírovat do všech dní",
+    "cenotvorba.copied": "Zkopírováno do všech dní.",
+    "cenotvorba.saved": "Cenotvorba uložena.",
+    "cenotvorba.footnote": "Marže se počítá z aktuální ceny produktu v okamžiku objednávky (Europe/Prague). Změna se projeví hned po uložení.",
     "products.labelAllergens": "Alergeny (čísla 1–14)",
 
     // --- Nové heslo ---
@@ -889,6 +897,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     "provoz.closedNow": "● 已打烊",
     "provoz.saved": "营业时间已保存。",
     "provoz.footnote": "时间为布拉格时区（Europe/Prague）。支持跨午夜时段（如 22:00–02:00）。",
+
+    "nav.pricing": "定价",
+    "cenotvorba.title": "定价曲线",
+    "cenotvorba.desc": "商品价格是基础（平均）价格。这里设置价格在一天中如何围绕它波动——高峰时段加价，低峰时段折扣。有效的促销（如快乐时光）始终优先。",
+    "cenotvorba.copyToAll": "复制到所有日期",
+    "cenotvorba.copied": "已复制到所有日期。",
+    "cenotvorba.saved": "定价曲线已保存。",
+    "cenotvorba.footnote": "加价比例按下单时的当前时间计算（布拉格时区）。保存后立即生效。",
     "products.labelAllergens": "过敏原（编号 1–14）",
 
     // --- Nové heslo ---

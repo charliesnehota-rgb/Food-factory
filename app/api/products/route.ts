@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/db/supabase";
 import { requireStaff } from "@/lib/auth/require-staff";
+import { applyMarginCurve, type MarginCurve } from "@/lib/pricing";
 import { enqueueChannelSync } from "@/lib/channels";
 
 // GET — veřejné (menu pro zákazníky i admin)
@@ -16,26 +17,41 @@ export async function GET(req: NextRequest) {
   const { data, error } = await q;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Aplikuj aktivní price_overrides (slevy/přirážky z marketing agenta)
+  // Aplikuj aktivní price_overrides (slevy/přirážky z marketing agenta), pak
+  // cenotvorbu (hodinová marže per koncept) na vše, co override nemá.
   const products = data ?? [];
   if (products.length > 0) {
     const nowIso = new Date().toISOString();
-    const { data: overrides } = await supabaseAdmin
-      .from("price_overrides")
-      .select("product_id, override_czk, reason")
-      .in("product_id", products.map(p => p.id))
-      .lte("valid_from", nowIso)
-      .gte("valid_until", nowIso);
+    const [{ data: overrides }, curveResult] = await Promise.all([
+      supabaseAdmin
+        .from("price_overrides")
+        .select("product_id, override_czk, reason")
+        .in("product_id", products.map(p => p.id))
+        .lte("valid_from", nowIso)
+        .gte("valid_until", nowIso),
+      supabaseAdmin.from("concept_settings").select("concept_slug, margin_curve"),
+    ]);
 
-    if (overrides && overrides.length > 0) {
-      const ovrMap = new Map(overrides.map(o => [o.product_id, o]));
-      for (const p of products) {
-        const ovr = ovrMap.get(p.id);
-        if (ovr) {
-          p.original_price_czk = p.price_czk;   // původní cena (pro přeškrtnutí v UI)
-          p.price_czk = Number(ovr.override_czk);
-          p.price_override_reason = ovr.reason; // např. "Happy hour 14–17"
-        }
+    const ovrMap = new Map((overrides ?? []).map(o => [o.product_id, o]));
+    // curveResult.error → sloupec margin_curve ještě nemusí existovat (migrace
+    // se aplikuje ručně); chovej se jako by křivka nebyla nastavená (0 %).
+    const curveRows = !curveResult.error && curveResult.data ? curveResult.data : [];
+    const curveMap = new Map(
+      curveRows.map((r: { concept_slug: string; margin_curve: MarginCurve }) => [r.concept_slug, r.margin_curve])
+    );
+
+    for (const p of products) {
+      const ovr = ovrMap.get(p.id);
+      if (ovr) {
+        p.original_price_czk = p.price_czk;   // původní cena (pro přeškrtnutí v UI)
+        p.price_czk = Number(ovr.override_czk);
+        p.price_override_reason = ovr.reason; // např. "Happy hour 14–17"
+        continue;
+      }
+      const curved = applyMarginCurve(Number(p.price_czk), curveMap.get(p.concept_slug));
+      if (curved !== Number(p.price_czk)) {
+        p.original_price_czk = p.price_czk;
+        p.price_czk = curved;
       }
     }
   }
