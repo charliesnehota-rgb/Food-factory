@@ -13,19 +13,27 @@ export async function POST(req: NextRequest) {
   const user = await getUserFromRequest(req);
 
   try {
-    const { orderId } = await req.json();
-    if (!orderId) return NextResponse.json({ error: "Chybí orderId" }, { status: 400 });
+    const body = await req.json();
+    // orderIds: společný košík z appky = víc objednávek (po kuchyních) na jednu
+    // platbu. Web posílá jediné orderId a chová se beze změny.
+    const ids: string[] = Array.isArray(body.orderIds) && body.orderIds.length
+      ? body.orderIds.map(String)
+      : body.orderId ? [String(body.orderId)] : [];
+    if (ids.length === 0) return NextResponse.json({ error: "Chybí orderId" }, { status: 400 });
 
-    const { data: order, error } = await supabaseAdmin
-      .from("orders").select("*, order_items(*)").eq("id", orderId).single();
-    if (error || !order) return NextResponse.json({ error: "Objednávka nenalezena" }, { status: 404 });
+    const { data: orders, error } = await supabaseAdmin
+      .from("orders").select("*, order_items(*)").in("id", ids);
+    if (error || !orders?.length || orders.length !== ids.length) {
+      return NextResponse.json({ error: "Objednávka nenalezena" }, { status: 404 });
+    }
+    const orderId = ids[0];
 
-    // Už zaplacená objednávka se nesmí platit znovu (dvojklik, refresh)
-    if (order.payment_status === "paid") {
+    // Už zaplacené se neplatí znovu (dvojklik, refresh)
+    if (orders.every((o) => o.payment_status === "paid")) {
       return NextResponse.json({ paid: true, redirect: `/objednavka/${orderId}?paid=1` });
     }
 
-    const totalAmount = Math.round(Number(order.total_czk) * 100);
+    const totalAmount = Math.round(orders.reduce((s, o) => s + Number(o.total_czk), 0) * 100);
     const origin = req.headers.get("origin") ?? "https://food-factory-zeta.vercel.app";
 
     // Rychlá platba uloženou kartou jen pro přihlášené zákazníky
@@ -57,13 +65,13 @@ export async function POST(req: NextRequest) {
             amount: totalAmount, currency: "czk",
             customer: customerId, payment_method: methods.data[0].id,
             off_session: true, confirm: true,
-            metadata: { order_id: orderId },
+            metadata: { order_id: orderId, order_ids: ids.join(",") },
           });
           if (intent.status === "succeeded") {
             await supabaseAdmin.from("orders").update({
               payment_status: "paid", stripe_intent_id: intent.id,
               status: "accepted", payment_provider: "stripe",
-            }).eq("id", orderId);
+            }).in("id", ids);
             return NextResponse.json({ paid: true, redirect: `/objednavka/${orderId}?paid=1` });
           }
         } catch {
@@ -75,13 +83,16 @@ export async function POST(req: NextRequest) {
 
     // Standardní Stripe Checkout (zadání karty)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const lineItems = (order.order_items as any[]).map((it) => ({
-      price_data: { currency: "czk", product_data: { name: it.name }, unit_amount: Math.round(Number(it.unit_price_czk) * 100) },
-      quantity: it.qty,
-    }));
-    if (Number(order.delivery_fee_czk) > 0) {
+    const lineItems = orders.flatMap((o: any) =>
+      (o.order_items as any[]).map((it) => ({
+        price_data: { currency: "czk", product_data: { name: it.name }, unit_amount: Math.round(Number(it.unit_price_czk) * 100) },
+        quantity: it.qty,
+      })));
+    // Doručení je na skupinu jen jedno (účtuje ho první objednávka)
+    const deliveryTotal = orders.reduce((s: number, o: any) => s + Number(o.delivery_fee_czk ?? 0), 0);
+    if (deliveryTotal > 0) {
       lineItems.push({
-        price_data: { currency: "czk", product_data: { name: "Doručení" }, unit_amount: Math.round(Number(order.delivery_fee_czk) * 100) },
+        price_data: { currency: "czk", product_data: { name: "Doručení" }, unit_amount: Math.round(deliveryTotal * 100) },
         quantity: 1,
       });
     }
@@ -94,11 +105,11 @@ export async function POST(req: NextRequest) {
       line_items: lineItems,
       success_url: `${origin}/objednavka/${orderId}?paid=1`,
       cancel_url: `${origin}/checkout?canceled=1`,
-      metadata: { order_id: orderId },
-      payment_intent_data: { metadata: { order_id: orderId }, setup_future_usage: "off_session" },
+      metadata: { order_id: orderId, order_ids: ids.join(",") },
+      payment_intent_data: { metadata: { order_id: orderId, order_ids: ids.join(",") }, setup_future_usage: "off_session" },
     });
 
-    await supabaseAdmin.from("orders").update({ payment_provider: "stripe" }).eq("id", orderId);
+    await supabaseAdmin.from("orders").update({ payment_provider: "stripe" }).in("id", ids);
     return NextResponse.json({ url: session.url });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

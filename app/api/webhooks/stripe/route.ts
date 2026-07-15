@@ -25,17 +25,20 @@ export async function POST(req: NextRequest) {
   if (event.type === "checkout.session.completed" || event.type === "payment_intent.succeeded") {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const obj = (event.data as any).object;
-    const orderId = obj.metadata?.order_id;
+    // Společný košík z appky = víc objednávek na jednu platbu (order_ids).
+    const meta = obj.metadata ?? {};
+    const ids: string[] = String(meta.order_ids ?? meta.order_id ?? "")
+      .split(",").map((s: string) => s.trim()).filter(Boolean);
     const intentId = obj.payment_intent ?? obj.id;
 
-    if (orderId && supabaseAdmin) {
-      // Idempotence: aktualizuj jen dosud nezaplacenou objednávku.
+    if (ids.length > 0 && supabaseAdmin) {
+      // Idempotence: aktualizuj jen dosud nezaplacené objednávky.
       // Stripe retry webhoooku jinak vrátí "preparing" zpět na "accepted".
       await supabaseAdmin.from("orders").update({
         payment_status: "paid",
         stripe_intent_id: intentId,
         status: "accepted",
-      }).eq("id", orderId).neq("payment_status", "paid");
+      }).in("id", ids).neq("payment_status", "paid");
     }
   }
 

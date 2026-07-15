@@ -55,7 +55,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { conceptSlug, channel, fulfilment, items, customer, note, marketing_opt_in } = body;
 
-    if (!conceptSlug || !channel || !fulfilment || !items?.length || !customer?.name) {
+    // conceptSlug je volitelný: appka posílá jeden společný košík napříč koncepty
+    // a server ho podle produktů rozdělí na objednávky pro jednotlivé kuchyně.
+    // Web dál posílá jeden koncept a chová se beze změny.
+    if (!channel || !fulfilment || !items?.length || !customer?.name) {
       return NextResponse.json({ error: "Chybí povinná pole" }, { status: 400 });
     }
 
@@ -81,20 +84,6 @@ export async function POST(req: NextRequest) {
         .gte("created_at", ago15);
       if ((count ?? 0) >= 5) {
         return NextResponse.json({ error: "Příliš mnoho objednávek za krátkou dobu. Zkus to prosím za chvíli." }, { status: 429 });
-      }
-    }
-
-    // ── PROVOZNÍ DOBA ──
-    // Objednávky z webu i appky mimo otevírací dobu blokujeme (KDS by je nikdo neviděl).
-    if (channel === "web" || channel === "app") {
-      const { data: settings } = await supabaseAdmin
-        .from("concept_settings").select("hours").eq("concept_slug", conceptSlug).single();
-      const hours = (settings?.hours ?? null) as WeekHours | null;
-      if (hours && !isOpenNow(hours)) {
-        const next = nextOpenText(hours);
-        return NextResponse.json({
-          error: `Máme zavřeno${next ? ` — otevíráme ${next}` : ""}. Objednávku zatím nejde odeslat.`,
-        }, { status: 400 });
       }
     }
 
@@ -137,12 +126,12 @@ export async function POST(req: NextRequest) {
 
     // Validace: všechny položky existují, jsou dostupné a patří ke konceptu
     type PricedCust = { customizationId: string; name: string; unitPriceCzk: number; qty: number };
-    const priced: { productId: string; name: string; qty: number; unitPriceCzk: number; note?: string; customizations: PricedCust[] }[] = [];
+    const priced: { productId: string; conceptSlug: string; name: string; qty: number; unitPriceCzk: number; note?: string; customizations: PricedCust[] }[] = [];
     for (const i of items as { productId: string; qty: number; note?: string; customizations?: { id: string }[] }[]) {
       const p = productMap.get(i.productId);
       if (!p) return NextResponse.json({ error: `Produkt ${i.productId} neexistuje.` }, { status: 400 });
       if (!p.available) return NextResponse.json({ error: `Produkt „${p.name}" není dostupný.` }, { status: 400 });
-      if (p.concept_slug !== conceptSlug) return NextResponse.json({ error: `Produkt „${p.name}" nepatří do tohoto konceptu.` }, { status: 400 });
+      if (conceptSlug && p.concept_slug !== conceptSlug) return NextResponse.json({ error: `Produkt „${p.name}" nepatří do tohoto konceptu.` }, { status: 400 });
       const qty = Math.max(1, Math.min(50, Math.round(Number(i.qty) || 1)));
 
       // Validace + ocenění přídavků (musí patřit k produktu a být dostupné)
@@ -163,43 +152,98 @@ export async function POST(req: NextRequest) {
       const custText = lineCusts.map(c => `+ ${c.name}`).join(", ");
       const noteText = [custText, i.note?.trim()].filter(Boolean).join(" · ") || undefined;
 
-      priced.push({ productId: i.productId, name: p.name, qty, unitPriceCzk: unit, note: noteText, customizations: lineCusts });
+      priced.push({ productId: i.productId, conceptSlug: p.concept_slug, name: p.name, qty, unitPriceCzk: unit, note: noteText, customizations: lineCusts });
     }
 
-    const subtotal = priced.reduce((s, i) => s + i.unitPriceCzk * i.qty, 0);
-    const deliveryFee = fulfilment === "delivery" ? 59 : 0;
-
-    // Insert s retry na kolizi ID (unique violation 23505)
-    let order = null;
-    let lastError = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const { data, error } = await supabaseAdmin
-        .from("orders")
-        .insert({
-          id: makeOrderId(conceptSlug),
-          user_id: user?.id ?? null,
-          concept_slug: conceptSlug, channel, fulfilment,
-          customer_name: customer.name, customer_phone: customer.phone,
-          customer_address: customer.address,
-          subtotal_czk: subtotal, delivery_fee_czk: deliveryFee,
-          total_czk: subtotal + deliveryFee,
-          payment_status: "pending", note,
-        })
-        .select()
-        .single();
-      if (data) { order = data; break; }
-      lastError = error;
-      if (error?.code !== "23505") break; // jiná chyba než duplicitní ID — nezkoušej znovu
+    // ── PROVOZNÍ DOBA ──
+    // Mimo otevírací dobu neobjednáváme (KDS by objednávku nikdo neviděl).
+    // Kontroluje se každý koncept v košíku zvlášť — appka jich pošle i víc.
+    const concepts = [...new Set(priced.map((i) => i.conceptSlug))];
+    if (channel === "web" || channel === "app") {
+      const { data: settings } = await supabaseAdmin
+        .from("concept_settings").select("concept_slug, hours").in("concept_slug", concepts);
+      for (const s of settings ?? []) {
+        const hours = (s.hours ?? null) as WeekHours | null;
+        if (hours && !isOpenNow(hours)) {
+          const next = nextOpenText(hours);
+          return NextResponse.json({
+            error: `Máme zavřeno${next ? ` — otevíráme ${next}` : ""}. Objednávku zatím nejde odeslat.`,
+          }, { status: 400 });
+        }
+      }
     }
 
-    if (!order) {
-      return NextResponse.json({ error: lastError?.message ?? "Insert failed" }, { status: 500 });
-    }
+    // ── ROZDĚLENÍ PODLE KUCHYNÍ ──
+    // Jedna objednávka = jeden koncept (tak ji vidí KDS, admin i P&L). Společný
+    // košík se proto rozpadne na víc objednávek, ale doručení se účtuje jen
+    // jednou — vaří se pod jednou střechou a jede jedna cesta.
+    const created: { id: string; total: number }[] = [];
+    let deliveryLeft = fulfilment === "delivery" ? 59 : 0;
 
-    // E-mail hosta ulož zvlášť (best-effort — funguje i než přibude sloupec)
-    if (customerEmail) {
-      try { await supabaseAdmin.from("orders").update({ customer_email: customerEmail }).eq("id", order.id); }
-      catch { /* sloupec customer_email zatím nemusí existovat */ }
+    for (const concept of concepts) {
+      const group = priced.filter((i) => i.conceptSlug === concept);
+      const subtotal = group.reduce((s, i) => s + i.unitPriceCzk * i.qty, 0);
+      const deliveryFee = deliveryLeft;
+      deliveryLeft = 0;
+
+      // Insert s retry na kolizi ID (unique violation 23505)
+      let order = null;
+      let lastError = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data, error } = await supabaseAdmin
+          .from("orders")
+          .insert({
+            id: makeOrderId(concept),
+            user_id: user?.id ?? null,
+            concept_slug: concept, channel, fulfilment,
+            customer_name: customer.name, customer_phone: customer.phone,
+            customer_address: customer.address,
+            subtotal_czk: subtotal, delivery_fee_czk: deliveryFee,
+            total_czk: subtotal + deliveryFee,
+            payment_status: "pending", note,
+          })
+          .select()
+          .single();
+        if (data) { order = data; break; }
+        lastError = error;
+        if (error?.code !== "23505") break; // jiná chyba než duplicitní ID — nezkoušej znovu
+      }
+
+      if (!order) {
+        return NextResponse.json({ error: lastError?.message ?? "Insert failed" }, { status: 500 });
+      }
+
+      // E-mail hosta ulož zvlášť (best-effort — funguje i než přibude sloupec)
+      if (customerEmail) {
+        try { await supabaseAdmin.from("orders").update({ customer_email: customerEmail }).eq("id", order.id); }
+        catch { /* sloupec customer_email zatím nemusí existovat */ }
+      }
+
+      const { data: insertedItems } = await supabaseAdmin.from("order_items").insert(
+        group.map((i) => ({
+          order_id: order.id, product_id: i.productId,
+          name: i.name, qty: i.qty, unit_price_czk: i.unitPriceCzk, note: i.note,
+        }))
+      ).select("id");
+
+      // Ulož vybrané přídavky ke každé položce (strukturovaně pro reporting/P&L)
+      if (insertedItems && insertedItems.length === group.length) {
+        const custRows = group.flatMap((i, idx) =>
+          i.customizations.map(c => ({
+            order_item_id: insertedItems[idx].id,
+            customization_id: c.customizationId,
+            name: c.name,
+            unit_price_czk: c.unitPriceCzk,
+            qty: c.qty,
+          }))
+        );
+        if (custRows.length > 0) {
+          try { await supabaseAdmin.from("order_item_customizations").insert(custRows); }
+          catch { /* best-effort — poznámka v order_items nese info i tak */ }
+        }
+      }
+
+      created.push({ id: order.id, total: Number(order.total_czk) });
     }
 
     // Opt-in novinek z checkoutu (GDPR souhlas zaškrtnutím, best-effort)
@@ -224,37 +268,20 @@ export async function POST(req: NextRequest) {
       } catch { /* marketing nesmí shodit objednávku */ }
     }
 
-    const { data: insertedItems } = await supabaseAdmin.from("order_items").insert(
-      priced.map((i) => ({
-        order_id: order.id, product_id: i.productId,
-        name: i.name, qty: i.qty, unit_price_czk: i.unitPriceCzk, note: i.note,
-      }))
-    ).select("id");
-
-    // Ulož vybrané přídavky ke každé položce (strukturovaně pro reporting/P&L)
-    if (insertedItems && insertedItems.length === priced.length) {
-      const custRows = priced.flatMap((i, idx) =>
-        i.customizations.map(c => ({
-          order_item_id: insertedItems[idx].id,
-          customization_id: c.customizationId,
-          name: c.name,
-          unit_price_czk: c.unitPriceCzk,
-          qty: c.qty,
-        }))
-      );
-      if (custRows.length > 0) {
-        try { await supabaseAdmin.from("order_item_customizations").insert(custRows); }
-        catch { /* best-effort — poznámka v order_items nese info i tak */ }
+    // Potvrzení o přijetí — await, jinak serverless funkci zmrazí dřív než odejde
+    if (customerEmail) {
+      for (const c of created) {
+        try { await sendOrderConfirmationEmail(customerEmail, customer.name, c.id, c.total); }
+        catch { /* best-effort */ }
       }
     }
 
-    // Potvrzení o přijetí objednávky — await, jinak serverless funkci zmrazí dřív než se odešle
-    if (customerEmail) {
-      try { await sendOrderConfirmationEmail(customerEmail, customer.name, order.id, Number(order.total_czk)); }
-      catch { /* best-effort */ }
-    }
-
-    return NextResponse.json({ orderId: order.id, total: order.total_czk }, { status: 201 });
+    const total = created.reduce((s, c) => s + c.total, 0);
+    // orderId drží zpětnou kompatibilitu s webem (jeden koncept = jedna objednávka)
+    return NextResponse.json(
+      { orderId: created[0].id, orderIds: created.map((c) => c.id), total },
+      { status: 201 },
+    );
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
