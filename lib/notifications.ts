@@ -69,6 +69,35 @@ export async function sendExpoPushNotification(tokens: string[], orderId: string
   }).catch(() => null); // push je best-effort
 }
 
+// Jediné místo, kudy odcházejí e-maily do Resendu. Selhání se loguje se
+// statusem a tělem odpovědi, aby šla příčina dohledat ve Vercel runtime
+// logu (dřív se odpověď zahazovala a chyby byly neviditelné).
+async function resendSend(payload: Record<string, unknown>, label: string): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.error(`[resend:${label}] RESEND_API_KEY chybí`);
+    return false;
+  }
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: process.env.RESEND_FROM ?? "Food Factory <onboarding@resend.dev>",
+      ...payload,
+    }),
+  }).catch((e: unknown) => {
+    console.error(`[resend:${label}] síťová chyba:`, e instanceof Error ? e.message : e);
+    return null;
+  });
+  if (!res) return false;
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    console.error(`[resend:${label}] HTTP ${res.status}: ${body.slice(0, 500)}`);
+    return false;
+  }
+  return true;
+}
+
 // Odeslání e-mailu přes Resend
 export async function sendStatusEmail(
   toEmail: string,
@@ -76,8 +105,6 @@ export async function sendStatusEmail(
   orderId: string,
   status: OrderStatus
 ) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return; // bez klíče tiše přeskočíme
 
   const msg = STATUS_MESSAGES[status];
   if (!msg) return;
@@ -95,16 +122,7 @@ export async function sendStatusEmail(
     </div>
   `;
 
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: process.env.RESEND_FROM ?? "Food Factory <onboarding@resend.dev>",
-      to: toEmail,
-      subject: `${msg.title} — objednávka ${orderId}`,
-      html,
-    }),
-  }).catch(() => null);
+  await resendSend({ to: toEmail, subject: `${msg.title} — objednávka ${orderId}`, html }, "status");
 }
 
 // Potvrzení o přijetí objednávky (i pro hosty bez registrace)
@@ -114,8 +132,6 @@ export async function sendOrderConfirmationEmail(
   orderId: string,
   totalCzk: number
 ) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return; // bez klíče tiše přeskočíme
 
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://food-factory-zeta.vercel.app";
   const html = `
@@ -133,16 +149,7 @@ export async function sendOrderConfirmationEmail(
     </div>
   `;
 
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: process.env.RESEND_FROM ?? "Food Factory <onboarding@resend.dev>",
-      to: toEmail,
-      subject: `Objednávka ${orderId} přijata`,
-      html,
-    }),
-  }).catch(() => null);
+  await resendSend({ to: toEmail, subject: `Objednávka ${orderId} přijata`, html }, "order");
 }
 
 // Denní upozornění na docházející zásoby (adminům)
@@ -150,8 +157,7 @@ export async function sendLowStockEmail(
   toEmails: string[],
   items: { name: string; current: number; min: number; unit: string; suggested: number }[]
 ) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey || toEmails.length === 0 || items.length === 0) return;
+  if (toEmails.length === 0 || items.length === 0) return;
 
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://food-factory-zeta.vercel.app";
   const rows = items.map((i) =>
@@ -182,16 +188,7 @@ export async function sendLowStockEmail(
       <p style="margin-top:32px;font-size:12px;color:#999">Food Factory — sklad</p>
     </div>`;
 
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: process.env.RESEND_FROM ?? "Food Factory <onboarding@resend.dev>",
-      to: toEmails,
-      subject: `Sklad: ${items.length} položek dochází`,
-      html,
-    }),
-  }).catch(() => null);
+  await resendSend({ to: toEmails, subject: `Sklad: ${items.length} položek dochází`, html }, "low-stock");
 }
 
 function escapeHtml(s: string) {
@@ -206,8 +203,7 @@ export async function sendExpiringEmail(
   toEmails: string[],
   items: { name: string; current_qty: number; base_unit: string; nearest_expiry: string; days_until_expiry: number }[]
 ) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey || toEmails.length === 0 || items.length === 0) return;
+  if (toEmails.length === 0 || items.length === 0) return;
 
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://food-factory-zeta.vercel.app";
   const rows = items.map((i) => {
@@ -242,16 +238,7 @@ export async function sendExpiringEmail(
       <p style="margin-top:32px;font-size:12px;color:#999">Food Factory — sklad</p>
     </div>`;
 
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: process.env.RESEND_FROM ?? "Food Factory <onboarding@resend.dev>",
-      to: toEmails,
-      subject: `Sklad: ${items.length} položek blíží se expiraci`,
-      html,
-    }),
-  }).catch(() => null);
+  await resendSend({ to: toEmails, subject: `Sklad: ${items.length} položek blíží se expiraci`, html }, "expiring");
 }
 
 // Pozvánka pro nový personál
@@ -260,8 +247,6 @@ export async function sendInviteEmail(
   toName: string,
   inviteLink: string
 ) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return;
 
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://food-factory-zeta.vercel.app";
 
@@ -285,16 +270,7 @@ export async function sendInviteEmail(
       <p style="font-size:12px;color:#aaa">Food Factory — správa týmu · <a href="${site}/admin" style="color:#aaa">Přejít do adminu</a></p>
     </div>`;
 
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: process.env.RESEND_FROM ?? "Food Factory <onboarding@resend.dev>",
-      to: [toEmail],
-      subject: "Pozvánka do Food Factory — nastav si heslo",
-      html,
-    }),
-  }).catch(() => null);
+  await resendSend({ to: [toEmail], subject: "Pozvánka do Food Factory — nastav si heslo", html }, "invite");
 }
 
 // Potvrzení registrace zákazníka (posíláme sami přes Resend — Supabase mailer je nespolehlivý)
@@ -303,8 +279,6 @@ export async function sendSignupConfirmationEmail(
   toName: string,
   confirmLink: string
 ) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return { ok: false, error: "RESEND_API_KEY chybí" };
 
   const html = `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1a1a1a">
@@ -326,17 +300,7 @@ export async function sendSignupConfirmationEmail(
       </p>
     </div>`;
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: process.env.RESEND_FROM ?? "Food Factory <onboarding@resend.dev>",
-      to: [toEmail],
-      subject: "Potvrď svůj e-mail — Food Factory",
-      html,
-    }),
-  }).catch(() => null);
-
-  if (!res || !res.ok) return { ok: false, error: "Odeslání selhalo" };
+  const ok = await resendSend({ to: [toEmail], subject: "Potvrď svůj e-mail — Food Factory", html }, "signup");
+  if (!ok) return { ok: false, error: "Odeslání selhalo" };
   return { ok: true };
 }
