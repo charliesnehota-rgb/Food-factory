@@ -5,7 +5,10 @@ import { STATUS_LABEL, formatCzk } from "@/lib/types";
 import type { Order, OrderStatus } from "@/lib/types";
 import { useT } from "@/lib/i18n";
 
-const FLOW: OrderStatus[] = ["new", "preparing", "ready", "out_for_delivery", "delivered"];
+// Pořadí kuchyňského toku pro šipky vpřed/vzad. Musí sedět s KDS: zaplacené
+// web/app objednávky přicházejí ze Stripe webhooku rovnou jako "accepted" —
+// dokud tu tenhle stav chyběl, v boardu se vůbec nezobrazovaly.
+const FLOW: OrderStatus[] = ["new", "accepted", "preparing", "ready", "out_for_delivery", "delivered"];
 
 const CHANNEL_LABEL: Record<Order["channel"], string> = {
   web: "Web", app: "App", wolt: "Wolt", foodora: "Foodora", pos: "POS",
@@ -70,6 +73,7 @@ export default function OrdersBoard() {
 
   const STATUS_T: Partial<Record<OrderStatus, string>> = {
     new: t("orders.status.new"),
+    accepted: t("orders.status.accepted"),
     preparing: t("orders.status.preparing"),
     ready: t("orders.status.ready"),
     out_for_delivery: t("orders.status.out_for_delivery"),
@@ -77,7 +81,9 @@ export default function OrdersBoard() {
     cancelled: t("orders.status.cancelled"),
   };
 
-  const columns: OrderStatus[] = ["new", "preparing", "ready", "out_for_delivery", "delivered"];
+  // Sloupce = celý tok + Zrušené (kvůli auto-stornu nezaplacených je manažer
+  // musí mít na očích; do kuchyně se nedostanou tak jako tak).
+  const columns: OrderStatus[] = [...FLOW, "cancelled"];
 
   return (
     <div>
@@ -96,7 +102,7 @@ export default function OrdersBoard() {
 
       {menuOpen && <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(null)} />}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
         {columns.map((col) => {
           const items = orders.filter((o) => o.status === col);
           return (
