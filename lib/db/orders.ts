@@ -3,10 +3,12 @@ import { supabaseAdmin } from "./supabase";
 import { mockOrders } from "@/lib/orders";
 import type { Order, OrderStatus } from "@/lib/types";
 
-export async function fetchOrders(conceptSlug?: string): Promise<Order[]> {
+export async function fetchOrders(conceptSlug?: string, sinceHours?: number): Promise<Order[]> {
   if (!supabaseAdmin) return conceptSlug ? mockOrders.filter(o => o.conceptSlug === conceptSlug) : mockOrders;
   let q = supabaseAdmin.from("orders").select("*, order_items(*, order_item_customizations(*))").order("created_at", { ascending: false }).limit(200);
   if (conceptSlug) q = q.eq("concept_slug", conceptSlug);
+  // Provozní pohledy (board, KDS) chtějí jen čerstvé objednávky — starší jsou historie.
+  if (sinceHours) q = q.gte("created_at", new Date(Date.now() - sinceHours * 3600_000).toISOString());
   const { data, error } = await q;
   if (error || !data) return [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

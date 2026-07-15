@@ -37,7 +37,8 @@ export async function GET(req: NextRequest) {
   }
 
   const concept = req.nextUrl.searchParams.get("concept") ?? undefined;
-  const orders = await fetchOrders(concept);
+  const hours = Number(req.nextUrl.searchParams.get("hours")) || undefined;
+  const orders = await fetchOrders(concept, hours);
   return NextResponse.json(orders);
 }
 

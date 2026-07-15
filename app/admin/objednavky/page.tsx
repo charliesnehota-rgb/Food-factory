@@ -33,7 +33,8 @@ export default function OrdersBoard() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/orders", { cache: "no-store" });
+      // Board je provozní pohled: jen posledních 24 h, starší patří do historie.
+      const res = await fetch("/api/orders?hours=24", { cache: "no-store" });
       const data = await res.json();
       if (Array.isArray(data)) setOrders(data);
     } catch { /* ponech prázdné */ }
@@ -111,36 +112,36 @@ export default function OrdersBoard() {
                 <span className="text-sm font-medium">{STATUS_T[col] ?? STATUS_LABEL[col]}</span>
                 <span className="rounded-md bg-[var(--bg)] px-2 py-0.5 text-xs text-[var(--muted)]">{items.length}</span>
               </div>
-              <div className="space-y-2">
+              <div className="max-h-[70vh] space-y-2 overflow-y-auto pr-0.5">
                 {items.map((o) => {
                   const ns = nextStatus(o.status);
                   const ps = prevStatus(o.status);
                   return (
                     <div key={o.id} className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">{o.id}</span>
-                        <span className="flex items-center gap-1.5">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium">{o.id}</div>
+                        <div className="mt-1 flex flex-wrap items-center gap-1">
                           {(o.channel === "web" || o.channel === "app") && o.payment?.status !== "paid" && o.status !== "cancelled" && (
-                            <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-xs font-bold text-red-400">{t("orders.unpaid")}</span>
+                            <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-[10px] font-bold text-red-400">{t("orders.unpaid")}</span>
                           )}
-                          <span className="rounded bg-[var(--card)] px-1.5 py-0.5 text-xs text-[var(--muted)]">{CHANNEL_LABEL[o.channel]}</span>
-                        </span>
+                          <span className="rounded bg-[var(--card)] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">{CHANNEL_LABEL[o.channel]}</span>
+                        </div>
                       </div>
                       <ul className="mt-2 space-y-0.5 text-sm text-[var(--muted)]">
                         {o.items.map((it, idx) => (
                           <li key={idx}>{it.qty}× {it.name}</li>
                         ))}
                       </ul>
-                      <div className="mt-3 flex items-center justify-between">
+                      <div className="mt-3 flex items-center justify-between gap-2">
                         <span className="text-sm font-medium">{formatCzk(o.totalCzk)}</span>
-                        <div className="relative z-20">
-                          <button
-                            onClick={() => setMenuOpen(menuOpen === o.id ? null : o.id)}
-                            className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-2.5 py-1 text-xs font-medium hover:bg-[var(--border)] transition">
-                            {t("common.actions")} ▾
-                          </button>
-                          {menuOpen === o.id && (
-                            <div className="absolute right-0 mt-1 w-48 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-lg">
+                        <button
+                          onClick={() => setMenuOpen(menuOpen === o.id ? null : o.id)}
+                          className="shrink-0 rounded-lg border border-[var(--border)] bg-[var(--card)] px-2.5 py-1 text-xs font-medium hover:bg-[var(--border)] transition">
+                          {t("common.actions")} ▾
+                        </button>
+                      </div>
+                      {menuOpen === o.id && (
+                            <div className="relative z-20 mt-2 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-lg">
                               {ns && (
                                 <button onClick={() => setStatus(o.id, ns)}
                                   className="block w-full px-3 py-2 text-left text-xs hover:bg-[var(--bg)] transition">
@@ -158,9 +159,7 @@ export default function OrdersBoard() {
                                 {t("orders.action.cancel")}
                               </button>
                             </div>
-                          )}
-                        </div>
-                      </div>
+                      )}
                     </div>
                   );
                 })}
