@@ -64,6 +64,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Chybí povinná pole" }, { status: 400 });
     }
 
+    // Kanály: web/app objednává veřejnost, pos smí jen personál od pultu
+    // (jinak by šlo z internetu vkládat objednávky, kterým KDS věří jako
+    // zaplaceným). Wolt/Foodora vznikají výhradně jejich integrací.
+    if (!["web", "app", "pos"].includes(channel)) {
+      return NextResponse.json({ error: "Neplatný kanál." }, { status: 400 });
+    }
+    const isPos = channel === "pos";
+    if (isPos && !(await requireStaff())) {
+      return NextResponse.json({ error: "Pokladna je jen pro personál." }, { status: 403 });
+    }
+    // Pultovní objednávka vzniká rovnou zaplacená: hotově / kartou na terminálu
+    const posPayment = isPos ? (body.payment === "card_terminal" ? "card_terminal" : "cash") : null;
+
     // ── OCHRANA PROTI SPAMU ──
     // Honeypot: skryté pole "website" vyplňují jen boti
     if (typeof body.website === "string" && body.website.trim() !== "") {
@@ -72,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     // E-mail pro potvrzení a notifikace: přihlášený z účtu, host ze zadání
     const customerEmail = (user?.email ?? customer?.email ?? "").trim() || null;
-    if (!user && !customerEmail) {
+    if (!user && !customerEmail && !isPos) {
       return NextResponse.json({ error: "Zadej e-mail pro potvrzení objednávky." }, { status: 400 });
     }
 
@@ -203,13 +216,15 @@ export async function POST(req: NextRequest) {
           .from("orders")
           .insert({
             id: makeOrderId(concept),
-            user_id: user?.id ?? null,
+            user_id: isPos ? null : (user?.id ?? null),
             concept_slug: concept, channel, fulfilment,
             customer_name: customer.name, customer_phone: customer.phone,
             customer_address: customer.address,
             subtotal_czk: subtotal, delivery_fee_czk: deliveryFee,
             total_czk: subtotal + deliveryFee,
-            payment_status: "pending", note,
+            payment_status: isPos ? "paid" : "pending",
+            ...(isPos ? { payment_provider: posPayment, status: "accepted" } : {}),
+            note,
           })
           .select()
           .single();
@@ -219,7 +234,9 @@ export async function POST(req: NextRequest) {
       }
 
       if (!order) {
-        return NextResponse.json({ error: lastError?.message ?? "Insert failed" }, { status: 500 });
+        let msg = lastError?.message ?? "Insert failed";
+        if (isPos && msg.includes("payment_provider")) msg += " (běžela migrace migration_pos.sql?)";
+        return NextResponse.json({ error: msg }, { status: 500 });
       }
 
       // E-mail hosta ulož zvlášť (best-effort — funguje i než přibude sloupec)
