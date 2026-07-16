@@ -297,6 +297,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     "kurier.emptyMine": "Nic nevezeš — vezmi si objednávku z fronty níže.",
     "kurier.emptyPool": "Nic nečeká. Objednávky se tu objeví, jakmile je kuchyň označí jako hotové.",
     "kurier.migration": "Kurýrní modul čeká na databázovou migraci (migration_couriers.sql) — do té doby nejde objednávky přebírat.",
+    "kurier.suggestTitle": "Navržená rozvážka",
+    "kurier.suggestDesc": "objednávky blízko sebe, seřazené po trase",
+    "kurier.takeRun": "Vezmu celou rozvážku",
+    "kurier.runPartial": "Část objednávek mezitím vzal jiný kurýr.",
     "products.labelAllergens": "Alergeny (čísla 1–14)",
 
     // --- Nové heslo ---
@@ -936,6 +940,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     "kurier.emptyMine": "当前没有配送中的订单——请从下方队列领取。",
     "kurier.emptyPool": "暂无待配送订单。厨房标记完成后会显示在这里。",
     "kurier.migration": "配送模块等待数据库迁移（migration_couriers.sql）——完成前无法领取订单。",
+    "kurier.suggestTitle": "推荐配送组",
+    "kurier.suggestDesc": "相互邻近的订单，已按路线排序",
+    "kurier.takeRun": "领取整组",
+    "kurier.runPartial": "部分订单已被其他配送员领取。",
     "products.labelAllergens": "过敏原（编号 1–14）",
 
     // --- Nové heslo ---

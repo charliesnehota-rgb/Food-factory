@@ -18,7 +18,10 @@ interface CourierOrder {
   customer_name: string; customer_phone: string; customer_address: string;
   note: string | null; total_czk: number; created_at: string;
   order_items: { name: string; qty: number }[];
+  delivery_district?: string | null; dist_km?: number | null;
 }
+
+interface RunSuggestion { ids: string[]; district: string | null }
 
 const formatCzk = (n: number) => `${Math.round(n)} Kč`;
 const timeOf = (iso: string) => new Date(iso).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" });
@@ -30,6 +33,7 @@ export default function KurierPage() {
   const { toast } = useToast();
   const [pool, setPool] = useState<CourierOrder[]>([]);
   const [mine, setMine] = useState<CourierOrder[]>([]);
+  const [suggestion, setSuggestion] = useState<RunSuggestion | null>(null);
   const [migrationPending, setMigrationPending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -40,6 +44,7 @@ export default function KurierPage() {
       if (d.error) { toast(d.error, "error"); return; }
       setPool(d.pool ?? []);
       setMine(d.mine ?? []);
+      setSuggestion(d.suggestion && d.suggestion.ids?.length >= 2 ? d.suggestion : null);
       setMigrationPending(!!d.migrationPending);
     } catch { /* polling to zkusí znovu */ }
     finally { setLoading(false); }
@@ -64,16 +69,42 @@ export default function KurierPage() {
     load();
   }
 
-  function Card({ o, inRun }: { o: CourierOrder; inRun: boolean }) {
+  // Návrh rozvážky se bere po jedné (atomicky) — když nějakou mezitím
+  // vzal jiný kurýr, vezme se zbytek a řekneme to.
+  async function takeRun(ids: string[]) {
+    setBusyId("__run__");
+    let missed = 0;
+    for (const id of ids) {
+      const r = await fetch(`/api/courier/orders/${id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "take" }),
+      });
+      if (!r.ok) missed++;
+    }
+    setBusyId(null);
+    if (missed > 0) toast(t("kurier.runPartial"), "error");
+    load();
+  }
+
+  function Card({ o, inRun, seq }: { o: CourierOrder; inRun: boolean; seq?: number }) {
     const b = BRAND[o.concept_slug] ?? { name: o.concept_slug, emoji: "🍴" };
     const items = (o.order_items ?? []).map(i => `${i.qty}× ${i.name}`).join(", ");
     const busy = busyId === o.id;
+    const geoBadge = [
+      o.delivery_district ? `📍 ${o.delivery_district}` : null,
+      o.dist_km != null ? `${String(o.dist_km).replace(".", ",")} km` : null,
+    ].filter(Boolean).join(" · ");
     return (
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="text-sm font-medium">{b.emoji} {o.id}</div>
-            <div className="mt-0.5 text-xs text-[var(--muted)]">{timeOf(o.created_at)} · {formatCzk(Number(o.total_czk))}</div>
+          <div className="min-w-0 flex items-start gap-2.5">
+            {seq != null ? (
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-semibold text-black">{seq}</span>
+            ) : null}
+            <div className="min-w-0">
+              <div className="text-sm font-medium">{b.emoji} {o.id}</div>
+              <div className="mt-0.5 text-xs text-[var(--muted)]">{timeOf(o.created_at)} · {formatCzk(Number(o.total_czk))}{geoBadge ? ` · ${geoBadge}` : ""}</div>
+            </div>
           </div>
           {inRun ? (
             <button onClick={() => act(o.id, "release")} disabled={busy}
@@ -131,7 +162,20 @@ export default function KurierPage() {
       <h2 className="mb-2 text-sm font-medium text-[var(--muted)]">{t("kurier.mine")} {mine.length ? `(${mine.length})` : ""}</h2>
       {mine.length === 0
         ? <p className="mb-6 text-sm text-[var(--muted)]">{t("kurier.emptyMine")}</p>
-        : <div className="mb-6 space-y-3">{mine.map(o => <Card key={o.id} o={o} inRun />)}</div>}
+        : <div className="mb-6 space-y-3">{mine.map((o, i) => <Card key={o.id} o={o} inRun seq={mine.length > 1 ? i + 1 : undefined} />)}</div>}
+
+      {suggestion ? (
+        <div className="mb-4 rounded-2xl border border-white/25 bg-white/5 p-4">
+          <div className="text-sm font-medium">✨ {t("kurier.suggestTitle")}</div>
+          <div className="mt-0.5 text-xs text-[var(--muted)]">
+            {suggestion.ids.length}× {suggestion.district ? `· 📍 ${suggestion.district}` : ""} — {t("kurier.suggestDesc")}
+          </div>
+          <button onClick={() => takeRun(suggestion.ids)} disabled={busyId === "__run__"}
+            className="mt-3 w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-neutral-200 disabled:opacity-50 transition">
+            🚚 {t("kurier.takeRun")} ({suggestion.ids.length})
+          </button>
+        </div>
+      ) : null}
 
       <h2 className="mb-2 text-sm font-medium text-[var(--muted)]">{t("kurier.pool")} {pool.length ? `(${pool.length})` : ""}</h2>
       {pool.length === 0

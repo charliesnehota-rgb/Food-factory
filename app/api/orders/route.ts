@@ -5,6 +5,7 @@ import { cancelStaleUnpaidOrders, fetchOrders } from "@/lib/db/orders";
 import { supabaseAdmin } from "@/lib/db/supabase";
 import { isOpenNow, nextOpenText, type WeekHours } from "@/lib/opening-hours";
 import { applyMarginCurve, type MarginCurve } from "@/lib/pricing";
+import { geocodeAddress } from "@/lib/geo";
 import { getUserFromRequest } from "@/lib/auth/server";
 import { requireStaff } from "@/lib/auth/require-staff";
 import { sendOrderConfirmationEmail } from "@/lib/notifications";
@@ -252,6 +253,21 @@ export async function POST(req: NextRequest) {
       }
 
       created.push({ id: order.id, total: Number(order.total_czk) });
+    }
+
+    // Geokódování doručovací adresy (best-effort) — jedna adresa pro celou
+    // skupinu, takže jeden dotaz a update všech objednávek naráz. Slouží
+    // kurýrnímu rozvozu (čtvrť, seskupování, pořadí zastávek). Selhání nebo
+    // chybějící sloupce (migration_delivery_geo.sql) objednávku nikdy neshodí.
+    if (fulfilment === "delivery" && created.length > 0) {
+      try {
+        const geo = await geocodeAddress(customer.address);
+        if (geo) {
+          await supabaseAdmin.from("orders")
+            .update({ delivery_lat: geo.lat, delivery_lng: geo.lng, delivery_district: geo.district })
+            .in("id", created.map(c => c.id));
+        }
+      } catch { /* rozvoz funguje i bez souřadnic */ }
     }
 
     // Opt-in novinek z checkoutu (GDPR souhlas zaškrtnutím, best-effort)
