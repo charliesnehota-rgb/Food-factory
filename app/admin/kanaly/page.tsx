@@ -98,10 +98,16 @@ export default function ChannelsPage() {
           <h1 className="text-xl font-semibold">📡 {t("channels.title")}</h1>
           <p className="text-sm text-[var(--muted)]">{t("channels.desc")}</p>
         </div>
-        <button onClick={runNow} disabled={running}
-          className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-neutral-200 disabled:opacity-50 transition">
-          {running ? t("channels.running") : "▶ " + t("channels.runNow")}
-        </button>
+        <div className="flex items-center gap-2">
+          <a href="/admin/kanaly/import"
+            className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm text-[var(--muted)] hover:text-[var(--fg)] transition">
+            ⬆ {t("import.linkLabel")}
+          </a>
+          <button onClick={runNow} disabled={running}
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-neutral-200 disabled:opacity-50 transition">
+            {running ? t("channels.running") : "▶ " + t("channels.runNow")}
+          </button>
+        </div>
       </div>
 
       {/* Stav API klíčů */}
