@@ -14,13 +14,16 @@ const CHANNEL_LABEL: Record<Order["channel"], string> = {
   web: "Web", app: "App", wolt: "Wolt", foodora: "Foodora", pos: "POS",
 };
 
-function nextStatus(s: OrderStatus): OrderStatus | null {
-  const i = FLOW.indexOf(s);
+function nextStatus(o: Order): OrderStatus | null {
+  // Odběr / na místě nikdy neprochází rozvozem: ready → delivered rovnou.
+  if (o.status === "ready" && o.fulfilment !== "delivery") return "delivered";
+  const i = FLOW.indexOf(o.status);
   if (i === -1 || i === FLOW.length - 1) return null;
   return FLOW[i + 1];
 }
-function prevStatus(s: OrderStatus): OrderStatus | null {
-  const i = FLOW.indexOf(s);
+function prevStatus(o: Order): OrderStatus | null {
+  if (o.status === "delivered" && o.fulfilment !== "delivery") return "ready";
+  const i = FLOW.indexOf(o.status);
   if (i <= 0) return null;
   return FLOW[i - 1];
 }
@@ -114,8 +117,8 @@ export default function OrdersBoard() {
               </div>
               <div className="max-h-[70vh] space-y-2 overflow-y-auto pr-0.5">
                 {items.map((o) => {
-                  const ns = nextStatus(o.status);
-                  const ps = prevStatus(o.status);
+                  const ns = nextStatus(o);
+                  const ps = prevStatus(o);
                   return (
                     <div key={o.id} className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
                       <div className="min-w-0">

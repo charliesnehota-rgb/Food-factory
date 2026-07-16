@@ -85,7 +85,7 @@ export default function KDSPage() {
   const firstLoad = useRef(true);
 
   const load = useCallback(async () => {
-    const d = await fetch("/api/orders", { cache: "no-store" }).then(r => r.json()).catch(() => null);
+    const d = await fetch("/api/orders?hours=24", { cache: "no-store" }).then(r => r.json()).catch(() => null);
     if (!Array.isArray(d)) return;
     // Nezaplacené web/app objednávky do kuchyně vůbec nepouštíme.
     const visible = (d as Order[]).filter(paidForKitchen);

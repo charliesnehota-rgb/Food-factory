@@ -5,10 +5,16 @@ import type { Order, OrderStatus } from "@/lib/types";
 
 export async function fetchOrders(conceptSlug?: string, sinceHours?: number): Promise<Order[]> {
   if (!supabaseAdmin) return conceptSlug ? mockOrders.filter(o => o.conceptSlug === conceptSlug) : mockOrders;
-  let q = supabaseAdmin.from("orders").select("*, order_items(*, order_item_customizations(*))").order("created_at", { ascending: false }).limit(200);
+  let q = supabaseAdmin.from("orders").select("*, order_items(*, order_item_customizations(*))").order("created_at", { ascending: false }).limit(400);
   if (conceptSlug) q = q.eq("concept_slug", conceptSlug);
-  // Provozní pohledy (board, KDS) chtějí jen čerstvé objednávky — starší jsou historie.
-  if (sinceHours) q = q.gte("created_at", new Date(Date.now() - sinceHours * 3600_000).toISOString());
+  // Provozní pohledy (board, KDS) chtějí jen čerstvou HISTORII — ale živá
+  // objednávka nesmí z pohledu zmizet jen proto, že je starší než okno
+  // (zapomenutý pickup, večerní rozvoz po půlnoci). Okno proto řeže jen
+  // uzavřené stavy; aktivní se vrací vždy.
+  if (sinceHours) {
+    const since = new Date(Date.now() - sinceHours * 3600_000).toISOString();
+    q = q.or(`status.in.(new,accepted,preparing,ready,out_for_delivery),created_at.gte.${since}`);
+  }
   const { data, error } = await q;
   if (error || !data) return [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

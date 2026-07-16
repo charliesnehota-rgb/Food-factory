@@ -45,10 +45,18 @@ export default function PokladnaPage() {
   const [success, setSuccess] = useState<{ ids: string[]; total: number; method: string } | null>(null);
 
   useEffect(() => {
-    fetch("/api/products").then(r => r.json())
-      .then(d => setProducts(Array.isArray(d) ? d : []))
-      .catch(() => toast(t("pokladna.loadFailed"), "error"))
-      .finally(() => setLoading(false));
+    const load = () =>
+      fetch("/api/products").then(r => r.json())
+        .then(d => setProducts(Array.isArray(d) ? d : []))
+        .catch(() => { /* další pokus za minutu */ })
+        .finally(() => setLoading(false));
+    load();
+    // Dostupnost (86nutí položky v KDS) i ceny z cenotvorby se mění za směny —
+    // mřížka se drží čerstvá sama, obsluha nemusí nic obnovovat.
+    const iv = setInterval(load, 60_000);
+    const onFocus = () => load();
+    window.addEventListener("focus", onFocus);
+    return () => { clearInterval(iv); window.removeEventListener("focus", onFocus); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

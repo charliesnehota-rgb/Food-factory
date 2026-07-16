@@ -7,7 +7,7 @@ import { isOpenNow, nextOpenText, type WeekHours } from "@/lib/opening-hours";
 import { applyMarginCurve, type MarginCurve } from "@/lib/pricing";
 import { geocodeAddress } from "@/lib/geo";
 import { getUserFromRequest } from "@/lib/auth/server";
-import { requireStaff } from "@/lib/auth/require-staff";
+import { requireStaff, requireRole } from "@/lib/auth/require-staff";
 import { sendOrderConfirmationEmail } from "@/lib/notifications";
 import { getBrand } from "@/lib/brand/registry";
 
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Neplatný kanál." }, { status: 400 });
     }
     const isPos = channel === "pos";
-    if (isPos && !(await requireStaff())) {
+    if (isPos && !(await requireRole(["admin", "staff"]))) {
       return NextResponse.json({ error: "Pokladna je jen pro personál." }, { status: 403 });
     }
     // Pultovní objednávka vzniká rovnou zaplacená: hotově / kartou na terminálu
