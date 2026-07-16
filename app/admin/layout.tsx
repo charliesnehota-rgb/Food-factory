@@ -16,6 +16,7 @@ const Icons: Record<string, ReactElement> = {
   marketing:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
   more:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>,
   pricing:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>,
+  truck:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>,
 };
 
 function AdminInner({ children }: { children: ReactNode }) {
@@ -31,12 +32,14 @@ function AdminInner({ children }: { children: ReactNode }) {
     pathname === "/admin/pristup-zamitnut";
 
   const isAccountant = me?.role === "accountant";
+  const isCourier    = me?.role === "courier";
   const isAdmin      = me?.role === "admin";
 
   useEffect(() => {
-    if (isLogin || !isAccountant) return;
-    if (!pathname.startsWith("/admin/sklad/exporty")) router.replace("/admin/sklad/exporty");
-  }, [isLogin, isAccountant, pathname, router]);
+    if (isLogin) return;
+    if (isAccountant && !pathname.startsWith("/admin/sklad/exporty")) router.replace("/admin/sklad/exporty");
+    if (isCourier && !pathname.startsWith("/admin/kurier")) router.replace("/admin/kurier");
+  }, [isLogin, isAccountant, isCourier, pathname, router]);
 
   async function signOut() {
     await fetch("/api/auth/signout", { method: "POST" });
@@ -60,22 +63,30 @@ function AdminInner({ children }: { children: ReactNode }) {
     { href: "/admin/kanaly",     label: t("nav.channels"),   icon: "more"      },
     { href: "/admin/provoz",     label: t("nav.hours"),      icon: "overview"  },
     { href: "/admin/cenotvorba", label: t("nav.pricing"),    icon: "pricing"   },
+    { href: "/admin/kurier",     label: t("nav.courier"),    icon: "truck"     },
   ];
   const accountantLinks = [
     { href: "/admin/sklad/exporty", label: t("nav.exports"), icon: "pnl" },
+  ];
+  const courierLinks = [
+    { href: "/admin/kurier", label: t("nav.courier"), icon: "truck" },
   ];
   const staffAdminLink = { href: "/admin/personal", label: t("nav.staff"), icon: "more" };
 
   const links = isAccountant
     ? accountantLinks
-    : isAdmin
-      ? [...allLinks, staffAdminLink]
-      : allLinks;
+    : isCourier
+      ? courierLinks
+      : isAdmin
+        ? [...allLinks, staffAdminLink]
+        : allLinks;
 
   // Bottom nav: první 4 + vždy sklad (kuchař potřebuje)
   const bottomLinks = isAccountant
     ? accountantLinks
-    : [allLinks[0], allLinks[1], allLinks[3], allLinks[4], allLinks[5]]; // overview, orders, sklad, pnl, marketing
+    : isCourier
+      ? courierLinks
+      : [allLinks[0], allLinks[1], allLinks[3], allLinks[4], allLinks[5]]; // overview, orders, sklad, pnl, marketing
 
   function isActive(href: string) {
     return href === "/admin"

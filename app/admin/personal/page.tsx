@@ -17,6 +17,7 @@ export default function PersonalPage() {
     { value: "staff", label: t("role.staff") },
     { value: "admin", label: t("role.admin") },
     { value: "accountant", label: t("role.accountant") },
+    { value: "courier", label: t("role.courier") },
   ];
 
   const [rows, setRows] = useState<Staff[]>([]);

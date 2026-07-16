@@ -282,6 +282,21 @@ export const translations: Record<Lang, Record<string, string>> = {
     "cenotvorba.copied": "Zkopírováno do všech dní.",
     "cenotvorba.saved": "Cenotvorba uložena.",
     "cenotvorba.footnote": "Marže se počítá z aktuální ceny produktu v okamžiku objednávky (Europe/Prague). Změna se projeví hned po uložení.",
+
+    "nav.courier": "Rozvoz",
+    "kurier.title": "Rozvoz",
+    "kurier.desc": "Vezmi si hotové objednávky (klidně víc najednou), naviguj se Wazem a po předání odklikni Doručeno. Pořadí si určuješ sám podle adres.",
+    "kurier.mine": "Moje rozvážka",
+    "kurier.pool": "Čeká na rozvoz",
+    "kurier.take": "Vezmu na rozvoz",
+    "kurier.delivered": "Doručeno",
+    "kurier.deliveredToast": "Doručeno. Díky!",
+    "kurier.release": "Vrátit do fronty",
+    "kurier.waze": "Waze",
+    "kurier.map": "Mapa",
+    "kurier.emptyMine": "Nic nevezeš — vezmi si objednávku z fronty níže.",
+    "kurier.emptyPool": "Nic nečeká. Objednávky se tu objeví, jakmile je kuchyň označí jako hotové.",
+    "kurier.migration": "Kurýrní modul čeká na databázovou migraci (migration_couriers.sql) — do té doby nejde objednávky přebírat.",
     "products.labelAllergens": "Alergeny (čísla 1–14)",
 
     // --- Nové heslo ---
@@ -320,6 +335,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "role.staff": "Personál",
     "role.admin": "Admin",
     "role.accountant": "Účetní",
+    "role.courier": "Kurýr",
 
     // --- Sklad přehled ---
     "sklad.title": "Sklad — přehled",
@@ -905,6 +921,21 @@ export const translations: Record<Lang, Record<string, string>> = {
     "cenotvorba.copied": "已复制到所有日期。",
     "cenotvorba.saved": "定价曲线已保存。",
     "cenotvorba.footnote": "加价比例按下单时的当前时间计算（布拉格时区）。保存后立即生效。",
+
+    "nav.courier": "配送",
+    "kurier.title": "配送",
+    "kurier.desc": "领取已备好的订单（可一次多单），用 Waze 导航，送达后点击「已送达」。配送顺序由你根据地址自行决定。",
+    "kurier.mine": "我的配送",
+    "kurier.pool": "待配送",
+    "kurier.take": "领取配送",
+    "kurier.delivered": "已送达",
+    "kurier.deliveredToast": "已送达，谢谢！",
+    "kurier.release": "退回队列",
+    "kurier.waze": "Waze",
+    "kurier.map": "地图",
+    "kurier.emptyMine": "当前没有配送中的订单——请从下方队列领取。",
+    "kurier.emptyPool": "暂无待配送订单。厨房标记完成后会显示在这里。",
+    "kurier.migration": "配送模块等待数据库迁移（migration_couriers.sql）——完成前无法领取订单。",
     "products.labelAllergens": "过敏原（编号 1–14）",
 
     // --- Nové heslo ---
@@ -943,6 +974,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "role.staff": "员工",
     "role.admin": "管理员",
     "role.accountant": "会计",
+    "role.courier": "配送员",
 
     // --- Sklad přehled ---
     "sklad.title": "仓库 — 概览",

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/db/supabase";
 import { requireRole } from "@/lib/auth/require-staff";
 
-const STAFF_ROLES = ["admin", "staff", "accountant"];
+const STAFF_ROLES = ["admin", "staff", "accountant", "courier"];
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireRole(["admin"]))) return NextResponse.json({ error: "Přístup zamítnut" }, { status: 403 });

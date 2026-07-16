@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/db/supabase";
 import { requireRole } from "@/lib/auth/require-staff";
 import { sendInviteEmail } from "@/lib/notifications";
 
-const STAFF_ROLES = ["admin", "staff", "accountant"];
+const STAFF_ROLES = ["admin", "staff", "accountant", "courier"];
 
 // GET: seznam personálu (uživatelé s rolí admin/staff/účetní)
 export async function GET() {
