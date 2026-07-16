@@ -26,6 +26,17 @@ const CONCEPT_META: Record<string, { name: string; accent: string; emoji: string
 
 const FULFILMENT_ICON: Record<string, string> = { delivery: "🛵", pickup: "🥡", dine_in: "🍽" };
 
+// Odkud objednávka přišla — kuchyň to vidí na kartě a vydává podle toho:
+// Wolt/Foodora si bere jejich kurýr (tlačítko „Předat"), web/app/pos rozváží
+// náš kurýr (bere si je sám v /admin/kurier, KDS jen čeká).
+const CHANNEL_META: Record<string, { label: string; color: string }> = {
+  wolt:    { label: "Wolt",    color: "#00c2e8" },
+  foodora: { label: "foodora", color: "#d70f64" },
+  web:     { label: "Web",     color: "#9ca3af" },
+  app:     { label: "App",     color: "#9ca3af" },
+  pos:     { label: "POS",     color: "#9ca3af" },
+};
+
 // Web/app objednávky bez potvrzené platby do kuchyně nepatří vůbec —
 // zaplacené přicházejí rovnou jako "accepted" (Stripe webhook / uložená
 // karta), takže cokoli nezaplaceného je opuštěný checkout, ne práce.
@@ -108,11 +119,16 @@ export default function KDSPage() {
     load();
   }
 
-  // Hotové: pickup → delivered, delivery → out_for_delivery
-  function readyNext(o: Order): { status: Status; label: string } {
-    return o.fulfilment === "delivery"
-      ? { status: "out_for_delivery", label: t("kds.action.dispatch") }
-      : { status: "delivered", label: t("kds.action.pickedUp") };
+  // Hotové: pickup → delivered; Wolt/Foodora rozvoz → předání jejich kurýrovi;
+  // vlastní rozvoz (web/app/pos) → null, bere si ho náš kurýr v /admin/kurier
+  // (kdyby to KDS přepnulo samo, objednávka by kurýrovi zmizela z fronty).
+  function readyNext(o: Order): { status: Status; label: string } | null {
+    if (o.fulfilment !== "delivery")
+      return { status: "delivered", label: t("kds.action.pickedUp") };
+    const ch = CHANNEL_META[o.channel];
+    if (o.channel === "wolt" || o.channel === "foodora")
+      return { status: "out_for_delivery", label: t("kds.action.dispatchPlatform", { ch: ch.label }) };
+    return null;
   }
 
   const activeCount = orders.filter(o => ["new", "accepted", "preparing"].includes(o.status)).length;
@@ -170,6 +186,12 @@ export default function KDSPage() {
                         <span style={{ color: meta.accent }} className="text-base leading-none">{meta.emoji}</span>
                         <span className="font-mono text-xs font-semibold truncate">{o.id.split("-").pop()}</span>
                         <span className="text-sm">{FULFILMENT_ICON[o.fulfilment]}</span>
+                        {CHANNEL_META[o.channel] ? (
+                          <span className="rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide"
+                            style={{ color: CHANNEL_META[o.channel].color, background: `${CHANNEL_META[o.channel].color}20` }}>
+                            {CHANNEL_META[o.channel].label}
+                          </span>
+                        ) : null}
                         <span
                           className="ml-auto font-mono text-xs font-bold rounded-md px-1.5 py-0.5"
                           style={{ color: ageColor(min), background: `${ageColor(min)}18` }}
@@ -193,15 +215,21 @@ export default function KDSPage() {
                         )}
                       </div>
 
-                      {/* Akce */}
-                      <button
-                        onClick={() => advance(o, action.status)}
-                        disabled={isBusy}
-                        className="w-full py-2.5 text-sm font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
-                        style={{ background: meta.accent }}
-                      >
-                        {isBusy ? "…" : action.label}
-                      </button>
+                      {/* Akce — vlastní rozvoz nemá tlačítko, bere si ho kurýr sám */}
+                      {action ? (
+                        <button
+                          onClick={() => advance(o, action.status)}
+                          disabled={isBusy}
+                          className="w-full py-2.5 text-sm font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
+                          style={{ background: meta.accent }}
+                        >
+                          {isBusy ? "…" : action.label}
+                        </button>
+                      ) : (
+                        <div className="w-full py-2.5 text-center text-xs font-semibold text-[var(--muted)] bg-[var(--card)]">
+                          🚚 {t("kds.ownCourier")}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

@@ -42,7 +42,7 @@ create index on products(available);
 create table if not exists orders (
   id              text primary key default 'FF-' || lpad(floor(random()*900000+100000)::text, 6, '0'),
   concept_slug    text not null references concepts(slug),
-  channel         text not null check (channel in ('web','wolt','foodora','pos')),
+  channel         text not null check (channel in ('web','app','wolt','foodora','pos')),
   fulfilment      text not null check (fulfilment in ('delivery','pickup','dine_in')),
   status          text not null default 'new'
                     check (status in ('new','accepted','preparing','ready','out_for_delivery','delivered','cancelled')),
