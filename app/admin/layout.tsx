@@ -2,10 +2,20 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, type ReactNode, type ReactElement } from "react";
+import { useEffect, useState, type ReactNode, type ReactElement } from "react";
 import { useMe } from "@/lib/auth/use-me";
+import { createSupabaseBrowser } from "@/lib/auth/client";
 import { LangProvider, LangToggle, useT } from "@/lib/i18n";
 import { ToastProvider } from "@/lib/toast";
+
+// ── Automatické odhlášení po zavření posledního admin listu ──
+// sessionStorage přežije reload (F5), ale ne zavření listu. Nově otevřený
+// list se přes BroadcastChannel zeptá, jestli ještě žije jiný admin list:
+// když ano, session převezme (druhý panel funguje dál); když ne, poslední
+// list byl zavřen → lokální odhlášení a login. Týká se jen /admin —
+// zákaznického webu ani appky se to nedotýká.
+const TAB_FLAG = "ff-admin-tab";
+const PRESENCE_CHANNEL = "ff-admin-presence";
 
 // SVG ikony pro bottom nav
 const Icons: Record<string, ReactElement> = {
@@ -42,6 +52,48 @@ function AdminInner({ children }: { children: ReactNode }) {
     if (isCourier && !pathname.startsWith("/admin/kurier")) router.replace("/admin/kurier");
   }, [isLogin, isAccountant, isCourier, pathname, router]);
 
+  // Čerstvý list (bez TAB_FLAG v sessionStorage): zeptej se ostatních admin
+  // listů, jestli žijí. Bez odpovědi do 350 ms = poslední list byl zavřen →
+  // odhlásit (jen tento prohlížeč, ať to neshodí session kuchyně/kurýra
+  // na jiném zařízení) a poslat na login.
+  const [tabChecked, setTabChecked] = useState(false);
+  useEffect(() => {
+    if (isLogin) { sessionStorage.setItem(TAB_FLAG, "1"); setTabChecked(true); return; }
+    if (sessionStorage.getItem(TAB_FLAG)) { setTabChecked(true); return; }
+    let settled = false;
+    const bc = new BroadcastChannel(PRESENCE_CHANNEL);
+    bc.onmessage = (e) => {
+      if (e.data === "alive" && !settled) {
+        settled = true;
+        sessionStorage.setItem(TAB_FLAG, "1"); // adopce: jiný list žije, jedeme dál
+        setTabChecked(true);
+        bc.close();
+      }
+    };
+    bc.postMessage("ping");
+    const timer = setTimeout(async () => {
+      if (settled) return;
+      settled = true;
+      bc.close();
+      sessionStorage.setItem(TAB_FLAG, "1"); // login list je od teď „živý"
+      try {
+        await createSupabaseBrowser().auth.signOut({ scope: "local" });
+      } catch { /* i bez toho končíme na loginu */ }
+      router.replace("/admin/login");
+      setTabChecked(true);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [isLogin, router]);
+
+  // Dokud tenhle list žije a má session, odpovídá na dotazy nových listů
+  useEffect(() => {
+    const bc = new BroadcastChannel(PRESENCE_CHANNEL);
+    bc.onmessage = (e) => {
+      if (e.data === "ping" && !isLogin && sessionStorage.getItem(TAB_FLAG)) bc.postMessage("alive");
+    };
+    return () => bc.close();
+  }, [isLogin]);
+
   async function signOut() {
     await fetch("/api/auth/signout", { method: "POST" });
     router.push("/admin/login");
@@ -49,6 +101,10 @@ function AdminInner({ children }: { children: ReactNode }) {
   }
 
   if (isLogin) return <>{children}</>;
+
+  // Než doběhne kontrola listu, nevykresluj admin data (žádné bliknutí
+  // obsahu v listu, který se vzápětí odhlásí).
+  if (!tabChecked) return null;
 
   // KDS běží fullscreen (tablet v kuchyni) — bez sidebaru a bottom navu
   if (pathname.startsWith("/admin/kds")) return <>{children}</>;
