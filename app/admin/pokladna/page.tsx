@@ -43,6 +43,39 @@ export default function PokladnaPage() {
   const [custCache] = useState<Map<string, Cust[]>>(new Map());
   const [modal, setModal] = useState<{ product: Product; custs: Cust[]; sel: Set<string> } | null>(null);
   const [success, setSuccess] = useState<{ ids: string[]; total: number; method: string } | null>(null);
+  const [closeout, setCloseout] = useState<{ date: string; cash: { count: number; total: number }; card: { count: number; total: number }; cancelled: { count: number; total: number }; total: { count: number; total: number } } | null | "loading">(null);
+
+  // Storno právě vytvořené skupiny (zákazník si to rozmyslel po zaplacení)
+  async function stornoSuccess() {
+    if (!success || busy) return;
+    if (!confirm(t("pokladna.stornoConfirm"))) return;
+    setBusy(true);
+    try {
+      for (const id of success.ids) {
+        await fetch(`/api/orders/${id}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "cancelled" }),
+        });
+      }
+      toast(t("pokladna.stornoDone"), "success");
+      reset();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function openCloseout() {
+    setCloseout("loading");
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Prague" }); // YYYY-MM-DD
+    try {
+      const d = await fetch(`/api/pos/closeout?date=${today}`).then(r => r.json());
+      if (d.error) { toast(d.error, "error"); setCloseout(null); return; }
+      setCloseout(d);
+    } catch {
+      toast(t("pokladna.failed"), "error");
+      setCloseout(null);
+    }
+  }
 
   useEffect(() => {
     const load = () =>
@@ -158,7 +191,13 @@ export default function PokladnaPage() {
 
   return (
     <div className="p-4 sm:p-6">
-      <h1 className="mb-4 text-xl font-semibold">🧾 {t("pokladna.title")}</h1>
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-xl font-semibold">🧾 {t("pokladna.title")}</h1>
+        <button onClick={openCloseout}
+          className="rounded-lg border border-[var(--border)] px-3.5 py-2 text-sm text-[var(--muted)] hover:text-[var(--fg)] transition">
+          Σ {t("pokladna.closeout")}
+        </button>
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-5 items-start">
         {/* ── Produkty ── */}
@@ -329,6 +368,42 @@ export default function PokladnaPage() {
               className="mt-5 w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black hover:bg-neutral-200 transition">
               {t("pokladna.newOrder")}
             </button>
+            <button onClick={stornoSuccess} disabled={busy}
+              className="mt-2 text-xs text-[var(--muted)] underline decoration-dotted hover:text-red-400 disabled:opacity-50 transition">
+              {t("pokladna.storno")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Denní uzávěrka ── */}
+      {closeout && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setCloseout(null)}>
+          <div className="w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5" onClick={e => e.stopPropagation()}>
+            {closeout === "loading" ? (
+              <p className="py-4 text-center text-sm text-[var(--muted)]">{t("common.loading")}</p>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold">Σ {t("pokladna.closeoutTitle")}</h3>
+                <p className="mt-0.5 text-xs text-[var(--muted)]">{new Date(closeout.date + "T12:00:00").toLocaleDateString("cs-CZ")}</p>
+                <div className="mt-4 space-y-2 text-sm">
+                  <div className="flex justify-between"><span>💵 {t("pokladna.cash")}</span><span className="tabular-nums">{closeout.cash.count}× · {Math.round(closeout.cash.total)} Kč</span></div>
+                  <div className="flex justify-between"><span>💳 {t("pokladna.card")}</span><span className="tabular-nums">{closeout.card.count}× · {Math.round(closeout.card.total)} Kč</span></div>
+                  <div className="mt-2 flex justify-between border-t border-[var(--border)] pt-2 font-semibold">
+                    <span>{t("pokladna.total")}</span><span className="tabular-nums">{closeout.total.count}× · {Math.round(closeout.total.total)} Kč</span>
+                  </div>
+                  {closeout.cancelled.count > 0 && (
+                    <div className="flex justify-between text-xs text-[var(--muted)]">
+                      <span>{t("pokladna.closeoutCancelled")}</span><span className="tabular-nums">{closeout.cancelled.count}× · {Math.round(closeout.cancelled.total)} Kč</span>
+                    </div>
+                  )}
+                </div>
+                <button onClick={() => setCloseout(null)}
+                  className="mt-5 w-full rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-neutral-200 transition">
+                  {t("pokladna.close")}
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

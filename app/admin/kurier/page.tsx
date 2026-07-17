@@ -86,11 +86,12 @@ export default function KurierPage() {
     load();
   }
 
-  function Card({ o, inRun, seq }: { o: CourierOrder; inRun: boolean; seq?: number }) {
+  function Card({ o, inRun, seq, groupInfo }: { o: CourierOrder; inRun: boolean; seq?: number; groupInfo?: string }) {
     const b = BRAND[o.concept_slug] ?? { name: o.concept_slug, emoji: "🍴" };
     const items = (o.order_items ?? []).map(i => `${i.qty}× ${i.name}`).join(", ");
     const busy = busyId === o.id;
     const geoBadge = [
+      groupInfo ? `🧺 ${groupInfo}` : null,
       o.delivery_district ? `📍 ${o.delivery_district}` : null,
       o.dist_km != null ? `${String(o.dist_km).replace(".", ",")} km` : null,
     ].filter(Boolean).join(" · ");
@@ -148,6 +149,24 @@ export default function KurierPage() {
 
   if (loading) return <div className="p-6 text-sm text-[var(--muted)]">{t("common.loading")}</div>;
 
+  // Objednávky ze společného košíku (jedna platba, víc kuchyní) sdílí
+  // zákazníka i adresu — kurýr je veze najednou, tak ať je vidí jako 🧺 1/2, 2/2.
+  const groupKey = (o: CourierOrder) => `${o.customer_phone}|${o.customer_address}`;
+  const groupOf = (list: CourierOrder[]) => {
+    const counts = new Map<string, number>();
+    for (const o of list) counts.set(groupKey(o), (counts.get(groupKey(o)) ?? 0) + 1);
+    const seen = new Map<string, number>();
+    return (o: CourierOrder): string | undefined => {
+      const k = groupKey(o);
+      if ((counts.get(k) ?? 0) < 2) return undefined;
+      const idx = (seen.get(k) ?? 0) + 1;
+      seen.set(k, idx);
+      return `${idx}/${counts.get(k)}`;
+    };
+  };
+  const mineGroup = groupOf(mine);
+  const poolGroup = groupOf(pool);
+
   return (
     <div className="p-4 sm:p-6 max-w-3xl">
       <h1 className="text-xl font-semibold">🚚 {t("kurier.title")}</h1>
@@ -162,7 +181,7 @@ export default function KurierPage() {
       <h2 className="mb-2 text-sm font-medium text-[var(--muted)]">{t("kurier.mine")} {mine.length ? `(${mine.length})` : ""}</h2>
       {mine.length === 0
         ? <p className="mb-6 text-sm text-[var(--muted)]">{t("kurier.emptyMine")}</p>
-        : <div className="mb-6 space-y-3">{mine.map((o, i) => <Card key={o.id} o={o} inRun seq={mine.length > 1 ? i + 1 : undefined} />)}</div>}
+        : <div className="mb-6 space-y-3">{mine.map((o, i) => <Card key={o.id} o={o} inRun seq={mine.length > 1 ? i + 1 : undefined} groupInfo={mineGroup(o)} />)}</div>}
 
       {suggestion ? (
         <div className="mb-4 rounded-2xl border border-white/25 bg-white/5 p-4">
@@ -180,7 +199,7 @@ export default function KurierPage() {
       <h2 className="mb-2 text-sm font-medium text-[var(--muted)]">{t("kurier.pool")} {pool.length ? `(${pool.length})` : ""}</h2>
       {pool.length === 0
         ? <p className="text-sm text-[var(--muted)]">{t("kurier.emptyPool")}</p>
-        : <div className="space-y-3">{pool.map(o => <Card key={o.id} o={o} inRun={false} />)}</div>}
+        : <div className="space-y-3">{pool.map(o => <Card key={o.id} o={o} inRun={false} groupInfo={poolGroup(o)} />)}</div>}
     </div>
   );
 }

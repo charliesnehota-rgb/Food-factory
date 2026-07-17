@@ -1,9 +1,23 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { STATUS_LABEL, formatCzk } from "@/lib/types";
 import type { Order, OrderStatus } from "@/lib/types";
 import { useT } from "@/lib/i18n";
+
+// Krátký beep přes Web Audio (nová objednávka) — stejný jako na KDS
+function beep() {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.start(); osc.stop(ctx.currentTime + 0.4);
+  } catch { /* autoplay policy — ticho */ }
+}
 
 // Pořadí kuchyňského toku pro šipky vpřed/vzad. Musí sedět s KDS: zaplacené
 // web/app objednávky přicházejí ze Stripe webhooku rovnou jako "accepted" —
@@ -33,13 +47,21 @@ export default function OrdersBoard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const seenIds = useRef<Set<string> | null>(null);
 
   const load = useCallback(async () => {
     try {
       // Board je provozní pohled: jen posledních 24 h, starší patří do historie.
       const res = await fetch("/api/orders?hours=24", { cache: "no-store" });
       const data = await res.json();
-      if (Array.isArray(data)) setOrders(data);
+      if (Array.isArray(data)) {
+        // Pípni na nově příchozí objednávku (stejně jako KDS) — až od druhého
+        // načtení, ať to nehouká při otevření stránky.
+        const incoming = (data as Order[]).filter(o => o.status === "new" || o.status === "accepted");
+        if (seenIds.current && incoming.some(o => !seenIds.current!.has(o.id))) beep();
+        seenIds.current = new Set(incoming.map(o => o.id));
+        setOrders(data);
+      }
     } catch { /* ponech prázdné */ }
     finally { setLoading(false); }
   }, []);

@@ -10,11 +10,10 @@
 export interface GeoPoint { lat: number; lng: number }
 export interface GeocodeResult extends GeoPoint { district: string | null }
 
-// Adresa kuchyně = výchozí bod tras. Zatím neznámá (v repu jsou jen
-// [DOPLNIT] placeholdery) — doplň sem plnou adresu provozovny a vzdálenosti
-// od kuchyně + řazení první zastávky se zapnou samy. null = start trasy
-// se bere od nejstarší objednávky v rozvážce.
-const KITCHEN_ADDRESS: string | null = null;
+// Adresa kuchyně = výchozí bod tras (doplněno Karlem 16. 7.). Geokóduje se
+// jednou na instanci; kdyby Nominatim adresu nenašel, vše degraduje na
+// chování bez kuchyně (trasa od nejstarší objednávky, bez vzdáleností).
+const KITCHEN_ADDRESS: string | null = "Pod Hájem 12, Praha 5";
 
 const NOMINATIM_HEADERS = {
   // Nominatim vyžaduje identifikující User-Agent (usage policy, max 1 req/s).

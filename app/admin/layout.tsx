@@ -111,21 +111,40 @@ function AdminInner({ children }: { children: ReactNode }) {
               <LangToggle />
             </div>
             <nav className="flex flex-col gap-1">
-              {links.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  style={isActive(l.href) ? { background: "#ffffff", color: "#111111" } : undefined}
-                  className={
-                    "rounded-md px-3 py-2 text-sm font-medium " +
-                    (isActive(l.href)
-                      ? ""
-                      : "text-[var(--muted)] hover:bg-[var(--card)] hover:text-white")
-                  }
-                >
-                  {l.label}
-                </Link>
-              ))}
+              {(isAccountant || isCourier ? [{ label: null as string | null, hrefs: links.map(l => l.href) }] : [
+                { label: t("nav.sec.ops"),   hrefs: ["/admin", "/admin/objednavky", "/admin/kds", "/admin/provoz"] },
+                { label: t("nav.sec.sales"), hrefs: ["/admin/pokladna", "/admin/kurier", "/admin/cenotvorba", "/admin/marketing", "/admin/kanaly"] },
+                { label: t("nav.sec.data"),  hrefs: ["/admin/sklad", "/admin/pnl", "/admin/produkty", "/admin/personal"] },
+              ]).map((sec, si) => {
+                const items = sec.hrefs
+                  .map(h => links.find(l => l.href === h))
+                  .filter((l): l is typeof links[number] => !!l);
+                if (items.length === 0) return null;
+                return (
+                  <div key={si} className={si > 0 ? "mt-3" : undefined}>
+                    {sec.label && (
+                      <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]/70">{sec.label}</div>
+                    )}
+                    <div className="flex flex-col gap-1">
+                      {items.map((l) => (
+                        <Link
+                          key={l.href}
+                          href={l.href}
+                          style={isActive(l.href) ? { background: "#ffffff", color: "#111111" } : undefined}
+                          className={
+                            "rounded-md px-3 py-2 text-sm font-medium " +
+                            (isActive(l.href)
+                              ? ""
+                              : "text-[var(--muted)] hover:bg-[var(--card)] hover:text-white")
+                          }
+                        >
+                          {l.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </nav>
 
             {me?.email && (
