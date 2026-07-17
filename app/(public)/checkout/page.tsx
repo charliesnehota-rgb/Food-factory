@@ -7,6 +7,7 @@ import { useBrand } from "@/lib/brand-context";
 import { formatCzk } from "@/lib/types";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { createSupabaseBrowser } from "@/lib/auth/client";
+import AddressAutocomplete, { type PickedAddress } from "@/components/AddressAutocomplete";
 
 type Fulfilment = "delivery" | "pickup";
 
@@ -36,6 +37,7 @@ export default function CheckoutPage() {
   const [website, setWebsite] = useState(""); // honeypot — lidé nevidí, boti vyplní
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [pickedAddress, setPickedAddress] = useState<PickedAddress | null>(null);
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -92,7 +94,13 @@ export default function CheckoutPage() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           conceptSlug: primaryConcept, channel: "web", fulfilment,
-          customer: { name: name.trim(), email: email.trim(), phone: phone.trim(), address: address.trim() },
+          customer: {
+            name: name.trim(), email: email.trim(), phone: phone.trim(), address: address.trim(),
+            // Adresa vybraná z našeptávače nese přesnou polohu — objednávka ji dostane rovnou
+            ...(pickedAddress && pickedAddress.label === address.trim()
+              ? { lat: pickedAddress.lat, lng: pickedAddress.lng, district: pickedAddress.district }
+              : {}),
+          },
           marketing_opt_in: newsletter,
           website,
           note: note.trim(),
@@ -229,8 +237,12 @@ export default function CheckoutPage() {
             {fulfilment === "delivery" && (
               <div>
                 <label className="mb-1 block text-sm font-medium" style={{ color: ink }}>Adresa doručení *</label>
-                <input value={address} onChange={e => setAddress(e.target.value)} placeholder={en ? "Street and number, city" : "Ulice a číslo, město"}
-                  className={inputCls} style={{ background: surface, border: `1px solid ${line}`, color: ink }} />
+                <AddressAutocomplete value={address}
+                  onChange={setAddress}
+                  onPick={setPickedAddress}
+                  placeholder={en ? "Start typing street and number…" : "Začni psát ulici a číslo…"}
+                  className={inputCls} style={{ background: surface, border: `1px solid ${line}`, color: ink }}
+                  dropdownClassName="border" />
               </div>
             )}
 

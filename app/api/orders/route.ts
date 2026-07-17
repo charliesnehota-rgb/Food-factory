@@ -276,9 +276,16 @@ export async function POST(req: NextRequest) {
     // skupinu, takže jeden dotaz a update všech objednávek naráz. Slouží
     // kurýrnímu rozvozu (čtvrť, seskupování, pořadí zastávek). Selhání nebo
     // chybějící sloupce (migration_delivery_geo.sql) objednávku nikdy neshodí.
+    // Když adresa přišla z našeptávače (customer.lat/lng z výběru), použije se
+    // přesná poloha rovnou a Nominatim se přeskočí — je přesnější i rychlejší.
     if (fulfilment === "delivery" && created.length > 0) {
       try {
-        const geo = await geocodeAddress(customer.address);
+        const pickedLat = Number(customer?.lat), pickedLng = Number(customer?.lng);
+        const pickedOk = Number.isFinite(pickedLat) && Number.isFinite(pickedLng)
+          && pickedLat > 48.5 && pickedLat < 51.1 && pickedLng > 12 && pickedLng < 18.9; // hrubé hranice ČR
+        const geo = pickedOk
+          ? { lat: pickedLat, lng: pickedLng, district: typeof customer?.district === "string" ? customer.district.slice(0, 80) : null }
+          : await geocodeAddress(customer.address);
         if (geo) {
           await supabaseAdmin.from("orders")
             .update({ delivery_lat: geo.lat, delivery_lng: geo.lng, delivery_district: geo.district })

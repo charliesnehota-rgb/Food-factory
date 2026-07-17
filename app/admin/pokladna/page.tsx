@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { useToast } from "@/lib/toast";
+import AddressAutocomplete, { type PickedAddress } from "@/components/AddressAutocomplete";
 
 const BRANDS = [
   { slug: "sunny-side", name: "Prostě snídaně", emoji: "🍳", accent: "#f59e0b" },
@@ -37,6 +38,7 @@ export default function PokladnaPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [pickedAddress, setPickedAddress] = useState<PickedAddress | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -142,7 +144,7 @@ export default function PokladnaPage() {
   const deliveryFee = fulfilment === "delivery" ? DELIVERY_FEE : 0;
 
   function reset() {
-    setCart([]); setName(""); setPhone(""); setAddress(""); setNote("");
+    setCart([]); setName(""); setPhone(""); setAddress(""); setNote(""); setPickedAddress(null);
     setFulfilment("pickup"); setSuccess(null);
   }
 
@@ -162,6 +164,9 @@ export default function PokladnaPage() {
             name: name.trim() || t("pokladna.walkIn"),
             phone: phone.trim() || undefined,
             address: fulfilment === "delivery" ? address.trim() : undefined,
+            ...(fulfilment === "delivery" && pickedAddress && pickedAddress.label === address.trim()
+              ? { lat: pickedAddress.lat, lng: pickedAddress.lng, district: pickedAddress.district }
+              : {}),
           },
           note: note.trim() || undefined,
           items: cart.map(l => ({
@@ -275,7 +280,10 @@ export default function PokladnaPage() {
               <>
                 <input value={phone} onChange={e => setPhone(e.target.value)} placeholder={t("pokladna.phone")}
                   className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
-                <input value={address} onChange={e => setAddress(e.target.value)} placeholder={t("pokladna.address")}
+                <AddressAutocomplete value={address}
+                  onChange={setAddress}
+                  onPick={setPickedAddress}
+                  placeholder={t("pokladna.address")}
                   className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
               </>
             )}
