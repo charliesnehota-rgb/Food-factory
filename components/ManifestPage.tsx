@@ -24,8 +24,8 @@ const COPY: Record<ManifestLang, {
 }> = {
   cs: {
     lines: ["JE ČAS", "ZMĚNIT", "ČESKOU", "GASTRONOMII."],
-    triad: ["Levně", "Chutně", "Rychle"],
-    triadLabel: "Levně. Chutně. Rychle.",
+    triad: ["Levně", "Chutně", "U vás doma"],
+    triadLabel: "Levně. Chutně. U vás doma.",
     city: "Praha",
     copy: (
       <>
@@ -35,7 +35,7 @@ const COPY: Record<ManifestLang, {
         <b> Brzy uslyšíte víc.</b>
       </>
     ),
-    band: "Připravujeme ✎ Levně · Chutně · Rychle ✎ ",
+    band: "Připravujeme ✎ Levně · Chutně · U vás doma ✎ ",
     building: "Ve výstavbě",
     signIn: "Přihlášení",
     langLabel: "EN",
@@ -43,8 +43,8 @@ const COPY: Record<ManifestLang, {
   },
   en: {
     lines: ["IT'S TIME", "TO CHANGE", "CZECH", "GASTRONOMY."],
-    triad: ["Affordable", "Tasty", "Fast"],
-    triadLabel: "Affordable. Tasty. Fast.",
+    triad: ["Affordable", "Tasty", "At your home"],
+    triadLabel: "Affordable. Tasty. At your home.",
     city: "Prague",
     copy: (
       <>
@@ -54,7 +54,7 @@ const COPY: Record<ManifestLang, {
         we&apos;re sketching quietly. <b>You&apos;ll hear more soon.</b>
       </>
     ),
-    band: "Coming soon ✎ Affordable · Tasty · Fast ✎ ",
+    band: "Coming soon ✎ Affordable · Tasty · At your home ✎ ",
     building: "Under construction",
     signIn: "Sign in",
     langLabel: "CZ",
