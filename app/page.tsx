@@ -5,7 +5,7 @@ import ManifestPage from "@/components/ManifestPage";
 // odkryje až při „sjednocení" (6+ restaurací + appka).
 export const metadata = {
   title: "Food Factory — je čas změnit českou gastronomii",
-  description: "Levně. Chutně. U vás doma. Stavíme něco, co tu ještě nebylo.",
+  description: "Levně. Chutně. Doma. Stavíme něco, co tu ještě nebylo.",
   alternates: {
     canonical: "/",
     languages: { cs: "/", en: "/en" },
