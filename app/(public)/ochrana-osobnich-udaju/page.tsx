@@ -1,6 +1,6 @@
 // NÁVRH zásad zpracování osobních údajů (GDPR) — před ostrým provozem
 // nechat zkontrolovat právníkem a doplnit údaje označené [DOPLNIT].
-export const metadata = { title: "Ochrana osobních údajů — Food Factory" };
+export const metadata = { title: "Ochrana osobních údajů — Free City" };
 
 export default function PrivacyPage() {
   return (

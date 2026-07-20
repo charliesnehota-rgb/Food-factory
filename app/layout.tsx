@@ -8,7 +8,7 @@ import { CustomerLocaleProvider } from "@/lib/customer-locale";
 import { CartDrawer } from "@/components/CartDrawer";
 
 export const metadata: Metadata = {
-  title: "Food Factory",
+  title: "Free City",
   description: "Cloud kitchen.",
 };
 

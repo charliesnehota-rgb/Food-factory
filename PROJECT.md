@@ -1,4 +1,4 @@
-# Food Factory — platforma pro multi-concept gastro
+# Free City — platforma pro multi-concept gastro
 
 Tenhle dokument je „mapa“ celého projektu: co stavíme, jak to drží pohromadě,
 jak fungují databáze, admin a napojení na platby a rozvoz, a co je potřeba

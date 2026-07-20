@@ -1,4 +1,4 @@
-# Food Factory
+# Free City
 
 Multi-concept gastro platforma (web + admin) postavená na Next.js 16, React 19,
 TypeScript a Tailwind v4. Databáze Firebase/Firestore, platby Stripe, rozvoz

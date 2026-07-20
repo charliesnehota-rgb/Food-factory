@@ -17,7 +17,7 @@ const KITCHEN_ADDRESS: string | null = "Pod Hájem 12, Praha 5";
 
 const NOMINATIM_HEADERS = {
   // Nominatim vyžaduje identifikující User-Agent (usage policy, max 1 req/s).
-  "User-Agent": "FoodFactory/1.0 (+https://food-factory-zeta.vercel.app)",
+  "User-Agent": "FreeCity/1.0 (+https://food-factory-zeta.vercel.app)",
 };
 
 /**

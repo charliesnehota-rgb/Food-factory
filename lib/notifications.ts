@@ -82,7 +82,7 @@ async function resendSend(payload: Record<string, unknown>, label: string): Prom
     method: "POST",
     headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: process.env.RESEND_FROM ?? "Food Factory <onboarding@resend.dev>",
+      from: process.env.RESEND_FROM ?? "Free City <onboarding@resend.dev>",
       ...payload,
     }),
   }).catch((e: unknown) => {
@@ -118,7 +118,7 @@ export async function sendStatusEmail(
          style="display:inline-block;margin-top:16px;padding:10px 20px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-size:14px">
         Sledovat objednávku →
       </a>
-      <p style="margin-top:32px;font-size:12px;color:#999">Powered by Food Factory</p>
+      <p style="margin-top:32px;font-size:12px;color:#999">Powered by Free City</p>
     </div>
   `;
 
@@ -145,7 +145,7 @@ export async function sendOrderConfirmationEmail(
         Sledovat objednávku →
       </a>
       <p style="margin-top:12px;font-size:13px;color:#888">O každé změně stavu ti dáme vědět e-mailem.</p>
-      <p style="margin-top:32px;font-size:12px;color:#999">Powered by Food Factory</p>
+      <p style="margin-top:32px;font-size:12px;color:#999">Powered by Free City</p>
     </div>
   `;
 
@@ -185,7 +185,7 @@ export async function sendLowStockEmail(
          style="display:inline-block;margin-top:16px;padding:10px 20px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-size:14px">
         Otevřít nákup →
       </a>
-      <p style="margin-top:32px;font-size:12px;color:#999">Food Factory — sklad</p>
+      <p style="margin-top:32px;font-size:12px;color:#999">Free City — sklad</p>
     </div>`;
 
   await resendSend({ to: toEmails, subject: `Sklad: ${items.length} položek dochází`, html }, "low-stock");
@@ -235,7 +235,7 @@ export async function sendExpiringEmail(
          style="display:inline-block;margin-top:16px;padding:10px 20px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-size:14px">
         Otevřít sklad →
       </a>
-      <p style="margin-top:32px;font-size:12px;color:#999">Food Factory — sklad</p>
+      <p style="margin-top:32px;font-size:12px;color:#999">Free City — sklad</p>
     </div>`;
 
   await resendSend({ to: toEmails, subject: `Sklad: ${items.length} položek blíží se expiraci`, html }, "expiring");
@@ -252,10 +252,10 @@ export async function sendInviteEmail(
 
   const html = `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1a1a1a">
-      <h2 style="font-size:20px;margin-bottom:8px">👋 Vítej v Food Factory</h2>
+      <h2 style="font-size:20px;margin-bottom:8px">👋 Vítej v Free City</h2>
       <p style="color:#555;margin-bottom:4px">Ahoj ${escapeHtml(toName)},</p>
       <p style="color:#555;margin-bottom:24px">
-        Byl/a jsi přidán/a do týmu Food Factory. Klikni na tlačítko níže,
+        Byl/a jsi přidán/a do týmu Free City. Klikni na tlačítko níže,
         nastav si heslo a dostaneš se přímo do administrace.
       </p>
       <a href="${inviteLink}"
@@ -267,10 +267,10 @@ export async function sendInviteEmail(
         <span style="word-break:break-all;color:#555">${inviteLink}</span>
       </p>
       <hr style="margin:32px 0;border:none;border-top:1px solid #eee">
-      <p style="font-size:12px;color:#aaa">Food Factory — správa týmu · <a href="${site}/admin" style="color:#aaa">Přejít do adminu</a></p>
+      <p style="font-size:12px;color:#aaa">Free City — správa týmu · <a href="${site}/admin" style="color:#aaa">Přejít do adminu</a></p>
     </div>`;
 
-  await resendSend({ to: [toEmail], subject: "Pozvánka do Food Factory — nastav si heslo", html }, "invite");
+  await resendSend({ to: [toEmail], subject: "Pozvánka do Free City — nastav si heslo", html }, "invite");
 }
 
 // Potvrzení registrace zákazníka (posíláme sami přes Resend — Supabase mailer je nespolehlivý)
@@ -282,7 +282,7 @@ export async function sendSignupConfirmationEmail(
 
   const html = `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1a1a1a">
-      <h2 style="font-size:20px;margin-bottom:8px">🍴 Vítej ve Food Factory</h2>
+      <h2 style="font-size:20px;margin-bottom:8px">🍴 Vítej ve Free City</h2>
       <p style="color:#555;margin-bottom:4px">Ahoj ${escapeHtml(toName)},</p>
       <p style="color:#555;margin-bottom:24px">
         Díky za registraci! Zbývá poslední krok — potvrď svůj e-mail kliknutím na tlačítko:
@@ -300,7 +300,7 @@ export async function sendSignupConfirmationEmail(
       </p>
     </div>`;
 
-  const ok = await resendSend({ to: [toEmail], subject: "Potvrď svůj e-mail — Food Factory", html }, "signup");
+  const ok = await resendSend({ to: [toEmail], subject: "Potvrď svůj e-mail — Free City", html }, "signup");
   if (!ok) return { ok: false, error: "Odeslání selhalo" };
   return { ok: true };
 }

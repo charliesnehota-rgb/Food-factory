@@ -34,7 +34,7 @@ function LoginForm() {
     <div className="mx-auto max-w-sm px-4 py-24">
       <div className="text-center mb-8">
         <div className="text-3xl mb-2">🍴</div>
-        <h1 className="text-xl font-semibold">Food Factory — Admin</h1>
+        <h1 className="text-xl font-semibold">Free City — Admin</h1>
         <p className="text-sm text-[var(--muted)] mt-1">Přihlas se pro přístup</p>
       </div>
 

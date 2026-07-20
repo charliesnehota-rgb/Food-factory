@@ -116,7 +116,7 @@ function LoginInner({ b }: { b: BrandTheme }) {
         </Link>
       </p>
       <p className="text-center text-xs mt-4" style={{ color: b.muted, opacity: 0.75 }}>
-        {en ? "One Food Factory account works across all our kitchens" : "Jeden účet Food Factory platí pro všechny naše provozy"}
+        {en ? "One Free City account works across all our kitchens" : "Jeden účet Free City platí pro všechny naše provozy"}
       </p>
     </Shell>
   );

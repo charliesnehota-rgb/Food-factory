@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 // ═══════════════════════════════════════════════════════════
-// MANIFEST — dočasná tvář Food Factory (skrytý režim), CZ + EN.
+// MANIFEST — dočasná tvář Free City (skrytý režim), CZ + EN.
 // Bílý papír, grafit, tužkové skici co se samy dokreslují —
 // projekt se teprve rýsuje. Rozcestník značek odkryjeme až při
 // „sjednocení" (6+ restaurací + appka); starý hub je v git historii.
@@ -195,7 +195,7 @@ export default function ManifestPage({ lang }: { lang: ManifestLang }) {
       `}</style>
 
       <header className="mf-wrap mf-top">
-        <span className="mf-mark">Food<b>·</b>Factory</span>
+        <span className="mf-mark">Free<b>·</b>City</span>
         <span className="mf-meta">
           <span className="mf-year">{c.city} — {year}</span>
           <Link className="mf-lang" href={c.langHref} lang={lang === "cs" ? "en" : "cs"} aria-label={lang === "cs" ? "English version" : "Česká verze"}>

@@ -8,7 +8,7 @@ export function Nav() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <span className="text-xl">🍴</span>
-          <span>Food Factory</span>
+          <span>Free City</span>
         </Link>
         <nav className="flex items-center gap-1 text-sm">
           <Link href="/#koncepty" className="rounded-md px-3 py-2 text-[var(--muted)] hover:text-white">Koncepty</Link>

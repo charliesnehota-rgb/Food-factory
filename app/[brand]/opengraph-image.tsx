@@ -12,7 +12,7 @@ export default async function Image({ params }: { params: Promise<{ brand: strin
   const b = getBrand(brand);
   const bg = b?.accent ?? "#111";
   const fg = b?.accentInk ?? "#fff";
-  const name = b?.name ?? "Food Factory";
+  const name = b?.name ?? "Free City";
   const sub = b?.eyebrow ?? "Praha";
 
   return new ImageResponse(
@@ -25,7 +25,7 @@ export default async function Image({ params }: { params: Promise<{ brand: strin
         <div style={{ fontSize: 160 }}>{EMOJI[brand] ?? "🍴"}</div>
         <div style={{ fontSize: 88, fontWeight: 800, marginTop: 8 }}>{name}</div>
         <div style={{ fontSize: 32, marginTop: 12, opacity: 0.85 }}>{sub}</div>
-        <div style={{ fontSize: 24, marginTop: 40, opacity: 0.6 }}>food-factory · objednej online</div>
+        <div style={{ fontSize: 24, marginTop: 40, opacity: 0.6 }}>free city · objednej online</div>
       </div>
     ),
     { ...size }

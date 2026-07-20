@@ -1,6 +1,6 @@
 // NÁVRH obchodních podmínek — před ostrým provozem nechat zkontrolovat
 // právníkem a doplnit údaje označené [DOPLNIT].
-export const metadata = { title: "Obchodní podmínky — Food Factory" };
+export const metadata = { title: "Obchodní podmínky — Free City" };
 
 export default function TermsPage() {
   return (
@@ -11,7 +11,7 @@ export default function TermsPage() {
       <div className="space-y-6 text-sm leading-relaxed text-[var(--muted)] [&_h2]:text-white [&_h2]:font-medium [&_h2]:text-base [&_h2]:mb-1">
         <section>
           <h2>1. Provozovatel</h2>
-          <p>Provozovatelem služby Food Factory a prodávajícím je [DOPLNIT: název společnosti], IČO [DOPLNIT], DIČ [DOPLNIT], se sídlem [DOPLNIT adresa], zapsaná v obchodním rejstříku vedeném [DOPLNIT soud, spisová značka] (dále „prodávající"). Kontakt: [DOPLNIT e-mail], [DOPLNIT telefon]. Provozovna: [DOPLNIT adresa kuchyně].</p>
+          <p>Provozovatelem služby Free City a prodávajícím je [DOPLNIT: název společnosti], IČO [DOPLNIT], DIČ [DOPLNIT], se sídlem [DOPLNIT adresa], zapsaná v obchodním rejstříku vedeném [DOPLNIT soud, spisová značka] (dále „prodávající"). Kontakt: [DOPLNIT e-mail], [DOPLNIT telefon]. Provozovna: [DOPLNIT adresa kuchyně].</p>
         </section>
         <section>
           <h2>2. Objednávka a uzavření smlouvy</h2>

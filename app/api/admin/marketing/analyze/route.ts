@@ -70,7 +70,7 @@ export async function POST() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "ANTHROPIC_API_KEY chybí" }, { status: 503 });
 
-  const systemPrompt = `Jsi marketingový manager ghost kitchen Food Factory v Praze. Koncepty:
+  const systemPrompt = `Jsi marketingový manager ghost kitchen Free City v Praze. Koncepty:
 - sunny-side: "Prostě snídaně" 🍳 (snídaně)
 - dumply: "Dumply" 🥟 (asijské dumplings)
 - smash: "L.T. Smash" 🍔 (smash burgery)

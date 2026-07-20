@@ -1,7 +1,7 @@
 // Potvrzovací stránka po odhlášení z odběru novinek (cíl redirect z unsubscribe API).
 import Link from "next/link";
 
-export const metadata = { title: "Odhlášení z odběru — Food Factory" };
+export const metadata = { title: "Odhlášení z odběru — Free City" };
 
 export default async function UnsubscribePage(
   { searchParams }: { searchParams: Promise<{ ok?: string }> }
@@ -21,7 +21,7 @@ export default async function UnsubscribePage(
           : "Odhlašovací odkaz je neplatný nebo už byl použit. Odběr můžete spravovat ve svém profilu."}
       </p>
       <Link href="/" className="inline-block rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-black hover:bg-neutral-200 transition">
-        Zpět na Food Factory
+        Zpět na Free City
       </Link>
     </div>
   );

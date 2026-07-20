@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const { data: products } = await supabaseAdmin.from("products")
       .select("id, concept_slug, name, price_czk").eq("available", true);
 
-    const aiPrompt = `Jsi AI koordinátor multi-concept restaurace Food Factory.
+    const aiPrompt = `Jsi AI koordinátor multi-concept restaurace Free City.
 Aktuální zatížení konceptů za posledních 30 min: ${JSON.stringify(load)}.
 Dostupné produkty: ${JSON.stringify((products ?? []).map(p => ({ id: p.id, concept: p.concept_slug, name: p.name, price: p.price_czk })))}
 
@@ -82,7 +82,7 @@ Odpověz POUZE jako JSON pole: [{"productId":"...","newPriceCzk":...,"reason":".
   // ── Marketing asistent ──
   if (action === "generate_post" && apiKey) {
     const { conceptSlug, prompt } = payload;
-    const userPrompt = prompt ?? `Napiš krátký Instagram post (max 150 znaků) pro restauraci ${conceptSlug ?? "Food Factory"}.`;
+    const userPrompt = prompt ?? `Napiš krátký Instagram post (max 150 znaků) pro restauraci ${conceptSlug ?? "Free City"}.`;
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },

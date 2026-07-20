@@ -107,7 +107,7 @@ function ProfileInner() {
           <input type="checkbox" checked={newsletter} onChange={e => setNewsletter(e.target.checked)}
             className="mt-0.5 h-4 w-4 shrink-0 accent-white" />
           <span className="text-xs leading-relaxed text-[var(--muted)]">
-            {en ? "I want to receive Food Factory news and deals by e-mail (unsubscribe anytime)" : "Chci e-mailem dostávat novinky a akce Food Factory (odhlášení kdykoli)"}
+            {en ? "I want to receive Free City news and deals by e-mail (unsubscribe anytime)" : "Chci e-mailem dostávat novinky a akce Free City (odhlášení kdykoli)"}
           </span>
         </label>
 

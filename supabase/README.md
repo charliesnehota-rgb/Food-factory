@@ -2,7 +2,7 @@
 
 ## 1. Vytvoř projekt
 - Jdi na https://supabase.com → New project
-- Zvol název "food-factory", region "Central EU (Frankfurt)"
+- Zvol název "free-city", region "Central EU (Frankfurt)"
 - Zapiš si heslo k databázi
 
 ## 2. Spusť schema

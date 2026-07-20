@@ -232,7 +232,7 @@ function AdminInner({ children }: { children: ReactNode }) {
       {/* Mobile top bar — viditelný jen na mobilu */}
       <div className="sm:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3 bg-[var(--bg)] border-b border-[var(--border)]">
         <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-          Food Factory
+          Free City
         </span>
         <LangToggle />
       </div>

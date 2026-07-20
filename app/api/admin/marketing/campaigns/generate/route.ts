@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     ? "zákazníci, kteří 30+ dní neobjednali (cíl: přivést je zpět)"
     : "všichni zákazníci s odběrem novinek";
 
-  const systemPrompt = `Jsi marketingový copywriter ghost kitchen Food Factory v Praze. Koncepty:
+  const systemPrompt = `Jsi marketingový copywriter ghost kitchen Free City v Praze. Koncepty:
 - sunny-side: "Prostě snídaně" 🍳 (snídaně po celý den)
 - dumply: "Dumply" 🥟 (asijské dumplings)
 - smash: "L.T. Smash" 🍔 (smash burgery)

@@ -4,7 +4,7 @@ import ManifestPage from "@/components/ManifestPage";
 // komponenta v components/ManifestPage.tsx. Rozcestník značek se
 // odkryje až při „sjednocení" (6+ restaurací + appka).
 export const metadata = {
-  title: "Food Factory — je čas změnit českou gastronomii",
+  title: "Free City — je čas změnit českou gastronomii",
   description: "Férově. Chutně. Doma. Stavíme něco, co tu ještě nebylo.",
   alternates: {
     canonical: "/",

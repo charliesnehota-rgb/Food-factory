@@ -106,7 +106,7 @@ export function buildCampaignHtml(bodyHtml: string, conceptSlug: string | null, 
   const brand = conceptSlug ? BRAND_META[conceptSlug] : null;
   const header = brand
     ? `<div style="background:${brand.accent};color:#fff;padding:18px 24px;border-radius:12px 12px 0 0;font-size:18px;font-weight:700">${brand.emoji} ${brand.name}</div>`
-    : `<div style="background:#111;color:#fff;padding:18px 24px;border-radius:12px 12px 0 0;font-size:18px;font-weight:700">🍴 Food Factory</div>`;
+    : `<div style="background:#111;color:#fff;padding:18px 24px;border-radius:12px 12px 0 0;font-size:18px;font-weight:700">🍴 Free City</div>`;
 
   return `
   <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
@@ -117,7 +117,7 @@ export function buildCampaignHtml(bodyHtml: string, conceptSlug: string | null, 
     <p style="margin-top:20px;font-size:12px;color:#999;text-align:center;line-height:1.6">
       Tento e-mail jste dostali, protože jste při registraci souhlasili se zasíláním novinek.<br>
       <a href="${site}/api/marketing/unsubscribe?token=${unsubscribeToken}" style="color:#999;text-decoration:underline">Odhlásit se z odběru</a>
-      · Food Factory, Praha
+      · Free City, Praha
     </p>
   </div>`;
 }
@@ -135,7 +135,7 @@ export async function sendCampaignBatch(
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return { sent: 0, error: "RESEND_API_KEY chybí" };
 
-  const from = process.env.RESEND_FROM ?? "Food Factory <onboarding@resend.dev>";
+  const from = process.env.RESEND_FROM ?? "Free City <onboarding@resend.dev>";
   let sent = 0;
   let lastError: string | undefined;
 

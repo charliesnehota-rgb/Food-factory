@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       + "&limit=8&lang=default"
       + "&bbox=14.22,49.94,14.71,50.18"; // Praha a těsné okolí
     const res = await fetch(url, {
-      headers: { "User-Agent": "FoodFactory/1.0 (+https://food-factory-zeta.vercel.app)" },
+      headers: { "User-Agent": "FreeCity/1.0 (+https://food-factory-zeta.vercel.app)" },
       signal: ctrl.signal,
     });
     clearTimeout(timer);
