@@ -4,7 +4,7 @@ import ManifestPage from "@/components/ManifestPage";
 // Czech lives at /, shared component in components/ManifestPage.tsx.
 export const metadata = {
   title: "Food Factory — it's time to change Czech gastronomy",
-  description: "Affordable. Tasty. Home. We're building something Czechia hasn't seen yet.",
+  description: "Fair. Tasty. Home. We're building something Czechia hasn't seen yet.",
   alternates: {
     canonical: "/en",
     languages: { cs: "/", en: "/en" },
